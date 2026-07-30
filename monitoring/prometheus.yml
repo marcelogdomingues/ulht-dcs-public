@@ -1,0 +1,117 @@
+# Prometheus Configuration for ULHT Digital Credential System
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'ulht-dcs'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# Load rules once and periodically evaluate them
+# rule_files:
+#   - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # =============================================================================
+  # MICROSERVICES - Spring Boot Actuator Metrics
+  # =============================================================================
+  
+  - job_name: 'student-service'
+    metrics_path: '/api/v1/actuator/prometheus'
+    static_configs:
+      - targets: ['ulht-student-service:8084']
+        labels:
+          service: 'student-service'
+          application: 'student-service'
+          type: 'microservice'
+
+  - job_name: 'lusofona-service'
+    metrics_path: '/api/v1/actuator/prometheus'
+    static_configs:
+      - targets: ['ulht-lusofona-service:8085']
+        labels:
+          service: 'lusofona-service'
+          application: 'lusofona-service'
+          type: 'microservice'
+
+  - job_name: 'credential-service'
+    metrics_path: '/api/v1/actuator/prometheus'
+    static_configs:
+      - targets: ['ulht-credential-service:8086']
+        labels:
+          service: 'credential-service'
+          application: 'credential-service'
+          type: 'microservice'
+
+  - job_name: 'fulfilment-service'
+    metrics_path: '/api/v1/actuator/prometheus'
+    static_configs:
+      - targets: ['ulht-fulfilment-service:8087']
+        labels:
+          service: 'fulfilment-service'
+          application: 'fulfilment-service'
+          type: 'microservice'
+
+  # =============================================================================
+  # INFRASTRUCTURE - Kafka
+  # =============================================================================
+  
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+        labels:
+          service: 'kafka'
+          type: 'infrastructure'
+
+  # =============================================================================
+  # INFRASTRUCTURE - Zookeeper (via JMX Exporter if enabled)
+  # =============================================================================
+  # Note: Zookeeper JMX metrics require JMX exporter sidecar
+  # - job_name: 'zookeeper'
+  #   static_configs:
+  #     - targets: ['zookeeper-exporter:9404']
+  #       labels:
+  #         service: 'zookeeper'
+  #         type: 'infrastructure'
+
+  # =============================================================================
+  # INFRASTRUCTURE - Kong Gateway
+  # =============================================================================
+  # Note: Kong metrics require Prometheus plugin to be enabled
+  # - job_name: 'kong'
+  #   metrics_path: '/metrics'
+  #   static_configs:
+  #     - targets: ['api-gateway:8001']
+  #       labels:
+  #         service: 'kong'
+  #         type: 'gateway'
+
+  # =============================================================================
+  # INFRASTRUCTURE - Consul
+  # =============================================================================
+  - job_name: 'consul'
+    metrics_path: '/v1/agent/metrics'
+    params:
+      format: ['prometheus']
+    static_configs:
+      - targets: ['consul:8500']
+        labels:
+          service: 'consul'
+          type: 'infrastructure'
+
+  # =============================================================================
+  # MONITORING - Prometheus itself
+  # =============================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          type: 'monitoring'
+

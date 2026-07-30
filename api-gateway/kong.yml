@@ -1,0 +1,267 @@
+_format_version: "3.0"
+
+# ---------------------------------------------------------------------------
+# Consumers & API-key credentials
+# ---------------------------------------------------------------------------
+# Clients must present the shared API key in the `apikey` header.
+# Dev key value below is a placeholder and MUST be rotated for any real deploy.
+consumers:
+  - username: ulht-app
+    keyauth_credentials:
+      - key: ulht-dev-local-CHANGE-ME
+
+services:
+  # Credential Service
+  - name: credential-service
+    url: http://ulht-credential-service:8086
+    routes:
+      - name: credential-service-route
+        strip_path: true
+        paths:
+          - /api/v1/credentials
+          - /api/v1/flows
+        plugins:
+          - name: key-auth
+            config:
+              key_names:
+                - apikey
+              # Backend Spring services validate the SAME `apikey` header,
+              # so the gateway must forward (not strip) the credential.
+              hide_credentials: false
+          - name: cors
+            config:
+              origins:
+                - http://localhost:8000
+                - http://localhost:3000
+              methods:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+                - OPTIONS
+              headers:
+                - Accept
+                - Accept-Version
+                - Content-Length
+                - Content-MD5
+                - Content-Type
+                - Date
+                - X-Auth-Token
+                - Authorization
+                - apikey
+              exposed_headers:
+                - X-Auth-Token
+              # Wildcard origins + credentials is invalid/insecure; native and
+              # mobile clients do not rely on cookies, so credentials are off.
+              credentials: false
+              max_age: 3600
+          - name: rate-limiting
+            config:
+              minute: 100
+              hour: 1000
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - "X-Service: credential-service"
+          - name: response-transformer
+            config:
+              add:
+                headers:
+                  - "X-Service-Version: 3.0.0"
+
+  # WaltID Proxy Service
+  - name: waltid-proxy-service
+    url: http://ulht-waltid-proxy:8085
+    routes:
+      - name: waltid-proxy-route
+        strip_path: true
+        paths:
+          - /api/v1/students
+          - /api/v1/wallet
+        plugins:
+          - name: key-auth
+            config:
+              key_names:
+                - apikey
+              hide_credentials: false
+          - name: cors
+            config:
+              origins:
+                - http://localhost:8000
+                - http://localhost:3000
+              methods:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+                - OPTIONS
+              headers:
+                - Accept
+                - Accept-Version
+                - Content-Length
+                - Content-MD5
+                - Content-Type
+                - Date
+                - X-Auth-Token
+                - Authorization
+                - apikey
+              exposed_headers:
+                - X-Auth-Token
+              credentials: false
+              max_age: 3600
+          - name: rate-limiting
+            config:
+              minute: 100
+              hour: 1000
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - "X-Service: waltid-proxy"
+          - name: response-transformer
+            config:
+              add:
+                headers:
+                  - "X-Service-Version: 3.0.0"
+
+  # Fulfilment Service
+  - name: fulfilment-service
+    url: http://ulht-fulfilment-service:8087
+    routes:
+      - name: fulfilment-service-route
+        strip_path: true
+        paths:
+          - /api/v1/fulfilment
+        plugins:
+          - name: key-auth
+            config:
+              key_names:
+                - apikey
+              hide_credentials: false
+          - name: cors
+            config:
+              origins:
+                - http://localhost:8000
+                - http://localhost:3000
+              methods:
+                - GET
+                - POST
+                - OPTIONS
+              headers:
+                - Accept
+                - Accept-Version
+                - Content-Length
+                - Content-MD5
+                - Content-Type
+                - Date
+                - X-Auth-Token
+                - Authorization
+                - apikey
+              exposed_headers:
+                - X-Auth-Token
+              credentials: false
+              max_age: 3600
+          - name: rate-limiting
+            config:
+              minute: 100
+              hour: 1000
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - "X-Service: fulfilment-service"
+          - name: response-transformer
+            config:
+              add:
+                headers:
+                  - "X-Service-Version: 1.0.0"
+
+  # Lusofona Service
+  - name: lusofona-service
+    url: http://lusofona-service:8080
+    routes:
+      - name: lusofona-service-route
+        strip_path: true
+        paths:
+          - /api/v1/lusofona
+        plugins:
+          - name: key-auth
+            config:
+              key_names:
+                - apikey
+              hide_credentials: false
+          - name: cors
+            config:
+              origins:
+                - http://localhost:8000
+                - http://localhost:3000
+              methods:
+                - GET
+                - POST
+                - PUT
+                - DELETE
+                - OPTIONS
+              headers:
+                - Accept
+                - Accept-Version
+                - Content-Length
+                - Content-MD5
+                - Content-Type
+                - Date
+                - X-Auth-Token
+                - Authorization
+                - apikey
+              exposed_headers:
+                - X-Auth-Token
+              credentials: false
+              max_age: 3600
+          - name: rate-limiting
+            config:
+              minute: 100
+              hour: 1000
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - "X-Service: lusofona-service"
+          - name: response-transformer
+            config:
+              add:
+                headers:
+                  - "X-Service-Version: 1.0.0"
+
+# ---------------------------------------------------------------------------
+# Global plugins
+# ---------------------------------------------------------------------------
+# NOTE: The former `api-gateway-health` route proxied to the Kong Admin API
+# (http://api-gateway:8001) through the public proxy port. That exposed the
+# admin API to any client and has been removed. Kong's own status endpoint is
+# served on the dedicated status listener (:8100/status) and must stay
+# loopback/internal-only — it is intentionally NOT exposed via the proxy here.
+plugins:
+  - name: cors
+    config:
+      origins:
+        - http://localhost:8000
+        - http://localhost:3000
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - X-Auth-Token
+        - Authorization
+        - apikey
+      exposed_headers:
+        - X-Auth-Token
+      credentials: false
+      max_age: 3600

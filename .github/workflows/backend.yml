@@ -1,0 +1,75 @@
+# -----------------------------------------------------------------------------
+# Backend CI
+# -----------------------------------------------------------------------------
+# Builds and tests the four INDEPENDENT Maven microservices. Each service has
+# its own pom.xml (there is no parent aggregator), so we use a matrix and build
+# each one in its own directory with `mvn -B -ntp verify`.
+#
+# The tests are plain unit / Spring context tests (no Testcontainers), so this
+# job needs NO Docker daemon. Code generation (Avro / OpenAPI generator plugins)
+# is handled automatically by `mvn verify`.
+# -----------------------------------------------------------------------------
+name: Backend CI
+
+on:
+  push:
+    # Only run when backend code or this workflow changes.
+    paths:
+      - "credential-service/**"
+      - "student-service/**"
+      - "lusofona-service/**"
+      - "fulfilment-service/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "credential-service/**"
+      - "student-service/**"
+      - "lusofona-service/**"
+      - "fulfilment-service/**"
+      - ".github/workflows/backend.yml"
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR) to save CI minutes.
+concurrency:
+  group: backend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      # Keep building the other services even if one fails, so we get full feedback.
+      fail-fast: false
+      matrix:
+        service:
+          - credential-service
+          - student-service
+          - lusofona-service
+          - fulfilment-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          # Cache the local Maven repository keyed off pom.xml files.
+          cache: maven
+
+      - name: Build & test (mvn verify)
+        working-directory: ${{ matrix.service }}
+        # -B  : batch mode (non-interactive)
+        # -ntp: no transfer progress (clean logs)
+        run: mvn -B -ntp verify
+
+      - name: Upload built JAR
+        # Only publish the artifact when the build actually produced a jar.
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.service }}-jar
+          path: ${{ matrix.service }}/target/*.jar
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Design Demo - ULHT DCS</title>
+    <link rel="stylesheet" href="styles/shared.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body>
+    <div id="header"></div>
+    <div class="doc-layout">
+        <aside class="doc-sidebar">
+            <nav class="sidebar-toc toc"></nav>
+        </aside>
+        <main class="doc-main">
+            <section class="hero">
+                <div class="container">
+                    <div class="tagline">Modern Card Design Showcase</div>
+                    <h1><span class="icon">🎨</span> Enhanced Card Components</h1>
+                    <p>Explore the new modern, responsive, and user-friendly card designs for the ULHT DCS documentation.</p>
+                </div>
+            </section>
+            <div class="doc-content-with-toc">
+                <div class="doc-content">
+                    
+                    <!-- Feature Cards -->
+                    <section class="content">
+                        <div class="section-title">
+                            <h2><span class="icon">✨</span> Feature Cards</h2>
+                            <p>Highlight key features with centered, prominent cards that draw attention.</p>
+                        </div>
+                        
+                        <div class="grid grid-3">
+                            <div class="feature-card">
+                                <span class="feature-icon">🔐</span>
+                                <h3>Secure Issuance</h3>
+                                <p>Issue tamper-proof digital credentials using blockchain technology with advanced cryptographic security.</p>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">✅</span>
+                                <h3>Instant Verification</h3>
+                                <p>Verify credentials instantly with cryptographic proof, eliminating the need for manual verification processes.</p>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">🎯</span>
+                                <h3>Student Control</h3>
+                                <p>Students maintain full control over their credentials through secure digital wallets with privacy-preserving features.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Regular Cards -->
+                    <section class="content alt">
+                        <div class="section-title">
+                            <h2><span class="icon">📋</span> Content Cards</h2>
+                            <p>Display detailed information with structured content and action buttons.</p>
+                        </div>
+                        
+                        <div class="grid grid-2">
+                            <div class="card">
+                                <h3>🔒 Secure & Compliant</h3>
+                                <p>Built with enterprise-grade security and W3C Verifiable Credentials standards compliance.</p>
+                                <ul>
+                                    <li>Tamper-proof credential storage</li>
+                                    <li>Decentralized verification</li>
+                                    <li>Audit trail for all operations</li>
+                                </ul>
+                                <a href="#" class="nav-button">Learn More</a>
+                            </div>
+                            <div class="card">
+                                <h3>📈 Scalable Architecture</h3>
+                                <p>Microservices-based architecture that scales with your institution's needs.</p>
+                                <ul>
+                                    <li>RESTful API endpoints</li>
+                                    <li>OpenAPI 3.0 specification</li>
+                                    <li>Multiple SDK languages</li>
+                                </ul>
+                                <a href="#" class="nav-button">View Architecture</a>
+                            </div>
+                            <div class="card">
+                                <h3>🔗 Easy Integration</h3>
+                                <p>RESTful APIs and comprehensive SDKs for seamless integration.</p>
+                                <ul>
+                                    <li>Real-time metrics dashboard</li>
+                                    <li>Structured logging</li>
+                                    <li>Automated alerting</li>
+                                </ul>
+                                <a href="#" class="nav-button">Get Started</a>
+                            </div>
+                            <div class="card">
+                                <h3>📊 Advanced Monitoring</h3>
+                                <p>Real-time monitoring, alerting, and analytics for operational excellence.</p>
+                                <ul>
+                                    <li>OAuth 2.0 authentication</li>
+                                    <li>Role-based access control</li>
+                                    <li>GDPR compliance</li>
+                                </ul>
+                                <a href="#" class="nav-button">Monitor Now</a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Documentation Cards -->
+                    <section class="content">
+                        <div class="section-title">
+                            <h2><span class="icon">📖</span> Documentation Cards</h2>
+                            <p>Navigate to different documentation sections with clickable cards.</p>
+                        </div>
+                        
+                        <div class="grid grid-2">
+                            <a href="api-reference.html" class="doc-card">
+                                <span class="icon">📚</span>
+                                <h3>API Reference</h3>
+                                <p>Complete API documentation with examples, authentication details, and integration guides for all endpoints.</p>
+                            </a>
+                            <a href="monitoring-guide.html" class="doc-card">
+                                <span class="icon">📊</span>
+                                <h3>Monitoring Guide</h3>
+                                <p>Learn how to monitor your deployment with Grafana dashboards, Prometheus metrics, and Loki logging.</p>
+                            </a>
+                            <a href="architecture.html" class="doc-card">
+                                <span class="icon">🏗️</span>
+                                <h3>Architecture</h3>
+                                <p>Detailed system architecture overview, component interactions, and deployment strategies.</p>
+                            </a>
+                            <a href="getting-started.html" class="doc-card">
+                                <span class="icon">🚀</span>
+                                <h3>Getting Started</h3>
+                                <p>Step-by-step guide to set up and configure the ULHT Digital Credential Service for your environment.</p>
+                            </a>
+                        </div>
+                    </section>
+
+                    <!-- Cards with Badges -->
+                    <section class="content alt">
+                        <div class="section-title">
+                            <h2><span class="icon">🏷️</span> Cards with Badges</h2>
+                            <p>Show status, priority, or category with badge indicators.</p>
+                        </div>
+                        
+                        <div class="grid grid-2">
+                            <div class="card">
+                                <span class="badge">New</span>
+                                <h3>🎯 Smart Contracts</h3>
+                                <p>Advanced smart contract integration for automated credential verification and compliance.</p>
+                                <ul>
+                                    <li>Automated verification workflows</li>
+                                    <li>Compliance rule enforcement</li>
+                                    <li>Audit trail automation</li>
+                                </ul>
+                                <a href="#" class="nav-button">Explore</a>
+                            </div>
+                            <div class="card">
+                                <span class="badge">Beta</span>
+                                <h3>🤖 AI Integration</h3>
+                                <p>Machine learning-powered credential analysis and fraud detection capabilities.</p>
+                                <ul>
+                                    <li>Pattern recognition</li>
+                                    <li>Anomaly detection</li>
+                                    <li>Predictive analytics</li>
+                                </ul>
+                                <a href="#" class="nav-button">Try Beta</a>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Interactive Demo -->
+                    <section class="content">
+                        <div class="section-title">
+                            <h2><span class="icon">🎮</span> Interactive Demo</h2>
+                            <p>Hover over the cards below to see the enhanced interactions and animations.</p>
+                        </div>
+                        
+                        <div class="grid grid-3">
+                            <div class="feature-card" onclick="alert('Card clicked!')">
+                                <span class="feature-icon">⚡</span>
+                                <h3>Lightning Fast</h3>
+                                <p>Experience blazing fast performance with optimized algorithms and caching.</p>
+                            </div>
+                            <div class="feature-card" onclick="alert('Card clicked!')">
+                                <span class="feature-icon">🛡️</span>
+                                <h3>Bulletproof Security</h3>
+                                <p>Military-grade encryption and security protocols protect your data.</p>
+                            </div>
+                            <div class="feature-card" onclick="alert('Card clicked!')">
+                                <span class="feature-icon">🌐</span>
+                                <h3>Global Access</h3>
+                                <p>Access your credentials from anywhere in the world with cloud synchronization.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Responsive Test -->
+                    <section class="content alt">
+                        <div class="section-title">
+                            <h2><span class="icon">📱</span> Responsive Design</h2>
+                            <p>These cards adapt beautifully to different screen sizes. Try resizing your browser window!</p>
+                        </div>
+                        
+                        <div class="grid grid-2">
+                            <div class="card">
+                                <h3>📱 Mobile First</h3>
+                                <p>Designed with mobile-first approach, ensuring perfect experience on all devices.</p>
+                                <ul>
+                                    <li>Touch-friendly interactions</li>
+                                    <li>Optimized for small screens</li>
+                                    <li>Fast loading times</li>
+                                </ul>
+                            </div>
+                            <div class="card">
+                                <h3>💻 Desktop Optimized</h3>
+                                <p>Enhanced desktop experience with advanced features and larger interface elements.</p>
+                                <ul>
+                                    <li>Keyboard shortcuts</li>
+                                    <li>Multi-window support</li>
+                                    <li>Advanced customization</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Design Features -->
+                    <section class="content">
+                        <div class="section-title">
+                            <h2><span class="icon">🎨</span> Design Features</h2>
+                            <p>Key improvements in the new card design system.</p>
+                        </div>
+                        
+                        <div class="grid grid-3">
+                            <div class="feature-card">
+                                <span class="feature-icon">✨</span>
+                                <h3>Smooth Animations</h3>
+                                <p>Subtle hover effects and transitions that feel natural and responsive.</p>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">🎯</span>
+                                <h3>Better Typography</h3>
+                                <p>Improved font weights, spacing, and hierarchy for better readability.</p>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">🌈</span>
+                                <h3>Modern Shadows</h3>
+                                <p>Layered shadows that create depth and modern visual appeal.</p>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">📐</span>
+                                <h3>Consistent Spacing</h3>
+                                <p>Uniform padding, margins, and gaps for visual harmony.</p>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">🎨</span>
+                                <h3>Color Harmony</h3>
+                                <p>Carefully chosen colors that work in both light and dark themes.</p>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">♿</span>
+                                <h3>Accessibility</h3>
+                                <p>Focus states, proper contrast, and keyboard navigation support.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="footer"></div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/i18n.js"></script>
+</body>
+</html> 

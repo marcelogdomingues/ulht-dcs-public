@@ -1,0 +1,150 @@
+spring:
+  application:
+    name: lusofona-service
+    version: 3.0.0
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: waltid-proxy
+        instance-id: ${spring.application.name}-${random.uuid}
+        health-check-path: /api/v1/actuator/health
+        health-check-interval: 10s
+    openfeign:
+      client:
+        config:
+          lusofonaClient:
+            # University Student Information System (SIS) base URL.
+            # Overridable per-environment via the LUSOFONA_API_URL env var.
+            url: ${LUSOFONA_API_URL:https://university-sis.example.edu/api}
+  kafka:
+    bootstrap-servers: localhost:29092
+    properties:
+      key:
+        serializer: org.apache.kafka.common.serialization.StringSerializer
+      value:
+        serializer: org.apache.kafka.common.serialization.StringSerializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      max-request-size: 10485760
+      buffer-memory: 33554432
+      compression-type: snappy
+      batch-size: 16384
+      linger-ms: 1
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: lusofona-service-group
+      fetch-max-bytes: 10485760
+      max-partition-fetch-bytes: 10485760
+      properties:
+        spring.json.trusted.packages: "pt.ulusofona.digital.wallet,java.util,java.lang"
+        spring.json.type.mapping: "studentLogin:java.util.Map"
+        spring.json.value.default.type: "java.util.HashMap"
+        spring.json.use.type.headers: false
+        # Request-Reply Configuration
+        spring.kafka.listener.reply-template: kafkaTemplate
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 3
+      poll-timeout: 3000
+
+# Kafka Topics
+kafka:
+  topics:
+    student-login-requested: student.login.requested
+    # Reply Topics (Request-Reply Pattern)
+    student-login-reply: student.login.reply
+
+# WaltID Proxy Service Configuration
+waltid-proxy:
+  lusofona:
+    url: http://localhost:8080
+  retry:
+    max-attempts: 5
+    initial-delay: 1000
+    max-delay: 30000
+    multiplier: 2.0
+  circuit-breaker:
+    failure-rate-threshold: 50
+    wait-duration-in-open-state: 30
+    permitted-number-of-calls-in-half-open-state: 5
+    sliding-window-size: 10
+    minimum-number-of-calls: 5
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      lusofonaClient:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+  retry:
+    instances:
+      lusofonaClient:
+        max-attempts: 5
+        wait-duration: 1s
+        exponential-backoff-multiplier: 2
+        max-wait-duration: 30s
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        # health/info are public (permitAll); prometheus is kept for scraping but
+        # protected by the security filter (requires apikey).
+        include: health,info,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      version: ${spring.application.version}
+
+# Logging
+logging:
+  level:
+    pt.ulusofona.digital.wallet: INFO
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN
+    # Feign client logging lowered to WARN: DEBUG/raw-response logging exposes
+    # request/response bodies and credentials (installKey, password) and PII.
+    pt.ulusofona.digital.wallet.clients.LusofonaClient: WARN
+    FEIGN_RAW_RESPONSE: WARN
+    feign: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+
+# Application security / CORS
+app:
+  security:
+    api-key: ${APP_API_KEY:ulht-dev-local-CHANGE-ME}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:8000,http://localhost:3000}
+
+# Server configuration
+server:
+  port: 8085
+  servlet:
+    context-path: /api/v1
+
+# OpenAPI documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method

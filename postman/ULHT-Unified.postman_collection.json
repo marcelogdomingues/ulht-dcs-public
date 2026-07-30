@@ -1,0 +1,1724 @@
+{
+	"info": {
+		"_postman_id": "ulht-unified-collection",
+		"name": "ULHT Digital Credentials - Unified Collection",
+		"description": "# ULHT Digital Credential System - Complete Collection\n\n## 🔐 Selective Verification (Privacy-First)\n\n**Students receive 4 credentials:**\n- `EducationalID` - Student identity & enrollment\n- `IdentityCredential` - Digital identity\n- `EuropeanStudentCard` - International recognition  \n- `UniversityDegree` - Graduation (conditional)\n\n**Verifiers request specific credentials:**\n- 🎟️ Cinema → `EducationalID` only\n- 🏦 Bank → `IdentityCredential` only\n- 💼 Employer → `UniversityDegree` only\n- 🌍 Erasmus → `EuropeanStudentCard` only\n\n**Benefits:** Privacy, GDPR compliance, W3C VC standard\n\n---\n\n## 📚 Collection Structure\n\n**Includes:**\n- 📝 Credential Issuance Workflow\n- 🔍 Credential Verification Workflow (Selective)\n- 🎫 Direct Credential Service APIs\n- 🔐 Direct Verifier APIs\n- 📊 Monitoring & Status\n- 🏥 Health Checks\n\n**Quick Start:**\n1. Import environment: `ULHT-Unified.postman_environment.json`\n2. Select environment from dropdown\n3. Run workflows in order\n4. See `SELECTIVE_VERIFICATION.md` for design rationale\n\n## 🔄 Wallet Workflow Integration (NEW!)\n\n**Wallet operations are now fully integrated into the credential issuance workflow:**\n- Wallet creation/retrieval happens automatically during credential issuance\n- Uses Kafka topics: `wallet.requests`, `wallet.progress`, `wallet.completed`\n- Each student gets their own wallet with their own DID\n- Credentials are issued to the student's wallet DID\n\nSee \"Wallet Operations (Kafka Integrated)\" section for direct wallet API access.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🚀 Complete Workflows",
+			"item": [
+				{
+					"name": "📝 Issuance Workflow (Recommended)",
+					"item": [
+						{
+							"name": "1. Issue Credentials",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    pm.environment.set('correlationId', jsonData.correlationId);",
+											"    console.log('✅ Credential issuance initiated!');",
+											"    console.log('CorrelationId: ' + jsonData.correlationId);",
+											"    console.log('⏳ Wait 10-15 seconds, then run step 2');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"userName\": \"{{student_username}}\",\n  \"installKey\": \"{{student_install_key}}\"\n}"
+								},
+								"url": {
+									"raw": "{{student_url}}/student/issue",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"issue"
+									]
+								},
+								"description": "**THE ENTRY POINT** for credential issuance.\n\nIssues W3C credentials: Educational ID, Identity Credential, European Student Card"
+							}
+						},
+						{
+							"name": "2. Check Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{student_url}}/student/status/{{correlationId}}",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"status",
+										"{{correlationId}}"
+									]
+								},
+								"description": "Check workflow progress"
+							}
+						},
+						{
+							"name": "3. Get Credentials",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    console.log('✅ Credentials ready!');",
+											"    console.log('Number of credentials: ' + jsonData.credentialsIssued);",
+											"    console.log('Credential types: ' + JSON.stringify(jsonData.credentialTypes));",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{student_url}}/student/credentials/{{correlationId}}",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"credentials",
+										"{{correlationId}}"
+									]
+								},
+								"description": "Get final credential offer URLs"
+							}
+						}
+					],
+					"description": "**THE COMPLETE CREDENTIAL ISSUANCE WORKFLOW** - Fully Event-Driven!\n\n**What Happens (Kafka-Driven):**\n1. **Validate Student Data** (10%) - Validates input from Lusofona Service\n2. **Prepare Issuer** (20%) - Gets/creates institution signing keys and DID\n3. **Wallet Operations** (40%) - **NEW!** Ensures student wallet exists:\n   - Publishes to `wallet.requests` topic\n   - WalletWorkflowConsumer processes async\n   - Creates wallet if needed, retrieves student's DID\n   - Publishes to `wallet.progress` and `wallet.completed`\n4. **Issue Credentials** (80%) - Issues W3C Verifiable Credentials with student's DID\n5. **Complete** (100%) - All credentials issued successfully\n\n**Kafka Topics Used:**\n- `credential.requests` - Input (from Lusofona Service)\n- `wallet.requests` - Wallet operations (internal)\n- `wallet.progress` - Wallet progress updates\n- `wallet.completed` - Wallet completion\n- `credential.progress` - Credential progress updates\n- `credential.completed` - Final results\n\n**Features:**\n- ✅ Fully async via Kafka\n- ✅ Each student has their own wallet\n- ✅ Credentials use student's wallet DID (not generated)\n- ✅ Real-time progress tracking\n- ✅ Event-driven architecture\n\n**Test Flow:**\n1. Run \"1. Issue Credentials\" → Returns `correlationId`\n2. Wait 10-15 seconds ⏳\n3. Run \"3. Get Credentials\" → Returns credential URLs"
+				},
+				{
+					"name": "🔍 Verification Workflow (Selective)",
+					"item": [
+						{
+							"name": "1a. Verify Educational ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    pm.environment.set('verificationCorrelationId', jsonData.correlationId);",
+											"    console.log('✅ Educational ID verification initiated!');",
+											"    console.log('CorrelationId: ' + jsonData.correlationId);",
+											"    console.log('⏳ Wait 2-3 seconds, then run step 2');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"credentialType\": \"EducationalID\",\n  \"format\": \"jwt_vc_json\",\n  \"userId\": \"{{student_username}}\"\n}"
+								},
+								"url": {
+									"raw": "{{student_url}}/student/verify",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"verify"
+									]
+								},
+								"description": "**Verify Educational ID** - For student discounts, campus access, etc.\n\nSelective verification: Only requests student enrollment credential."
+							}
+						},
+						{
+							"name": "1b. Verify Identity Credential",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    pm.environment.set('verificationCorrelationId', jsonData.correlationId);",
+											"    console.log('✅ Identity verification initiated!');",
+											"    console.log('CorrelationId: ' + jsonData.correlationId);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"credentialType\": \"IdentityCredential\",\n  \"format\": \"jwt_vc_json\",\n  \"userId\": \"{{student_username}}\"\n}"
+								},
+								"url": {
+									"raw": "{{student_url}}/student/verify",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"verify"
+									]
+								},
+								"description": "**Verify Identity** - For banks, government services, KYC.\n\nOnly shares identity data, not educational details."
+							}
+						},
+						{
+							"name": "1c. Verify With Policies",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    pm.environment.set('verificationCorrelationId', jsonData.correlationId);",
+											"    console.log('✅ Verification with custom policies initiated!');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"credentialType\": \"EducationalID\",\n  \"format\": \"jwt_vc_json\",\n  \"userId\": \"{{student_username}}\",\n  \"vpPolicies\": [\"signature\", \"expired\"],\n  \"vcPolicies\": [\"signature\", \"expired\", \"not-before\"]\n}"
+								},
+								"url": {
+									"raw": "{{student_url}}/student/verify",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"verify"
+									]
+								},
+								"description": "**Custom Policies** - Add VP/VC validation policies.\n\nPolicies: signature, expired, not-before, revoked"
+							}
+						},
+						{
+							"name": "2. Get Verification URL",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    var result = jsonData.result || {};",
+											"    pm.environment.set('verificationState', result.state);",
+											"    console.log('✅ Verification URL ready!');",
+											"    console.log('URL: ' + result.verificationUrl);",
+											"    console.log('State: ' + result.state);",
+											"    console.log('📱 Display as QR code or share with user');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{fulfilment_url}}/fulfilment/result/{{verificationCorrelationId}}",
+									"host": [
+										"{{fulfilment_url}}"
+									],
+									"path": [
+										"fulfilment",
+										"result",
+										"{{verificationCorrelationId}}"
+									]
+								},
+								"description": "Get verification URL to display as QR code"
+							}
+						},
+						{
+							"name": "3. Check Verification Status (walt.id)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{waltid_verifier_url}}/openid4vc/session/{{verificationState}}",
+									"host": [
+										"{{waltid_verifier_url}}"
+									],
+									"path": [
+										"openid4vc",
+										"session",
+										"{{verificationState}}"
+									]
+								},
+								"description": "Check if user has presented credentials"
+							}
+						},
+						{
+							"name": "4. Get Presented Credentials",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{waltid_verifier_url}}/openid4vc/session/{{verificationState}}/presented-credentials?viewMode=simple",
+									"host": [
+										"{{waltid_verifier_url}}"
+									],
+									"path": [
+										"openid4vc",
+										"session",
+										"{{verificationState}}",
+										"presented-credentials"
+									],
+									"query": [
+										{
+											"key": "viewMode",
+											"value": "simple"
+										}
+									]
+								},
+								"description": "View credentials presented by user"
+							}
+						}
+					],
+					"description": "**Selective Verification Workflow**\n\nDemonstrates privacy-first credential verification:\n- Choose specific credential type (1a, 1b, or 1c)\n- System only requests that credential\n- User only shares minimal data\n\nSee: SELECTIVE_VERIFICATION.md for full explanation"
+				},
+				{
+					"name": "🔄 Issue → Verify Flow",
+					"item": [
+						{
+							"name": "Step 1: Issue Credentials",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    pm.environment.set('correlationId', jsonData.correlationId);",
+											"    console.log('✅ Step 1 complete - Credentials issuing');",
+											"    console.log('⏳ Wait 10 seconds, then run Step 2');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"userName\": \"{{student_username}}\",\n  \"installKey\": \"{{student_install_key}}\"\n}"
+								},
+								"url": {
+									"raw": "{{student_url}}/student/issue",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"issue"
+									]
+								}
+							}
+						},
+						{
+							"name": "Step 2: Get Issued Credentials",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    console.log('✅ Step 2 complete - Credentials ready');",
+											"    console.log('▶️  Now run Step 3');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{student_url}}/student/credentials/{{correlationId}}",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"credentials",
+										"{{correlationId}}"
+									]
+								}
+							}
+						},
+						{
+							"name": "Step 3: Initiate Verification",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    pm.environment.set('verificationCorrelationId', jsonData.correlationId);",
+											"    console.log('✅ Step 3 complete - Verification initiated');",
+											"    console.log('⏳ Wait 2-3 seconds, then run Step 4');",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"credentialType\": \"EducationalID\",\n  \"format\": \"jwt_vc_json\",\n  \"userId\": \"{{student_username}}\"\n}"
+								},
+								"url": {
+									"raw": "{{student_url}}/student/verify",
+									"host": [
+										"{{student_url}}"
+									],
+									"path": [
+										"student",
+										"verify"
+									]
+								},
+								"description": "Selective verification: Only requests EducationalID credential"
+							}
+						},
+						{
+							"name": "Step 4: Get Verification URL",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    var jsonData = pm.response.json();",
+											"    var result = jsonData.result || {};",
+											"    pm.environment.set('verificationState', result.state);",
+											"    console.log('✅ Complete! Verification URL ready');",
+											"    console.log('📱 URL: ' + result.verificationUrl);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{fulfilment_url}}/fulfilment/result/{{verificationCorrelationId}}",
+									"host": [
+										"{{fulfilment_url}}"
+									],
+									"path": [
+										"fulfilment",
+										"result",
+										"{{verificationCorrelationId}}"
+									]
+								}
+							}
+						}
+					],
+					"description": "Complete flow: Issue credentials then verify them"
+				}
+			],
+			"description": "Ready-to-run complete workflows"
+		},
+		{
+			"name": "📊 Monitoring & Tracking",
+			"item": [
+				{
+					"name": "Track Workflow (SSE)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{fulfilment_url}}/fulfilment/track/{{correlationId}}",
+							"host": [
+								"{{fulfilment_url}}"
+							],
+							"path": [
+								"fulfilment",
+								"track",
+								"{{correlationId}}"
+							]
+						},
+						"description": "Real-time Server-Sent Events tracking"
+					}
+				},
+				{
+					"name": "Get Workflow Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{fulfilment_url}}/fulfilment/status/{{correlationId}}",
+							"host": [
+								"{{fulfilment_url}}"
+							],
+							"path": [
+								"fulfilment",
+								"status",
+								"{{correlationId}}"
+							]
+						},
+						"description": "Get current workflow status"
+					}
+				},
+				{
+					"name": "Get Workflow Result",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{fulfilment_url}}/fulfilment/result/{{correlationId}}",
+							"host": [
+								"{{fulfilment_url}}"
+							],
+							"path": [
+								"fulfilment",
+								"result",
+								"{{correlationId}}"
+							]
+						},
+						"description": "Get final workflow result"
+					}
+				}
+			],
+			"description": "Track and monitor workflow progress"
+		},
+		{
+			"name": "🎫 Direct Credential APIs",
+			"item": [
+				{
+					"name": "Verify Educational ID (Direct)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/verifier/verify/basic?credentialType=EducationalID&format=jwt_vc_json",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"verifier",
+								"verify",
+								"basic"
+							],
+							"query": [
+								{
+									"key": "credentialType",
+									"value": "EducationalID"
+								},
+								{
+									"key": "format",
+									"value": "jwt_vc_json"
+								}
+							]
+						},
+						"description": "Direct call to Credential Service (bypasses workflow)\n\nVerifies EducationalID credential only."
+					}
+				},
+				{
+					"name": "Verify Identity Credential (Direct)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/verifier/verify/basic?credentialType=IdentityCredential&format=jwt_vc_json",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"verifier",
+								"verify",
+								"basic"
+							],
+							"query": [
+								{
+									"key": "credentialType",
+									"value": "IdentityCredential"
+								},
+								{
+									"key": "format",
+									"value": "jwt_vc_json"
+								}
+							]
+						},
+						"description": "Direct verification of Identity Credential"
+					}
+				}
+			],
+			"description": "Direct API calls to Credential Service (bypasses workflow)\n\nUse for testing or direct integration."
+		},
+		{
+			"name": "🔐 Direct Verifier APIs",
+			"item": [
+				{
+					"name": "Verify Educational ID (Advanced)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vp_policies\": [\"signature\", \"expired\"],\n  \"vc_policies\": [\"signature\", \"expired\"],\n  \"request_credentials\": [\n    {\n      \"type\": \"EducationalID\",\n      \"format\": \"jwt_vc_json\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{credential_url}}/verifier/verify",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"verifier",
+								"verify"
+							]
+						},
+						"description": "**Advanced Direct Verification**\n\nDirect call to Credential Service Verifier (bypasses workflow)\n\nAllows full control over:\n- VP policies\n- VC policies\n- Requested credentials"
+					}
+				},
+				{
+					"name": "Verify Identity (Advanced)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vp_policies\": [\"signature\"],\n  \"vc_policies\": [\"signature\", \"expired\", \"not-before\"],\n  \"request_credentials\": [\n    {\n      \"type\": \"IdentityCredential\",\n      \"format\": \"jwt_vc_json\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{credential_url}}/verifier/verify",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"verifier",
+								"verify"
+							]
+						},
+						"description": "Identity credential verification with strict policies"
+					}
+				},
+				{
+					"name": "Basic Verification (Direct)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/verifier/verify/basic?credentialType=EducationalID&format=jwt_vc_json",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"verifier",
+								"verify",
+								"basic"
+							],
+							"query": [
+								{
+									"key": "credentialType",
+									"value": "EducationalID"
+								},
+								{
+									"key": "format",
+									"value": "jwt_vc_json"
+								}
+							]
+						},
+						"description": "**Simplified Direct Verification**\n\nQuick verification with default policies.\n\nChange credentialType parameter:\n- EducationalID\n- IdentityCredential\n- EuropeanStudentCard\n- UniversityDegree"
+					}
+				}
+			],
+			"description": "**Direct API Calls to Verifier Service**\n\nBypass workflow for direct integration.\n\nUse cases:\n- Testing specific scenarios\n- Custom integrations\n- Advanced policy control"
+		},
+		{
+			"name": "🏥 Health Checks",
+			"item": [
+				{
+					"name": "Student Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{student_url}}/actuator/health",
+							"host": [
+								"{{student_url}}"
+							],
+							"path": [
+								"actuator",
+								"health"
+							]
+						}
+					}
+				},
+				{
+					"name": "Credential Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/actuator/health",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"actuator",
+								"health"
+							]
+						}
+					}
+				},
+				{
+					"name": "Fulfilment Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{fulfilment_url}}/actuator/health",
+							"host": [
+								"{{fulfilment_url}}"
+							],
+							"path": [
+								"actuator",
+								"health"
+							]
+						}
+					}
+				}
+			],
+			"description": "Check service health status"
+		},
+		{
+			"name": "Wallet Operations (Kafka Integrated)",
+			"item": [
+				{
+					"name": "1. Wallet Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Registration successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData.status).to.equal('SUCCESS');",
+									"});",
+									"",
+									"console.log(\"✅ Wallet registration successful\");",
+									"console.log(\"📡 Event published to Kafka: wallet.register\");",
+									"console.log(\"🎯 User can now login to wallet\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"student@ulusofona.pt\",\n  \"password\": \"SecurePassword123!\",\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\",\n  \"type\": \"email\"\n}"
+						},
+						"url": {
+							"raw": "{{credential_url}}/wallet/register",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"register"
+							]
+						},
+						"description": "**Registers a new user in WaltID Wallet**\n\n**Kafka Integration:**\n- ✅ Publishes event to `wallet.register` topic\n- ✅ Tracks success/failure status\n- ✅ Event includes userId, timestamp, and request details\n\n**Use Case:** First-time wallet setup for students\n\n**Note:** This is a wrapper around external WaltID Wallet API (not a custom wallet)."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Wallet Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Login successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData.status).to.equal('SUCCESS');",
+									"    pm.expect(jsonData).to.have.property('sessionCookie');",
+									"    ",
+									"    // Save session cookie for subsequent requests",
+									"    if (jsonData.sessionCookie) {",
+									"        pm.collectionVariables.set(\"walletSessionCookie\", jsonData.sessionCookie);",
+									"        console.log(\"🔑 Session cookie saved\");",
+									"    }",
+									"});",
+									"",
+									"console.log(\"✅ Wallet login successful\");",
+									"console.log(\"📡 Event published to Kafka: wallet.login\");",
+									"console.log(\"🎯 Session established - can now access wallet accounts\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"student@ulusofona.pt\",\n  \"password\": \"SecurePassword123!\",\n  \"type\": \"email\"\n}"
+						},
+						"url": {
+							"raw": "{{credential_url}}/wallet/login",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"login"
+							]
+						},
+						"description": "**Authenticates user with WaltID Wallet**\n\n**Kafka Integration:**\n- ✅ Publishes event to `wallet.login` topic\n- ✅ Tracks success/failure with session cookie status\n- ✅ Event includes userId, login request details, and timestamp\n\n**Authentication:** Uses cookie-based authentication (preferred by WaltID Wallet API)\n\n**Use Case:** Student accessing their digital wallet"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Wallet Accounts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has wallet accounts\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('accounts');",
+									"    ",
+									"    if (jsonData.accounts && jsonData.accounts.length > 0) {",
+									"        // Save first wallet ID for subsequent requests",
+									"        var firstWallet = jsonData.accounts[0];",
+									"        if (firstWallet.walletId) {",
+									"            pm.collectionVariables.set(\"walletId\", firstWallet.walletId);",
+									"            console.log(\"💼 Wallet ID saved:\", firstWallet.walletId);",
+									"        }",
+									"        console.log(\"📊 Found\", jsonData.accounts.length, \"wallet account(s)\");",
+									"    }",
+									"});",
+									"",
+									"console.log(\"✅ Wallet accounts retrieved\");",
+									"console.log(\"📡 Event published to Kafka: wallet.account.access\");",
+									"console.log(\"📝 Operation type: GET_ACCOUNTS\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if session cookie is available",
+									"if (!pm.collectionVariables.get(\"walletSessionCookie\")) {",
+									"    console.warn(\"⚠️  No session cookie found. Please run 'Wallet Login' first!\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "{{walletSessionCookie}}"
+							}
+						],
+						"url": {
+							"raw": "{{credential_url}}/wallet/info",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"info"
+							]
+						},
+						"description": "**Retrieves wallet accounts for authenticated user**\n\n**Kafka Integration:**\n- ✅ Publishes event to `wallet.account.access` topic\n- ✅ Tracks operation type: GET_ACCOUNTS\n- ✅ Includes walletId and success/failure status\n\n**Authentication:** Requires session cookie from wallet login\n\n**Use Case:** List all wallets associated with user account"
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Wallet Keys",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has wallet keys\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('keys');",
+									"    console.log(\"🔑 Found\", jsonData.keys ? jsonData.keys.length : 0, \"key(s)\");",
+									"});",
+									"",
+									"console.log(\"✅ Wallet keys retrieved\");",
+									"console.log(\"📡 Event published to Kafka: wallet.account.access\");",
+									"console.log(\"📝 Operation type: GET_KEYS\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if wallet ID and session cookie are available",
+									"if (!pm.collectionVariables.get(\"walletId\")) {",
+									"    console.warn(\"⚠️  No wallet ID found. Please run 'Get Wallet Accounts' first!\");",
+									"}",
+									"if (!pm.collectionVariables.get(\"walletSessionCookie\")) {",
+									"    console.warn(\"⚠️  No session cookie found. Please run 'Wallet Login' first!\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "{{walletSessionCookie}}"
+							}
+						],
+						"url": {
+							"raw": "{{credential_url}}/wallet/{{walletId}}/keys",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"{{walletId}}",
+								"keys"
+							]
+						},
+						"description": "**Retrieves cryptographic keys for a specific wallet**\n\n**Kafka Integration:**\n- ✅ Publishes event to `wallet.account.access` topic\n- ✅ Tracks operation type: GET_KEYS\n- ✅ Includes walletId and success/failure status\n\n**Authentication:** Requires session cookie from wallet login\n\n**Use Case:** Access wallet cryptographic keys for credential management"
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Wallet DIDs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has DIDs\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    console.log(\"🆔 Found\", jsonData.length, \"DID(s)\");",
+									"    ",
+									"    if (jsonData.length > 0) {",
+									"        console.log(\"📝 First DID:\", jsonData[0]);",
+									"    }",
+									"});",
+									"",
+									"console.log(\"✅ Wallet DIDs retrieved\");",
+									"console.log(\"📡 Event published to Kafka: wallet.account.access\");",
+									"console.log(\"📝 Operation type: GET_DIDS\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if wallet ID and session cookie are available",
+									"if (!pm.collectionVariables.get(\"walletId\")) {",
+									"    console.warn(\"⚠️  No wallet ID found. Please run 'Get Wallet Accounts' first!\");",
+									"}",
+									"if (!pm.collectionVariables.get(\"walletSessionCookie\")) {",
+									"    console.warn(\"⚠️  No session cookie found. Please run 'Wallet Login' first!\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "{{walletSessionCookie}}"
+							}
+						],
+						"url": {
+							"raw": "{{credential_url}}/wallet/{{walletId}}/dids",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"{{walletId}}",
+								"dids"
+							]
+						},
+						"description": "**Retrieves Decentralized Identifiers (DIDs) for a specific wallet**\n\n**Kafka Integration:**\n- ✅ Publishes event to `wallet.account.access` topic\n- ✅ Tracks operation type: GET_DIDS\n- ✅ Includes walletId and success/failure status\n\n**Authentication:** Requires session cookie from wallet login\n\n**Use Case:** Access wallet DIDs for credential issuance and verification"
+					},
+					"response": []
+				}
+			],
+			"description": "**Wallet Operations with Kafka Integration**\n\nAll wallet operations are now fully integrated with Kafka for event-driven processing:\n\n**Kafka Workflow Topics (Async Processing):**\n- `wallet.requests` - Wallet operation requests (input)\n- `wallet.progress` - Progress updates during wallet operations\n- `wallet.completed` - Completion events with wallet info (output)\n- `wallet.error` - Error events for failed operations\n\n**Kafka Event Topics (Audit/Logging):**\n- `wallet.login` - Login events (success/failure)\n- `wallet.register` - Registration events\n- `wallet.account.access` - Account access events (GET_ACCOUNTS, GET_KEYS, GET_DIDS)\n- `wallet.operation` - Generic wallet operations\n\n**Event-Driven Architecture:**\n- ✅ Wallet operations publish to Kafka workflow topics\n- ✅ WalletWorkflowConsumer processes requests asynchronously\n- ✅ All operations publish audit events for tracking\n- ✅ Events include userId, operation type, status, and timestamp\n- ✅ Consistent with credential and verification workflow patterns\n\n**Note:** These endpoints are wrappers around external WaltID Wallet API (not a custom wallet).\n\n**Test Flow:**\n1. Register → Creates wallet account\n2. Login → Establishes session\n3. Get Accounts → Lists wallets\n4. Get Keys → Access cryptographic keys\n5. Get DIDs → Access decentralized identifiers\n\n**Workflow Integration:**\nWhen credentials are issued, the credential workflow automatically:\n1. Publishes to `wallet.requests` topic\n2. WalletWorkflowConsumer ensures wallet exists\n3. Retrieves student's DID from wallet\n4. Uses DID for credential issuance"
+		},
+		{
+			"name": "W3C Credential Issuance",
+			"item": [
+				{
+					"name": "Onboard Issuer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has issuer credentials\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('issuerKey');",
+									"    pm.expect(jsonData).to.have.property('issuerDid');",
+									"});",
+									"",
+									"// Save complete issuer credentials",
+									"var response = pm.response.json();",
+									"pm.collectionVariables.set(\"issuerDid\", response.issuerDid);",
+									"pm.collectionVariables.set(\"issuerKeyJson\", JSON.stringify(response.issuerKey));",
+									"",
+									"console.log(\"✅ Issuer onboarded successfully\");",
+									"console.log(\"📝 Issuer DID:\", response.issuerDid);",
+									"console.log(\"🔑 Issuer Key saved to collection variables\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"keyType\": \"secp256r1\",\n  \"didMethod\": \"jwk\"\n}"
+						},
+						"url": {
+							"raw": "{{credential_url}}/wallet/onboard-issuer",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"onboard-issuer"
+							]
+						},
+						"description": "Creates signing key and DID for credential issuance. Run this first!"
+					},
+					"response": []
+				},
+				{
+					"name": "Issue University Degree",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is credential offer URL\", function () {",
+									"    var response = pm.response.text();",
+									"    pm.expect(response).to.include('openid-credential-offer');",
+									"});",
+									"",
+									"// Save credential offer URL",
+									"pm.collectionVariables.set(\"degreeOfferUrl\", pm.response.text());",
+									"console.log(\"✅ University Degree issued successfully\");",
+									"console.log(\"📱 Offer URL:\", pm.response.text());"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Ensure issuer credentials are available",
+									"if (!pm.collectionVariables.get(\"issuerDid\")) {",
+									"    console.error(\"❌ Please run 'Onboard Issuer' first!\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subjectDid\": \"did:jwk:student123\",\n  \"issuerDid\": \"{{issuerDid}}\",\n  \"issuerKey\": {{issuerKeyJson}},\n  \"degreeName\": \"Bachelor of Computer Science\",\n  \"degreeType\": \"BachelorDegree\",\n  \"field\": \"Computer Science\",\n  \"universityName\": \"ULHT - Universidade Lusófona\",\n  \"graduationDate\": \"2024-06-15\",\n  \"grade\": \"18.5\"\n}"
+						},
+						"url": {
+							"raw": "{{credential_url}}/wallet/issue-university-degree",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"issue-university-degree"
+							]
+						},
+						"description": "Issues a university degree credential using saved issuer credentials."
+					},
+					"response": []
+				},
+				{
+					"name": "Issue Educational ID (SCHAC)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is credential offer URL\", function () {",
+									"    var response = pm.response.text();",
+									"    pm.expect(response).to.include('openid-credential-offer');",
+									"});",
+									"",
+									"pm.collectionVariables.set(\"educationalIdOfferUrl\", pm.response.text());",
+									"console.log(\"✅ Educational ID issued successfully\");",
+									"console.log(\"📱 Offer URL:\", pm.response.text());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"identifier\": \"511114706\",\n  \"familyName\": \"Costa\",\n  \"firstName\": \"Luísa\",\n  \"mail\": \"luisa.costa@alunos.ulusofona.pt\",\n  \"dateOfBirth\": \"1970-01-01\",\n  \"schacHomeOrganization\": \"ulusofona.pt\",\n  \"eduPersonPrimaryAffiliation\": \"student\",\n  \"eduPersonAffiliation\": [\"student\"],\n  \"eduPersonAssurance\": [\"https://refeds.org/assurance/IAP/low\"],\n  \"subjectDid\": \"did:jwk:student123\",\n  \"issuerDid\": \"{{issuerDid}}\",\n  \"issuerKey\": {{issuerKeyJson}}\n}"
+						},
+						"url": {
+							"raw": "{{credential_url}}/wallet/issue-educational-id",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"issue-educational-id"
+							]
+						},
+						"description": "Issues SCHAC-compliant Educational ID credential."
+					},
+					"response": []
+				},
+				{
+					"name": "Issue European Student Card",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is credential offer URL\", function () {",
+									"    var response = pm.response.text();",
+									"    pm.expect(response).to.include('openid-credential-offer');",
+									"});",
+									"",
+									"pm.collectionVariables.set(\"escOfferUrl\", pm.response.text());",
+									"console.log(\"✅ European Student Card issued successfully\");",
+									"console.log(\"📱 Offer URL:\", pm.response.text());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"givenName\": \"Luísa\",\n  \"familyName\": \"Costa\",\n  \"email\": \"luisa.costa@aluno.ulusofona.pt\",\n  \"esi\": \"ESI-3618254416\",\n  \"escn\": \"511114706\",\n  \"institutionPIC\": \"997605425\",\n  \"institutionName\": \"ULHT - Universidade Lusófona\",\n  \"academicLevel\": \"bachelor\",\n  \"cardType\": \"Digital\",\n  \"validFrom\": \"2024-09-01\",\n  \"validUntil\": \"2025-08-31\",\n  \"subjectDid\": \"did:jwk:student123\",\n  \"issuerDid\": \"{{issuerDid}}\",\n  \"issuerKey\": {{issuerKeyJson}}\n}"
+						},
+						"url": {
+							"raw": "{{credential_url}}/wallet/issue-european-student-card",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"issue-european-student-card"
+							]
+						},
+						"description": "Issues European Student Card credential."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Issuer Metadata",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/wallet/issuer-metadata",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"wallet",
+								"issuer-metadata"
+							]
+						},
+						"description": "Retrieves OpenID4VCI issuer metadata."
+					},
+					"response": []
+				}
+			],
+			"description": "W3C Verifiable Credentials issuance endpoints (OID4VCI protocol)."
+		},
+		{
+			"name": "Credential Issuance Flow",
+			"item": [
+				{
+					"name": "1. Student Login (Entry Point!)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has correlation ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('correlationId');",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData.status).to.equal('PROCESSING');",
+									"    ",
+									"    // Save correlation ID for tracking",
+									"    pm.collectionVariables.set(\"workflowCorrelationId\", jsonData.correlationId);",
+									"    console.log(\"📝 Student login processed, correlationId:\", jsonData.correlationId);",
+									"    console.log(\"📊 Monitor at:\", jsonData.monitorAt);",
+									"    console.log(\"🎓 Credentials at:\", jsonData.credentialsAt);",
+									"});",
+									"",
+									"console.log(\"🎯 Student Service received login request\");",
+									"console.log(\"📡 Published to Kafka: student.login.requested\");",
+									"console.log(\"⚙️  Lusofona Service will fetch ULHT data automatically\");",
+									"console.log(\"🎓 Credential Service will issue credentials\");",
+									"console.log(\"📬 Fulfilment Service will track & notify\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userName\": \"{{student_username}}\",\n  \"installKey\": \"{{student_install_key}}\",\n  \"language\": \"PT\",\n  \"platform\": \"ios\",\n  \"application\": \"org.cofac.mobile.ulht\",\n  \"versionCode\": \"1601206\"\n}"
+						},
+						"url": {
+							"raw": "{{student_url}}/student/login",
+							"host": [
+								"{{student_url}}"
+							],
+							"path": [
+								"student",
+								"login"
+							]
+						},
+						"description": "**THE ENTRY POINT** for credential issuance!\n\n**New Architecture:**\n1. Student Service (NEW!) → receives minimal data, publishes to Kafka\n2. Lusofona Service → gets REAL student data from ULHT API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks progress & notifies\n\n**You provide:** username + installKey (MINIMAL!)\n**You get:** correlationId for tracking\n**Everything else is automatic via Kafka!**"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Monitor Progress (Fulfilment Service)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Just display the progress",
+									"console.log(\"📊 Progress:\", pm.response.text());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{fulfilment_url}}/fulfilment/progress/{{workflowCorrelationId}}",
+							"host": [
+								"{{fulfilment_url}}"
+							],
+							"path": [
+								"fulfilment",
+								"progress",
+								"{{workflowCorrelationId}}"
+							]
+						},
+						"description": "Monitor real-time progress via Fulfilment Service (SSE stream).\n\nShows progress updates as Credential Service processes the workflow."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Check Flow Status (Credential Service)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Workflow status is available\", function () {",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData).to.have.property('progress');",
+									"});",
+									"",
+									"console.log(\"📊 Status:\", jsonData.status);",
+									"console.log(\"📈 Progress:\", jsonData.progress + \"%\");",
+									"",
+									"if (jsonData.status === 'COMPLETED') {",
+									"    console.log(\"✅ Workflow completed! Use 'Get Workflow Result' to see credentials\");",
+									"} else if (jsonData.status === 'FAILED') {",
+									"    console.log(\"❌ Workflow failed:\", jsonData.message);",
+									"} else {",
+									"    console.log(\"⏳ Workflow in progress:\", jsonData.message);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/api/flows/status/{{workflowCorrelationId}}",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"api",
+								"flows",
+								"status",
+								"{{workflowCorrelationId}}"
+							]
+						},
+						"description": "Checks the status of the credential issuance flow.\n\nMonitors progress through the FlowEngine."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Credentials (Fulfilment Service)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"if (jsonData.status === 'COMPLETED' && jsonData.result) {",
+									"    console.log(\"✅ Credentials issued!\");",
+									"    if (jsonData.result.credentialOfferUrls) {",
+									"        console.log(\"📱 Credential URLs:\");",
+									"        jsonData.result.credentialOfferUrls.forEach((url, i) => {",
+									"            console.log(`  ${i+1}. ${url.substring(0, 60)}...`);",
+									"        });",
+									"    }",
+									"} else {",
+									"    console.log(\"⏳ Workflow still processing or failed\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{fulfilment_url}}/fulfilment/result/{{workflowCorrelationId}}",
+							"host": [
+								"{{fulfilment_url}}"
+							],
+							"path": [
+								"fulfilment",
+								"result",
+								"{{workflowCorrelationId}}"
+							]
+						},
+						"description": "Get final credentials from Fulfilment Service.\n\nReturns credential offer URLs that student can use in their wallet."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Flow Result (Credential Service)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Result has credential data\", function () {",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData).to.have.property('result');",
+									"});",
+									"",
+									"if (jsonData.status === 'COMPLETED' && jsonData.result) {",
+									"    console.log(\"✅ Workflow completed successfully!\");",
+									"    console.log(\"📊 Credentials issued:\", jsonData.result.credentialsIssued);",
+									"    console.log(\"📝 Credential types:\", jsonData.result.credentialTypes);",
+									"    ",
+									"    if (jsonData.result.credentialOfferUrls) {",
+									"        console.log(\"\\n📱 Credential Offer URLs:\");",
+									"        jsonData.result.credentialOfferUrls.forEach((url, index) => {",
+									"            console.log(`  ${index + 1}. ${url.substring(0, 80)}...`);",
+									"        });",
+									"    }",
+									"    ",
+									"    // Save first credential offer",
+									"    if (jsonData.result.credentialOfferUrls && jsonData.result.credentialOfferUrls.length > 0) {",
+									"        pm.collectionVariables.set(\"workflowCredentialOffer\", jsonData.result.credentialOfferUrls[0]);",
+									"    }",
+									"} else if (jsonData.status === 'FAILED') {",
+									"    console.log(\"❌ Workflow failed:\", jsonData.errorMessage);",
+									"} else {",
+									"    console.log(\"⏳ Workflow not yet completed. Current status:\", jsonData.status);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/api/flows/result/{{workflowCorrelationId}}",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"api",
+								"flows",
+								"result",
+								"{{workflowCorrelationId}}"
+							]
+						},
+						"description": "Retrieves the final result of the credential flow including all issued credential offer URLs."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Check Result Availability",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"if (jsonData.available) {",
+									"    console.log(\"✅ Result is available! Use 'Get Workflow Result'\");",
+									"} else {",
+									"    console.log(\"⏳ Result not available yet. Workflow may still be running.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/api/flows/result/{{workflowCorrelationId}}/available",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"api",
+								"flows",
+								"result",
+								"{{workflowCorrelationId}}",
+								"available"
+							]
+						},
+						"description": "Quick check to see if flow result is ready."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Get All Active Flows",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"console.log(\"📊 Active workflows:\", jsonData.length);",
+									"",
+									"if (jsonData.length > 0) {",
+									"    jsonData.forEach((workflow, index) => {",
+									"        console.log(`\\n${index + 1}. ${workflow.correlationId}`);",
+									"        console.log(`   Status: ${workflow.status}`);",
+									"        console.log(`   Progress: ${workflow.progress}%`);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/api/flows/active",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"api",
+								"flows",
+								"active"
+							]
+						},
+						"description": "Lists all currently active flows in the system."
+					},
+					"response": []
+				}
+			],
+			"description": "**THE CORRECT FLOW** - 4 Microservices Architecture!\n\n**Test Flow:**\n1. Student Login → Student Service (minimal: username + installKey)\n2. Monitor Progress → Fulfilment Service (real-time updates)\n3. Get Credentials → Fulfilment Service (final URLs)\n\n**What happens automatically:**\n1. Student Service → publishes to Kafka: student.login.requested\n2. Lusofona Service → gets ALL student data from ULHT API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks & stores results\n\n**You provide:** username + installKey (2 fields!)\n**You get:** Verifiable Credentials!\n**4 services, fully automated, event-driven!**"
+		},
+		{
+			"name": "Flow Utilities",
+			"item": [
+				{
+					"name": "Get Available Flows",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/api/flows/available",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"api",
+								"flows",
+								"available"
+							]
+						},
+						"description": "Lists all available flow types."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Flow",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{credential_url}}/api/flows/cancel/{{workflowCorrelationId}}",
+							"host": [
+								"{{credential_url}}"
+							],
+							"path": [
+								"api",
+								"flows",
+								"cancel",
+								"{{workflowCorrelationId}}"
+							]
+						},
+						"description": "Cancels an active flow."
+					},
+					"response": []
+				}
+			],
+			"description": "Utility endpoints for managing flows."
+		}
+	]
+}

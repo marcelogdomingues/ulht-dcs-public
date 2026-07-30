@@ -1,0 +1,624 @@
+openapi: 3.0.3
+info:
+  title: ULHT Student Service API
+  description: |
+    Student Service - Entry point for all student operations in the ULHT Digital Credential System.
+    
+    ## Overview
+    This service acts as the primary gateway for student interactions, providing a simple and clean interface
+    for credential issuance workflows. It handles minimal student data and delegates complex operations
+    to downstream services via Kafka-based event-driven architecture.
+    
+    ## Key Features
+    - **Simple Entry Point**: Accepts minimal student data (username + installKey)
+    - **Event-Driven**: Publishes events to Kafka for asynchronous processing
+    - **Real-time Tracking**: Provides correlation IDs for workflow monitoring
+    - **Proxy to Fulfilment**: Delegates status and result queries to Fulfilment Service
+    
+    ## Workflow
+    1. Student submits credential issuance request with username and installKey
+    2. Service generates correlationId and publishes to `student.login.requested` topic
+    3. Lusofona Service retrieves real student data from ULHT API
+    4. Credential Service issues W3C Verifiable Credentials (EducationalID, IdentityCredential, etc.)
+    5. Fulfilment Service tracks progress and stores results
+    6. Student can query status and retrieve credentials via this service
+    
+    ## API Design Pattern
+    The Student Service follows a clear logical pattern:
+    - **Issue** (`/student/issue`) - Issue credentials to students
+    - **Wallet** (future) - Wallet management operations
+    - **Verifier** (future) - Credential verification operations
+    
+    ## Integration
+    - **Publishes to**: `student.login.requested` (Kafka)
+    - **Proxies to**: Fulfilment Service (HTTP/REST)
+    - **Consumed by**: Lusofona Service (via Kafka)
+  version: 1.0.0
+  contact:
+    name: ULHT Development Team
+    email: dev@ulusofona.pt
+    url: https://www.ulusofona.pt
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8085/api/v1
+    description: Local development server
+  - url: http://student-service:8085/api/v1
+    description: Docker internal
+  - url: https://api.ulht.pt/student-service/api/v1
+    description: Production server
+
+tags:
+  - name: Student
+    description: Student operations and credential workflows
+  - name: Health
+    description: Service health and monitoring
+
+paths:
+  /student/issue:
+    post:
+      tags: [Student]
+      summary: Issue credentials - triggers W3C credential issuance workflow
+      description: |
+        **THE** entry point for credential issuance!
+        
+        This endpoint receives minimal student data (username + installKey) and triggers
+        the entire W3C Verifiable Credential issuance workflow via Kafka event publishing.
+        
+        **What happens:**
+        1. Generates unique correlationId for tracking
+        2. Publishes to `student.login.requested` Kafka topic
+        3. Returns immediately with correlationId for async tracking
+        4. Lusofona Service picks up event and fetches real student data
+        5. Credential Service issues W3C credentials (Educational ID, Identity Credential, etc.)
+        6. Fulfilment Service tracks progress
+        
+        **Monitor progress:**
+        - Use returned correlationId to query `/student/status/{correlationId}`
+        - Retrieve final credentials from `/student/credentials/{correlationId}`
+        
+        **Logical Flow Pattern:**
+        - **Issue** → This endpoint (issue credentials)
+        - **Wallet** → Future wallet operations
+        - **Verifier** → Future verification operations
+      operationId: issueCredentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              fullRequest:
+                summary: Complete credential issuance request
+                value:
+                  userName: a12345678
+                  installKey: "00000_0000000000000"
+                  platform: ios
+                  language: PT
+                  application: org.cofac.mobile.ulht
+                  versionCode: "1601206"
+              minimalRequest:
+                summary: Minimal required fields
+                value:
+                  userName: a12345678
+                  installKey: "00000_0000000000000"
+      responses:
+        '200':
+          description: Credential issuance request accepted and published to Kafka
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                success:
+                  summary: Credential issuance initiated
+                  value:
+                    correlationId: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "PROCESSING"
+                    message: "Credential issuance initiated, processing..."
+                    monitorAt: "/student/status/550e8400-e29b-41d4-a716-446655440000"
+                    credentialsAt: "/student/credentials/550e8400-e29b-41d4-a716-446655440000"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    status: "error"
+                    message: "Username is required"
+                    statusCode: 400
+                    timestamp: "2024-10-09T10:30:00Z"
+
+  /student/verify:
+    post:
+      tags: [Student]
+      summary: Verify credentials - triggers W3C credential verification workflow
+      description: |
+        **THE** entry point for credential verification!
+        
+        This endpoint initiates a W3C Verifiable Credential verification request
+        using the OID4VP protocol via Kafka event publishing.
+        
+        **What happens:**
+        1. Generates unique correlationId for tracking
+        2. Publishes to `verification.requested` Kafka topic
+        3. Returns immediately with correlationId for async tracking
+        4. Credential Service picks up event and initiates verification with walt.id
+        5. Returns verification URL (for QR code or direct sharing)
+        6. User presents credentials from wallet
+        7. Service validates credentials and stores results
+        8. Fulfilment Service tracks verification progress
+        
+        **Monitor progress:**
+        - Use returned correlationId to query `/student/status/{correlationId}`
+        - Retrieve verification results from `/student/verification/{correlationId}`
+        
+        **Logical Flow Pattern:**
+        - **Issue** → Issue credentials (`/student/issue`)
+        - **Verify** → This endpoint (verify credentials)
+        - **Wallet** → Future wallet operations
+      operationId: verifyCredentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationRequest'
+            examples:
+              educationalId:
+                summary: Verify Educational ID
+                value:
+                  credentialType: EducationalID
+                  format: jwt_vc_json
+                  userId: a12345678
+              identityCredential:
+                summary: Verify Identity Credential
+                value:
+                  credentialType: IdentityCredential
+                  format: jwt_vc_json
+                  userId: a12345678
+              universityDegree:
+                summary: Verify University Degree
+                value:
+                  credentialType: UniversityDegree
+                  format: jwt_vc_json
+                  userId: a12345678
+              customPolicies:
+                summary: Verification with custom policies
+                value:
+                  credentialType: EducationalID
+                  format: jwt_vc_json
+                  userId: a12345678
+                  vpPolicies:
+                    - signature
+                    - expired
+                  vcPolicies:
+                    - signature
+                    - expired
+                    - not-before
+                  successRedirectUri: https://example.com/success?id=$id
+                  errorRedirectUri: https://example.com/error?id=$id
+      responses:
+        '200':
+          description: Verification request accepted and published to Kafka
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationWorkflowResponse'
+              examples:
+                success:
+                  summary: Verification initiated
+                  value:
+                    correlationId: "660e8400-e29b-41d4-a716-446655440000"
+                    status: "PROCESSING"
+                    message: "Verification request initiated, processing..."
+                    monitorAt: "/student/status/660e8400-e29b-41d4-a716-446655440000"
+                    verificationAt: "/student/verification/660e8400-e29b-41d4-a716-446655440000"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    status: "error"
+                    message: "Credential type is required"
+                    statusCode: 400
+                    timestamp: "2024-10-09T10:30:00Z"
+
+  /student/status/{correlationId}:
+    get:
+      tags: [Student]
+      summary: Check credential issuance status
+      description: |
+        Get current progress of the credential issuance workflow.
+        
+        This endpoint proxies to the Fulfilment Service to retrieve real-time
+        workflow progress updates including status, progress percentage, and messages.
+        
+        **Status values:**
+        - `INITIATED`: Workflow just started
+        - `PROCESSING`: In progress (fetching data, issuing credentials)
+        - `COMPLETED`: Successfully completed, credentials available
+        - `FAILED`: Workflow failed, check error details
+      operationId: getWorkflowStatus
+      parameters:
+        - name: correlationId
+          in: path
+          required: true
+          description: Correlation ID received from issue response
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowStatus'
+              examples:
+                processing:
+                  summary: Workflow in progress
+                  value:
+                    correlationId: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "PROCESSING"
+                    progress: 60
+                    message: "Issuing credentials..."
+                completed:
+                  summary: Workflow completed
+                  value:
+                    correlationId: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "COMPLETED"
+                    progress: 100
+                    message: "Credentials issued successfully"
+                    result:
+                      credentialsIssued: 3
+                      credentialTypes: ["EducationalID", "EuropeanStudentCard", "UniversityDegree"]
+        '404':
+          description: Workflow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Fulfilment Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /student/credentials/{correlationId}:
+    get:
+      tags: [Student]
+      summary: Get issued credentials
+      description: |
+        Retrieve the final credential offer URLs after workflow completes.
+        
+        This endpoint proxies to the Fulfilment Service to get the credential URLs
+        that students can use in their digital wallet apps to claim their credentials.
+        
+        **Returns:**
+        - Credential offer URLs (OpenID4VCI protocol)
+        - Credential types issued
+        - Student information
+        
+        **Note:** Only available after workflow status is `COMPLETED`
+      operationId: getCredentials
+      parameters:
+        - name: correlationId
+          in: path
+          required: true
+          description: Correlation ID from issue response
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Credentials retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialsResult'
+              examples:
+                success:
+                  summary: Credentials ready
+                  value:
+                    correlationId: "550e8400-e29b-41d4-a716-446655440000"
+                    userId: "a12345678"
+                    studentId: "511114706"
+                    status: "COMPLETED"
+                    credentialOfferUrls:
+                      - "openid-credential-offer://?credential_offer_uri=http://localhost:8086/..."
+                      - "openid-credential-offer://?credential_offer_uri=http://localhost:8086/..."
+                      - "openid-credential-offer://?credential_offer_uri=http://localhost:8086/..."
+                    credentialTypes:
+                      - "EducationalID"
+                      - "EuropeanStudentCard"
+                      - "UniversityDegree"
+                    credentialsIssued: 3
+        '404':
+          description: Credentials not found or not ready yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notReady:
+                  summary: Credentials not ready
+                  value:
+                    status: "error"
+                    message: "Credentials not ready. Current status: PROCESSING"
+                    statusCode: 404
+        '500':
+          description: Fulfilment Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /actuator/health:
+    get:
+      tags: [Health]
+      summary: Service health check
+      description: Spring Boot Actuator health endpoint
+      operationId: health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - userName
+        - installKey
+      properties:
+        userName:
+          type: string
+          description: Student username (ULHT student ID)
+          example: a12345678
+        installKey:
+          type: string
+          description: Mobile app installation key for verification
+          example: "00000_0000000000000"
+        platform:
+          type: string
+          description: Platform type
+          default: ios
+          example: ios
+        language:
+          type: string
+          description: Preferred language
+          default: PT
+          example: PT
+        application:
+          type: string
+          description: Application identifier
+          default: org.cofac.mobile.ulht
+          example: org.cofac.mobile.ulht
+        versionCode:
+          type: string
+          description: Application version code
+          default: "1601206"
+          example: "1601206"
+
+    LoginResponse:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          format: uuid
+          description: Unique ID for tracking this workflow
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          description: Current workflow status
+          enum: [PROCESSING, INITIATED]
+          example: PROCESSING
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Credential issuance initiated, processing..."
+        monitorAt:
+          type: string
+          description: Endpoint to monitor workflow progress
+          example: "/student/status/550e8400-e29b-41d4-a716-446655440000"
+        credentialsAt:
+          type: string
+          description: Endpoint to retrieve final credentials
+          example: "/student/credentials/550e8400-e29b-41d4-a716-446655440000"
+
+    VerificationRequest:
+      type: object
+      required:
+        - credentialType
+        - userId
+      properties:
+        credentialType:
+          type: string
+          description: Type of credential to verify
+          example: VerifiableDiploma
+        format:
+          type: string
+          description: Credential format
+          default: jwt_vc_json
+          enum: [jwt_vc_json, sd_jwt_vc, mso_mdoc]
+          example: jwt_vc_json
+        userId:
+          type: string
+          description: User ID for tracking
+          example: a12345678
+        vpPolicies:
+          type: array
+          description: Policies to apply to Verifiable Presentation
+          items:
+            type: string
+          example: ["signature", "expired"]
+        vcPolicies:
+          type: array
+          description: Policies to apply to Verifiable Credentials
+          items:
+            type: string
+          example: ["signature", "expired", "not-before"]
+        successRedirectUri:
+          type: string
+          description: URL to redirect on successful verification (can use $id placeholder)
+          example: "https://example.com/success?id=$id"
+        errorRedirectUri:
+          type: string
+          description: URL to redirect on failed verification (can use $id placeholder)
+          example: "https://example.com/error?id=$id"
+        statusCallbackUri:
+          type: string
+          description: URL for verification status callbacks
+          example: "https://example.com/callback"
+        statusCallbackApiKey:
+          type: string
+          description: API key for status callback authentication
+        customStateId:
+          type: string
+          description: Custom state ID for verification session
+
+    VerificationWorkflowResponse:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          format: uuid
+          description: Unique ID for tracking this verification workflow
+          example: "660e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          description: Current workflow status
+          enum: [PROCESSING, INITIATED]
+          example: PROCESSING
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Verification request initiated, processing..."
+        monitorAt:
+          type: string
+          description: Endpoint to monitor workflow progress
+          example: "/student/status/660e8400-e29b-41d4-a716-446655440000"
+        verificationAt:
+          type: string
+          description: Endpoint to retrieve verification results
+          example: "/student/verification/660e8400-e29b-41d4-a716-446655440000"
+
+    WorkflowStatus:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          format: uuid
+          description: Workflow correlation ID
+        status:
+          type: string
+          enum: [INITIATED, PROCESSING, COMPLETED, FAILED, CANCELLED]
+          description: Current workflow status
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Progress percentage (0-100)
+        message:
+          type: string
+          description: Current status message
+        startTime:
+          type: string
+          format: date-time
+          description: Workflow start timestamp
+        completionTime:
+          type: string
+          format: date-time
+          description: Workflow completion timestamp (if completed)
+        result:
+          type: object
+          description: Final result (if completed)
+        error:
+          type: object
+          description: Error details (if failed)
+
+    CredentialsResult:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          format: uuid
+          description: Workflow correlation ID
+        userId:
+          type: string
+          description: Student user ID
+          example: a12345678
+        studentId:
+          type: string
+          description: Student ID number
+          example: "511114706"
+        status:
+          type: string
+          description: Workflow status
+          enum: [COMPLETED]
+          example: COMPLETED
+        credentialOfferUrls:
+          type: array
+          description: OpenID4VCI credential offer URLs
+          items:
+            type: string
+          example:
+            - "openid-credential-offer://?credential_offer_uri=http://localhost:8086/..."
+        credentialTypes:
+          type: array
+          description: Types of credentials issued
+          items:
+            type: string
+          example:
+            - EducationalID
+            - EuropeanStudentCard
+            - UniversityDegree
+        credentialsIssued:
+          type: integer
+          description: Number of credentials issued
+          example: 3
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          description: Error message
+          example: Username is required
+        statusCode:
+          type: integer
+          description: HTTP status code
+          example: 400
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+        path:
+          type: string
+          description: Request path that caused the error
+

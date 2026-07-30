@@ -1,0 +1,71 @@
+# -----------------------------------------------------------------------------
+# Mobile CI
+# -----------------------------------------------------------------------------
+# Analyzes and tests the three Flutter apps under mobile-apps/. Each app is a
+# self-contained Flutter package with its own pubspec.yaml. We use a matrix and
+# run the standard verify flow (pub get -> analyze -> test) for each.
+#
+# Flutter is pinned to the `stable` channel (the project targets Flutter 3.44.x
+# / Dart 3.12). `flutter test` is guarded so it is skipped if an app has no
+# test/ directory.
+# -----------------------------------------------------------------------------
+name: Mobile CI
+
+on:
+  push:
+    paths:
+      - "mobile-apps/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    paths:
+      - "mobile-apps/**"
+      - ".github/workflows/mobile.yml"
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: mobile-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Analyze ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - student-app
+          - verifier-app
+          - issuer-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (stable channel)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # Cache the Flutter SDK + pub packages between runs.
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        working-directory: mobile-apps/${{ matrix.app }}
+        run: flutter pub get
+
+      - name: Static analysis
+        working-directory: mobile-apps/${{ matrix.app }}
+        run: flutter analyze
+
+      - name: Run tests (skipped if no test/ dir)
+        working-directory: mobile-apps/${{ matrix.app }}
+        # Guard: only run tests when the app ships a test/ directory, so an app
+        # without tests does not fail the pipeline.
+        run: |
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "No test/ directory found for ${{ matrix.app }} — skipping tests."
+          fi

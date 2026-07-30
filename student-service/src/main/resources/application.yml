@@ -1,0 +1,129 @@
+spring:
+  application:
+    name: student-service
+    version: 1.0.0
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: student-service
+        instance-id: ${spring.application.name}-${random.uuid}
+        health-check-path: /api/v1/actuator/health
+        health-check-interval: 10s
+  kafka:
+    bootstrap-servers: localhost:29092
+    properties:
+      key:
+        serializer: org.apache.kafka.common.serialization.StringSerializer
+      value:
+        serializer: org.apache.kafka.common.serialization.StringSerializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      max-request-size: 10485760
+      buffer-memory: 33554432
+      compression-type: snappy
+      batch-size: 16384
+      linger-ms: 1
+  
+# Application security / CORS
+app:
+  security:
+    api-key: ${APP_API_KEY:ulht-dev-local-CHANGE-ME}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:8000,http://localhost:3000}
+
+server:
+  port: ${SERVER_PORT:8084}
+  servlet:
+    context-path: /api/v1
+
+# Service URLs
+services:
+  fulfilment:
+    url: ${FULFILMENT_SERVICE_URL:http://localhost:8087/api/v1}
+
+# Kafka Topics
+kafka:
+  topics:
+    student-login-requested: student.login.requested
+  # Producer Configuration
+  producer:
+    # Timeout for waiting for Kafka acknowledgment (in seconds)
+    # Increase this in production or for slow networks
+    # Decrease this for faster failure feedback in development
+    send-timeout: ${KAFKA_PRODUCER_TIMEOUT:10}
+    # Whether to use synchronous send (wait for acknowledgment)
+    # true = reliable (wait for ack), false = fast (fire-and-forget)
+    synchronous: ${KAFKA_PRODUCER_SYNCHRONOUS:true}
+  # Request-Reply Configuration (Optional - more reliable)
+  reply:
+    # Enable request-reply pattern (wait for reply message from consumer)
+    # When enabled, student service waits for confirmation that workflow started
+    enabled: ${KAFKA_REPLY_ENABLED:false}
+    # Reply topics
+    topics:
+      student-login-reply: student.login.reply
+      verification-reply: verification.reply
+    # Timeout for waiting for reply (milliseconds)
+    # This is how long to wait for the consumer to send back a reply
+    timeout: ${KAFKA_REPLY_TIMEOUT:30000}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        # health/info are public (permitAll); prometheus is kept for scraping but
+        # protected by the security filter (requires apikey).
+        include: health,info,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      version: ${spring.application.version}
+
+# OpenAPI/Swagger
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  info:
+    title: Student Service API
+    description: Entry point service for student requests - minimal and simple
+    version: 1.0.0
+    contact:
+      name: ULHT DCS Team
+      email: dcs@ulusofona.pt
+
+# Logging
+logging:
+  level:
+    root: INFO
+    pt.ulusofona.student: DEBUG
+    org.springframework.kafka: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Feign Client
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: basic
+
+

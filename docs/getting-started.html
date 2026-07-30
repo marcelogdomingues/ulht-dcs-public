@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - ULHT Digital Credential Service</title>
+    <link rel="stylesheet" href="styles/shared.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body>
+    <div id="header"></div>
+    <div class="doc-layout">
+        <aside class="doc-sidebar">
+            <nav class="sidebar-toc toc"></nav>
+        </aside>
+        <main class="doc-main">
+            <section class="hero">
+                <div class="container">
+                    <div class="tagline">Start issuing and verifying digital credentials in minutes</div>
+                    <h1><span class="icon">🚀</span> Getting Started</h1>
+                    <p>Step-by-step guide to set up and configure the ULHT Digital Credential Service for your environment.</p>
+                    <div class="hero-buttons">
+                        <a href="index.html" class="btn btn-primary">Home</a>
+                        <a href="#steps" class="btn btn-secondary">Jump to Steps</a>
+                    </div>
+                </div>
+            </section>
+            <div class="doc-content-with-toc">
+                <div class="doc-content">
+                    <section class="content">
+                        <div class="section-title">
+                            <h2><span class="icon">🧰</span> Prerequisites</h2>
+                            <p>Before you begin, ensure you have the necessary tools and access to get started with the ULHT Digital Credential Service.</p>
+                        </div>
+                        <div class="info-box">
+                            <strong>ℹ️ Tip:</strong> You'll need Java 25, Maven, and Docker to run all services.
+                        </div>
+                        <div class="card">
+                            <span class="icon">💻</span>
+                            <h3>Required Tools</h3>
+                            <ul>
+                                <li>Java 25</li>
+                                <li>Maven 3.9+</li>
+                                <li>Docker & Docker Compose</li>
+                                <li>Kafka 3.x (included in docker-compose)</li>
+                                <li>Git</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="content alt" id="steps">
+                        <div class="section-title">
+                            <h2><span class="icon">⚡</span> Installation</h2>
+                            <p>Step-by-step guide to install and configure the ULHT Digital Credential Service.</p>
+                        </div>
+                        <div class="card">
+                            <span class="icon">📥</span>
+                            <h3>1. Clone the Repository</h3>
+                            <pre class="code-block">git clone &lt;repository-url&gt;
+cd ulht-dcs</pre>
+                        </div>
+                        <div class="card">
+                            <span class="icon">🐳</span>
+                            <h3>2. Start Infrastructure</h3>
+                            <p>Start infrastructure services (Kafka, Consul, Kong, Monitoring):</p>
+                            <pre class="code-block">docker-compose -f docker-compose.infrastructure.yml up -d</pre>
+                        </div>
+                        <div class="card">
+                            <span class="icon">🚀</span>
+                            <h3>3. Start Microservices</h3>
+                            <p>Start all microservices:</p>
+                            <pre class="code-block">docker-compose -f docker-compose.microservices.yml up -d</pre>
+                            <p class="info-box" style="margin-top: 12px;">
+                                <strong>💡 Alternative:</strong> For local development, run services individually:
+                            </p>
+                            <pre class="code-block">cd credential-service && mvn spring-boot:run
+cd lusofona-service && mvn spring-boot:run
+cd fulfilment-service && mvn spring-boot:run
+cd student-service && mvn spring-boot:run</pre>
+                        </div>
+                        <div class="card">
+                            <span class="icon">✅</span>
+                            <h3>4. Verify Services</h3>
+                            <pre class="code-block">curl http://localhost:8084/actuator/health  # Student Service
+curl http://localhost:8085/api/v1/actuator/health  # Lusofona
+curl http://localhost:8086/api/v1/actuator/health  # Credential
+curl http://localhost:8087/api/v1/actuator/health  # Fulfilment</pre>
+                        </div>
+                    </section>
+
+                    <section class="content">
+                        <div class="section-title">
+                            <h2><span class="icon">⚙️</span> Service Ports</h2>
+                            <p>The system runs on the following ports:</p>
+                        </div>
+                        <div class="grid grid-2">
+                            <div class="card">
+                                <h3>🎓 Student Service</h3>
+                                <p><strong>Port:</strong> 8084</p>
+                                <p>Entry point for credential issuance requests</p>
+                                <p><strong>Via Kong:</strong> http://localhost:8000/api/v1/students/*</p>
+                            </div>
+                            <div class="card">
+                                <h3>🏫 Lusofona Service</h3>
+                                <p><strong>Port:</strong> 8085</p>
+                                <p>ULHT API integration and student data retrieval</p>
+                                <p><strong>Via Kong:</strong> http://localhost:8000/api/v1/lusofona/*</p>
+                            </div>
+                            <div class="card">
+                                <h3>🎯 Credential Service</h3>
+                                <p><strong>Port:</strong> 8086</p>
+                                <p>W3C Verifiable Credential issuance</p>
+                                <p><strong>Via Kong:</strong> http://localhost:8000/api/v1/credentials/*</p>
+                            </div>
+                            <div class="card">
+                                <h3>📦 Fulfilment Service</h3>
+                                <p><strong>Port:</strong> 8087</p>
+                                <p>Workflow tracking and progress monitoring</p>
+                                <p><strong>Via Kong:</strong> http://localhost:8000/api/v1/fulfilment/*</p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-box" style="margin-top: 24px;">
+                            <h4>🛡️ Infrastructure Services</h4>
+                            <ul style="margin-top: 12px;">
+                                <li><strong>Kong API Gateway:</strong> Port 8000, 8001 - Centralized API routing</li>
+                                <li><strong>Kong UI:</strong> Port 8082 - Gateway management interface</li>
+                                <li><strong>Consul:</strong> Port 8500, 8600 - Service discovery</li>
+                                <li><strong>Kafka:</strong> Port 9092, 29092 - Message broker</li>
+                                <li><strong>Zookeeper:</strong> Port 2181 - Kafka coordination</li>
+                                <li><strong>Kafka UI:</strong> Port 8081 - Kafka management</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="success-box" style="margin-top: 24px;">
+                            <h4>📊 Monitoring & Observability</h4>
+                            <ul style="margin-top: 12px;">
+                                <li><strong>Grafana:</strong> http://localhost:3000 (admin/admin) - Dashboards & visualization</li>
+                                <li><strong>Prometheus:</strong> http://localhost:9090 - Metrics collection</li>
+                                <li><strong>Loki:</strong> Port 3100 - Log aggregation</li>
+                                <li><strong>Kafka Exporter:</strong> Port 9308 - Kafka metrics</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="content alt">
+                        <div class="section-title">
+                            <h2><span class="icon">🎓</span> Your First Credential</h2>
+                            <p>Create and issue your first digital credential using the ULHT Digital Credential Service.</p>
+                        </div>
+                        <div class="success-box">
+                            <strong>✅ Success:</strong> You're ready to issue W3C Verifiable Credentials!
+                        </div>
+                        <div class="card">
+                            <span class="icon">🆕</span>
+                            <h3>Issue Credentials via API</h3>
+                            <p><strong>Via Kong API Gateway (recommended):</strong></p>
+                            <pre class="code-block">curl -X POST http://localhost:8000/api/v1/students/issue \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userName": "a12345678",
+    "installKey": "00000_0000000000000"
+  }'</pre>
+                            <p style="margin-top: 16px;"><strong>Or directly (bypassing Kong):</strong></p>
+                            <pre class="code-block">curl -X POST http://localhost:8084/student/issue \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userName": "a12345678",
+    "installKey": "00000_0000000000000",
+    "platform": "ios",
+    "language": "PT"
+  }'</pre>
+                            <p><strong>Response:</strong></p>
+                            <pre class="code-block">{
+  "correlationId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "PROCESSING",
+  "message": "Credential issuance initiated",
+  "monitorAt": "/student/status/550e8400-...",
+  "credentialsAt": "/student/credentials/550e8400-..."
+}</pre>
+                        </div>
+                        <div class="card">
+                            <span class="icon">🔍</span>
+                            <h3>Check Status</h3>
+                            <pre class="code-block">curl http://localhost:8084/student/status/{correlationId}</pre>
+                            <p><strong>Response:</strong></p>
+                            <pre class="code-block">{
+  "correlationId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "COMPLETED",
+  "progress": 100,
+  "message": "Credentials issued successfully"
+}</pre>
+                        </div>
+                        <div class="card">
+                            <span class="icon">📥</span>
+                            <h3>Get Credentials</h3>
+                            <pre class="code-block">curl http://localhost:8084/student/credentials/{correlationId}</pre>
+                            <p><strong>Response includes:</strong></p>
+                            <ul>
+                                <li>Educational ID Credential</li>
+                                <li>European Student Card</li>
+                                <li>Identity Credential</li>
+                                <li>University Degree (if graduated)</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <!-- API Documentation -->
+                    <section class="content">
+                        <div class="container">
+                            <div class="section-title">
+                                <h2>📚 API Documentation</h2>
+                                <p>Access Swagger UI for each service to explore the complete API.</p>
+                            </div>
+                            
+                            <div class="grid grid-2">
+                                <div class="card">
+                                    <h4>🎓 Student Service</h4>
+                                    <p>Entry point API</p>
+                                    <a href="http://localhost:8084/swagger-ui.html" target="_blank" class="nav-button">Open Swagger UI</a>
+                                </div>
+                                
+                                <div class="card">
+                                    <h4>🏫 Lusofona Service</h4>
+                                    <p>ULHT integration API</p>
+                                    <a href="http://localhost:8085/api/v1/swagger-ui.html" target="_blank" class="nav-button">Open Swagger UI</a>
+                                </div>
+                                
+                                <div class="card">
+                                    <h4>🎯 Credential Service</h4>
+                                    <p>Credential issuance API</p>
+                                    <a href="http://localhost:8086/api/v1/swagger-ui.html" target="_blank" class="nav-button">Open Swagger UI</a>
+                                </div>
+                                
+                                <div class="card">
+                                    <h4>📦 Fulfilment Service</h4>
+                                    <p>Progress tracking API</p>
+                                    <a href="http://localhost:8087/api/v1/swagger-ui.html" target="_blank" class="nav-button">Open Swagger UI</a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Troubleshooting -->
+                    <section class="content">
+                        <div class="container">
+                            <div class="section-title">
+                                <h2>🔧 Troubleshooting</h2>
+                                <p>Common issues and their solutions for getting your ULHT DCS deployment running smoothly.</p>
+                            </div>
+                            
+                            <h3>Service Won't Start</h3>
+                            <div class="error-box">
+                                <h4>🔍 Common Causes</h4>
+                                <ul>
+                                    <li><strong>Port conflicts:</strong> Check if ports 8084-8087 are already in use</li>
+                                    <li><strong>Java version:</strong> Ensure Java 25 is installed</li>
+                                    <li><strong>Maven issues:</strong> Run mvn clean package</li>
+                                </ul>
+                                <div class="code-block">
+# Check ports
+netstat -tulpn | grep :8084
+netstat -tulpn | grep :8085
+netstat -tulpn | grep :8086
+netstat -tulpn | grep :8087
+
+# Verify Java version
+java -version
+                                </div>
+                            </div>
+                            
+                            <h3>Kafka Connection Issues</h3>
+                            <div class="warning-box">
+                                <h4>🔍 Troubleshooting Steps</h4>
+                                <ol>
+                                    <li>Check if Kafka is running: <code>docker ps | grep kafka</code></li>
+                                    <li>Verify Kafka logs: <code>docker-compose logs kafka</code></li>
+                                    <li>Check topics: <code>docker exec -it kafka kafka-topics --list --bootstrap-server localhost:9092</code></li>
+                                    <li>Look for topics: student.login.requested, credential.requests, credential.progress, credential.completed</li>
+                                </ol>
+                            </div>
+                            
+                            <h3>walt.id Integration Issues</h3>
+                            <div class="info-box">
+                                <h4>🔍 Troubleshooting Steps</h4>
+                                <ol>
+                                    <li>Verify walt.id is running: <code>curl http://localhost:7002/health</code></li>
+                                    <li>Check issuer onboarding: <code>GET /api/v1/waltid/issuer/status</code></li>
+                                    <li>Review walt.id logs for errors</li>
+                                    <li>Verify credential configuration IDs exist in walt.id</li>
+                                </ol>
+                            </div>
+                            
+                            <h3>No Credentials Issued</h3>
+                            <div class="success-box">
+                                <h4>🔍 Check These Items</h4>
+                                <ol>
+                                    <li>Verify all services are running and healthy</li>
+                                    <li>Check Kafka messages are flowing: <code>docker exec -it kafka kafka-console-consumer --topic credential.requests --bootstrap-server localhost:9092</code></li>
+                                    <li>Review service logs for error codes (STUD-*, TE-*, CRED-*, FULF-*)</li>
+                                    <li>Ensure student credentials are valid</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Adding New Credentials -->
+                    <section class="content">
+                        <div class="container">
+                            <div class="section-title">
+                                <h2>⚙️ Adding New Credential Types</h2>
+                                <p>The Generic Credential System allows you to add new credentials without code changes!</p>
+                            </div>
+                            
+                            <h3>Step-by-Step Guide (5 minutes)</h3>
+                            <div class="card">
+                                <h4>1. Edit Configuration</h4>
+                                <p>Open <code>credential-service/src/main/resources/application.yml</code></p>
+                            </div>
+                            
+                            <div class="card">
+                                <h4>2. Add Credential Template</h4>
+                                <div class="code-block">
+credentials:
+  templates:
+    - id: parking-permit
+      type: ParkingPermit
+      displayName: "Student Parking Permit"
+      enabled: true
+      priority: 60
+      waltidConfigId: UniversityDegree_jwt_vc_json
+      fieldMappings:
+        studentName: [fullName, name]
+        studentId: [studentId]
+        vehiclePlate: [vehiclePlate]
+      staticFields:
+        institutionName: "ULHT"
+        permitType: "Student Parking"
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <h4>3. Restart Credential Service</h4>
+                                <div class="code-block">
+cd credential-service
+mvn spring-boot:run
+                                </div>
+                            </div>
+                            
+                            <div class="success-box">
+                                <strong>✅ Done!</strong> Your new credential type is now active and will be automatically issued when conditions are met.
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Next Steps -->
+                    <section class="content">
+                        <div class="container">
+                            <div class="section-title">
+                                <h2>📖 Next Steps</h2>
+                                <p>Now that you have the ULHT Digital Credential Service running, here's what you can do next.</p>
+                            </div>
+                            
+                            <div class="grid grid-3">
+                                <div class="feature-card">
+                                    <span class="feature-icon">📚</span>
+                                    <h3>Read the API Docs</h3>
+                                    <p>Explore the complete API reference to understand all available endpoints and features.</p>
+                                    <a href="api-reference.html" class="nav-button">View API Reference</a>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <span class="feature-icon">🏗️</span>
+                                    <h3>Understand Architecture</h3>
+                                    <p>Learn about the 4-service microservices architecture and event-driven workflow.</p>
+                                    <a href="architecture.html" class="nav-button">Architecture Guide</a>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <span class="feature-icon">⚙️</span>
+                                    <h3>Add Credentials</h3>
+                                    <p>Use the Generic Credential System to add new credential types via YAML configuration.</p>
+                                    <a href="#" class="nav-button">Learn More</a>
+                                </div>
+                            </div>
+                            
+                            <h3>Production Checklist</h3>
+                            <ul>
+                                <li>✅ Configure external KMS for credential-service</li>
+                                <li>✅ Set up proper SSL/TLS certificates</li>
+                                <li>✅ Configure production Kafka cluster</li>
+                                <li>✅ Enable authentication & authorization</li>
+                                <li>✅ Set up monitoring & alerting</li>
+                                <li>✅ Configure log aggregation</li>
+                                <li>✅ Set up database backups</li>
+                                <li>✅ Configure rate limiting</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <!-- Navigation -->
+                    <div class="nav-buttons">
+                        <a href="monitoring-guide.html" class="nav-button secondary">← Monitoring Guide</a>
+                        <a href="api-reference.html" class="nav-button">API Reference →</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="footer"></div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/i18n.js"></script>
+</body>
+</html> 

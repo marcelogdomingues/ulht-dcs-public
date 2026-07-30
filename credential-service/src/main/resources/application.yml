@@ -1,0 +1,503 @@
+spring:
+  application:
+    name: credential-service
+    version: 1.0.0
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          waltidCredentialClient:
+            url: https://issuer.demo.walt.id/openid4vc/jwt
+          waltidIssuerClient:
+            url: http://localhost:7002/onboard
+          waltidWalletClient:
+            url: http://localhost:7001
+          waltidVerifierClient:
+            url: http://localhost:7003
+  kafka:
+    bootstrap-servers: localhost:29092
+    properties:
+      key:
+        serializer: org.apache.kafka.common.serialization.StringSerializer
+      value:
+        serializer: org.apache.kafka.common.serialization.StringSerializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      max-request-size: 10485760
+      buffer-memory: 33554432
+      compression-type: snappy
+      batch-size: 16384
+      linger-ms: 1
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: credential-service-group
+      fetch-max-bytes: 10485760
+      max-partition-fetch-bytes: 10485760
+      properties:
+        spring.json.trusted.packages: "pt.ulusofona.ulht.credential,java.util,java.lang"
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 3
+      poll-timeout: 3000
+
+# Kafka Retry Configuration
+kafka:
+  retry:
+    enabled: true
+    dlt-enabled: true
+    default-retry-attempts: 3
+    default-initial-delay: 1000
+    default-multiplier: 2.0
+    default-max-delay: 10000
+    default-num-partitions: 3
+    default-concurrency: 3
+    enable-idempotence: true
+    producer-retries: 3
+    producer-retry-backoff: 1000
+    enable-auto-commit: false
+    auto-offset-reset: earliest
+    dlt-topic-suffix: ".DLT"
+    retry-topic-suffix-pattern: "-retry-{index}"
+    max-message-size: 10485760
+    trusted-packages: "pt.ulusofona.ulht.credential,java.util,java.lang"
+    enable-tracing: true
+    correlation-id-header: "X-Correlation-ID"
+    trace-id-header: "X-Trace-ID"
+    user-id-header: "X-User-ID"
+    source-service-header: "X-Source-Service"
+    timestamp-header: "X-Timestamp"
+  # Message handling configuration
+  max-message-size: 10485760  # 10MB
+  large-message-threshold: 5242880  # 5MB
+  message:
+    chunk-size: 5242880  # 5MB chunks
+    external-storage-threshold: 10485760  # 10MB
+    compression-threshold: 1048576  # 1MB
+    # Credential service topics (standardized with dot notation)
+  topics:
+    # Input topics
+    credential-requests: credential.requests
+    verification-requests: verification.requested
+    
+    # Output topics (for Fulfilment Service)
+    credential-progress: credential.progress
+    credential-completed: credential.completed
+    credential-error: credential.error
+    verification-progress: verification.progress
+    verification-completed: verification.completed
+    verification-error: verification.error
+    
+    # Wallet workflow topics
+    wallet-requests: wallet.requests
+    wallet-progress: wallet.progress
+    wallet-completed: wallet.completed
+    wallet-error: wallet.error
+    
+    # Wallet event topics (audit/logging)
+    wallet-login: wallet.login
+    wallet-register: wallet.register
+    wallet-account-access: wallet.account.access
+    wallet-operation: wallet.operation
+    
+    # Reply Topics (Request-Reply Pattern)
+    verification-reply: verification.reply
+    credential-reply: credential.reply
+
+# Application security / CORS
+app:
+  security:
+    api-key: ${APP_API_KEY:ulht-dev-local-CHANGE-ME}
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:8000,http://localhost:3000}
+
+server:
+  port: 8086
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  error:
+    include-message: always
+    include-binding-errors: always
+  servlet:
+    context-path: /api/v1
+
+# Enhanced OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+    version: openapi_3_0
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    # UI Customization
+    displayRequestDuration: true
+    showExtensions: true
+    showCommonExtensions: true
+    operationsSorter: method
+    tagsSorter: alpha
+    docExpansion: none
+    defaultModelsExpandDepth: 1
+    displayOperationId: true
+    # Custom UI Settings
+    disableSwaggerDefaultUrl: true
+    deepLinking: true
+    filter: true
+    showMutatedRequest: true
+    tryItOutEnabled: true
+    requestInterceptor: true
+    # Custom CSS and JS
+    customCssUrl: /swagger-ui/custom.css
+    customJs: /swagger-ui/custom.js
+    # OAuth2 Settings
+    oauth2RedirectUrl: /swagger-ui/oauth2-redirect.html
+    # Custom Headers
+    customSiteTitle: "ULHT Credential Service API"
+    customfavIcon: /favicon.ico
+  # Default Media Types
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+  # Actuator Integration
+  show-actuator: true
+  # Paths Configuration
+  paths-to-match:
+    - /api/**
+    - /wallet/**
+    - /actuator/**
+  # Packages to Scan
+  packages-to-scan:
+    - pt.ulusofona.ulht.credential.controller
+  # Info Configuration
+  info:
+    title: "ULHT Credential Service API"
+    description: "Comprehensive digital credential management and wallet integration services"
+    version: "1.0.0"
+    contact:
+      name: "ULHT Development Team"
+      email: "dev@ulusofona.pt"
+      url: "https://www.ulusofona.pt"
+    license:
+      name: "MIT License"
+      url: "https://opensource.org/licenses/MIT"
+  # Security Configuration
+  security:
+    enabled: true
+    schemes:
+      - name: "sessionAuth"
+        type: "apiKey"
+        in: "cookie"
+        description: "Session cookie for authentication"
+
+# WaltID Configuration
+waltid:
+  issuer:
+    url: http://localhost:7002
+    # Default settings for W3C Verifiable Credentials issuance
+    defaults:
+      key-type: secp256r1  # Options: ed25519, secp256k1, secp256r1, RSA
+      did-method: jwk      # Options: key, jwk, web, cheqd
+      standard-version: DRAFT13  # Options: DRAFT13, DRAFT11
+      authentication-method: PRE_AUTHORIZED  # Options: PRE_AUTHORIZED, ID_TOKEN, VP_TOKEN, PWD
+      credential-expiry-days: 365
+    # Supported credential configurations
+    credential-configurations:
+      university-degree: UniversityDegree_jwt_vc_json
+      university-degree-sdjwt: UniversityDegree_vc+sd-jwt
+  wallet:
+    url: http://localhost:7001
+  verifier:
+    url: http://localhost:7003
+    # Default settings for W3C Verifiable Credentials verification via OID4VP
+    defaults:
+      authorize-base-url: openid4vp://authorize  # Base URL for OID4VP authorization
+      response-mode: direct_post  # Response mode (currently only direct_post supported)
+      # Default policies
+      vp-policies:
+        - signature  # Verify VP signature
+      vc-policies:
+        - signature  # Verify VC signature
+        - expired    # Check if credential is expired
+        - not-before # Check if credential is valid yet
+
+# Wallet Configuration
+wallet:
+  # Password generation for student wallets
+  # Passwords are generated deterministically from student data
+  # In production, consider using KMS or OAuth instead
+  password:
+    # No insecure default: the app fails fast if these are not provided via env.
+    secret: ${WALLET_PASSWORD_SECRET}
+    salt: ${WALLET_PASSWORD_SALT}
+
+# Credential Templates Configuration
+# Add/remove/modify credential types just by editing this section
+credentials:
+  templates:
+    # Educational ID (SCHAC) - Priority credential for students
+    - id: educational-id
+      type: EducationalID
+      displayName: Educational ID (SCHAC)
+      enabled: true
+      priority: 10
+      required: false
+      waltidConfigId: UniversityDegree_jwt_vc_json
+      format: jwt_vc_json
+      fieldMappings:
+        # Student Identity
+        studentId: [studentId, studentCode, id]
+        givenName: [firstName, givenName, name]
+        familyName: [lastName, familyName, surname]
+        email: [email, studentEmail, emailAddress]
+        dateOfBirth: [dateOfBirth, birthDate, dob]
+        # Academic Information
+        courseName: [courseName, course, programName]
+        courseCode: [courseCode, programCode]
+        department: [department, faculty]
+        academicLevel: [academicLevel, degreeLevel, level]
+        enrollmentYear: [enrollmentYear, yearOfEnrollment, startYear]
+        studentStatus: [status, enrollmentStatus, studentStatus]
+        # Institution Information (from API)
+        institutionName: [institutionName, institution]
+        institutionCode: [institutionCode, pic, institutionPIC]
+      staticFields:
+        country: "PT"
+        credentialSchema: "https://europa.eu/schemas/v-id-1"
+      contexts:
+        - https://www.w3.org/2018/credentials/v1
+        - https://europa.eu/2018/credentials/esi/v1
+      additionalTypes:
+        - EducationalID
+        
+    # Identity Credential - Digital identity verification
+    - id: identity-credential
+      type: IdentityCredential
+      displayName: Digital Identity Credential
+      enabled: true
+      priority: 15
+      required: false
+      waltidConfigId: IdentityCredential_jwt_vc_json
+      format: jwt_vc_json
+      fieldMappings:
+        # Personal Identity
+        given_name: [firstName, givenName, name]
+        family_name: [lastName, familyName, surname]
+        email: [email, studentEmail, emailAddress]
+        phone_number: [phoneNumber, phone, mobileNumber, contactNumber]
+        birthdate: [dateOfBirth, birthDate, dob]
+        # Address fields (will be nested)
+        street_address: [address.street, streetAddress, address]
+        locality: [address.city, city, locality]
+        region: [address.region, region, state, address.state]
+        country: [address.country, country, nationality]
+        # Age verification flags (will be calculated if birthdate is available)
+        is_over_18: [isOver18, ageVerified]
+        is_over_21: [isOver21]
+        is_over_65: [isOver65]
+        # Institution Information (from API)
+        issuer_name: [institutionName, institution]
+      staticFields:
+        country_code: "PT"
+      contexts:
+        - https://www.w3.org/2018/credentials/v1
+      additionalTypes:
+        - IdentityCredential
+        
+    # European Student Card - For international recognition
+    - id: european-student-card
+      type: EuropeanStudentCard
+      displayName: European Student Card
+      enabled: true
+      priority: 20
+      required: false
+      waltidConfigId: UniversityDegree_jwt_vc_json
+      format: jwt_vc_json
+      fieldMappings:
+        # ESC Fields (following ESC specification)
+        esi: [studentId, esi, europeanStudentIdentifier]
+        givenName: [firstName, givenName]
+        familyName: [lastName, familyName]
+        dateOfBirth: [dateOfBirth, birthDate]
+        email: [email, studentEmail]
+        # Institution Information (from API)
+        institutionName: [institutionName, institution]
+        institutionCode: [institutionCode, pic, institutionPIC]
+        courseName: [courseName, course]
+        courseCode: [courseCode]
+        startDate: [enrollmentDate, startDate]
+        endDate: [expectedGraduationDate, endDate]
+        studyLevel: [academicLevel, level]
+      staticFields:
+        country: "PT"
+        cardType: "ESC"
+      contexts:
+        - https://www.w3.org/2018/credentials/v1
+        - https://europa.eu/2018/credentials/esc/v1
+      additionalTypes:
+        - EuropeanStudentCard
+        
+    # University Degree - Only for graduates
+    - id: university-degree
+      type: UniversityDegree
+      displayName: University Degree Certificate
+      enabled: true
+      priority: 30
+      required: false
+      waltidConfigId: UniversityDegree_jwt_vc_json
+      format: jwt_vc_json
+      # Condition: Only issue if student has graduation data
+      condition: "#studentData['graduationDate'] != null || #studentData['degreeAwarded'] != null"
+      fieldMappings:
+        # Graduate Identity
+        studentId: [studentId, studentCode]
+        givenName: [firstName, givenName]
+        familyName: [lastName, familyName]
+        email: [email]
+        # Degree Information
+        degreeName: [degreeName, courseName, degree]
+        degreeType: [degreeType, academicLevel, level]
+        major: [major, specialization, courseName]
+        graduationDate: [graduationDate, completionDate]
+        gpa: [gpa, finalGrade, grade]
+        honors: [honors, distinction, classification]
+        # Institution Information (from API)
+        institutionName: [institutionName, institution]
+        institutionCode: [institutionCode, pic, institutionPIC]
+      staticFields:
+        country: "PT"
+        accreditedBy: "A3ES - Portuguese Agency for Assessment and Accreditation"
+      contexts:
+        - https://www.w3.org/2018/credentials/v1
+        - https://europa.eu/2018/credentials/degree/v1
+      additionalTypes:
+        - UniversityDegree
+        
+    # === ADDITIONAL W3C CREDENTIAL TYPES (Disabled by default) ===
+    # Simply set enabled: true to activate any of these
+    
+    # KYC Credential - Know Your Customer verification
+    - id: kyc-credential
+      type: KycCredential
+      displayName: KYC Verification
+      enabled: false
+      priority: 100
+      waltidConfigId: KycCredential_jwt_vc_json
+      format: jwt_vc_json
+      fieldMappings:
+        fullName: [fullName, name]
+        nationality: [nationality, country]
+        documentNumber: [passportNumber, idNumber, documentId]
+        dateOfBirth: [dateOfBirth, birthDate]
+        placeOfBirth: [placeOfBirth, birthPlace]
+      staticFields:
+        verificationLevel: "basic"
+        verifiedBy: "ULHT Identity Service"
+        
+    # Boarding Pass - For travel/event credentials
+    - id: boarding-pass
+      type: BoardingPass
+      displayName: Boarding Pass
+      enabled: false
+      priority: 100
+      waltidConfigId: BoardingPass_jwt_vc_json
+      format: jwt_vc_json
+      fieldMappings:
+        passengerName: [fullName, name]
+        flightNumber: [flightNumber, flight]
+        boardingTime: [boardingTime, departureTime]
+        seat: [seatNumber, seat]
+        from: [origin, departure]
+        to: [destination, arrival]
+        
+    # Hotel Reservation - For accommodation credentials
+    - id: hotel-reservation
+      type: HotelReservation
+      displayName: Hotel Reservation
+      enabled: false
+      priority: 100
+      waltidConfigId: HotelReservation_jwt_vc_json
+      format: jwt_vc_json
+      fieldMappings:
+        guestName: [fullName, name]
+        hotelName: [hotelName, accommodation]
+        checkInDate: [checkIn, arrival]
+        checkOutDate: [checkOut, departure]
+        roomNumber: [room, roomNumber]
+        confirmationNumber: [confirmation, reservationId]
+
+# Logging
+logging:
+  level:
+    pt.ulusofona.ulht.credential: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.cloud.openfeign: WARN
+    feign: WARN
+  # Security configuration for sensitive data masking
+  security:
+    enabled: true
+    sensitive-fields:
+      - password
+      - passwd
+      - pwd
+      - secret
+      - token
+      - key
+      - apiKey
+      - api_key
+      - authorization
+      - auth
+      - credential
+      - credentials
+      - privateKey
+      - private_key
+      - sessionToken
+      - session_token
+      - accessToken
+      - access_token
+      - refreshToken
+      - refresh_token
+      - jwt
+      - bearer
+      - apikey
+      - apisecret
+      - clientSecret
+      - client_secret
+      - userId
+    mask-string: "###"
+    mask-request-body: true
+    mask-response-body: true
+    mask-headers: true
+    sensitive-headers:
+      - authorization
+      - x-api-key
+      - x-auth-token
+      - cookie
+      - set-cookie
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        # Only health/info are public (permitAll in SecurityConfig).
+        # prometheus is kept for scraping but is protected by the security filter (requires apikey).
+        include: health,info,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      version: ${spring.application.version}

@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: ULHT Fulfilment Service API
+  description: |
+    The ULHT Fulfilment Service API provides workflow fulfilment and progress tracking capabilities.
+    This service enables real-time monitoring of credential workflow processes through Server-Sent Events (SSE)
+    and REST endpoints for status checking.
+    
+    ## Key Features
+    
+    - **Real-time Progress Tracking**: SSE-based real-time workflow updates
+    - **Workflow Status Monitoring**: REST endpoints for status checking
+    - **Event-Driven Architecture**: Kafka-based event processing
+    - **High Availability**: Scalable SSE connection management
+    
+    ## Usage
+    
+    This service is designed to work in conjunction with the Credential Service and Lusofona Service
+    to provide end-to-end workflow tracking capabilities for digital credential issuance processes.
+  version: 1.0.0
+  contact:
+    name: ULHT Development Team
+    email: dev@ulusofona.pt
+    url: https://www.ulusofona.pt
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8087/api/v1
+    description: Development server
+  - url: https://api.ulusofona.pt/fulfilment/v1
+    description: Production server
+  - url: https://staging-api.ulusofona.pt/fulfilment/v1
+    description: Staging server
+
+paths:
+  /fulfilment/track/{correlationId}:
+    get:
+      tags:
+        - Workflow Tracking
+      summary: Track workflow progress
+      description: |
+        Subscribe to real-time workflow progress updates using Server-Sent Events (SSE). 
+        This endpoint provides live updates on the status of credential workflows including 
+        progress percentages, status messages, and final results or errors.
+      operationId: trackWorkflow
+      parameters:
+        - name: correlationId
+          in: path
+          required: true
+          description: Unique correlation ID for the workflow to track
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Successfully connected to workflow tracking
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                progressUpdate:
+                  summary: Progress update event
+                  value: |
+                    data: {"status":"PROCESSING","progress":50,"message":"Authenticating user"}
+
+                    data: {"status":"PROCESSING","progress":75,"message":"Creating credential"}
+
+                    data: {"status":"COMPLETED","progress":100,"message":"Credential issued successfully","result":{"credentialId":"cred_123"}}
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /fulfilment/status/{correlationId}:
+    get:
+      tags:
+        - Workflow Tracking
+      summary: Get workflow status
+      description: |
+        Retrieve the current status of a workflow by its correlation ID. 
+        This is a REST endpoint alternative to SSE for polling-based status checking.
+      operationId: getWorkflowStatus
+      parameters:
+        - name: correlationId
+          in: path
+          required: true
+          description: Unique correlation ID for the workflow
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Workflow status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowStatus'
+              examples:
+                processing:
+                  summary: Workflow in progress
+                  value:
+                    correlationId: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "PROCESSING"
+                    progress: 60
+                    message: "Creating digital credential"
+                    startTime: "2024-01-15T10:30:00Z"
+                completed:
+                  summary: Workflow completed
+                  value:
+                    correlationId: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "COMPLETED"
+                    progress: 100
+                    message: "Credential issued successfully"
+                    startTime: "2024-01-15T10:30:00Z"
+                    completionTime: "2024-01-15T10:31:45Z"
+                    result:
+                      credentialId: "cred_123"
+                      issuanceUrl: "openid-credential-offer://..."
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /fulfilment/health:
+    get:
+      tags:
+        - System
+      summary: Get fulfilment service health
+      description: |
+        Retrieve health information and statistics about the fulfilment service 
+        including active connections and tracked workflows.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Health information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  summary: Service is healthy
+                  value:
+                    status: "UP"
+                    activeConnections: 15
+                    trackedWorkflows: 42
+                    timestamp: 1705320000000
+
+components:
+  schemas:
+    WorkflowStatus:
+      type: object
+      properties:
+        correlationId:
+          type: string
+          description: Unique identifier for the workflow
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum: [INITIATED, PROCESSING, COMPLETED, FAILED, CANCELLED]
+          description: Current status of the workflow
+          example: "PROCESSING"
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Progress percentage (0-100)
+          example: 60
+        message:
+          type: string
+          description: Current status message
+          example: "Creating digital credential"
+        startTime:
+          type: string
+          format: date-time
+          description: Workflow start timestamp
+        completionTime:
+          type: string
+          format: date-time
+          description: Workflow completion timestamp (only for completed/failed workflows)
+        result:
+          type: object
+          description: Final workflow result (only for completed workflows)
+        error:
+          type: object
+          description: Error details (only for failed workflows)
+          properties:
+            code:
+              type: string
+              example: "CREDENTIAL_ISSUANCE_FAILED"
+            message:
+              type: string
+              example: "Failed to issue credential"
+            details:
+              type: string
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - activeConnections
+        - trackedWorkflows
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, DEGRADED]
+          description: Service health status
+          example: "UP"
+        activeConnections:
+          type: integer
+          description: Number of active SSE connections
+          example: 15
+        trackedWorkflows:
+          type: integer
+          description: Number of workflows currently being tracked
+          example: 42
+        timestamp:
+          type: integer
+          format: int64
+          description: Current timestamp in milliseconds
+          example: 1705320000000
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+        - statusCode
+        - timestamp
+      properties:
+        status:
+          type: string
+          example: "error"
+        message:
+          type: string
+          example: "Workflow not found"
+        statusCode:
+          type: integer
+          example: 404
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          example: "/fulfilment/status/invalid-id"
+
+  responses:
+    NotFound:
+      description: Workflow not found or correlation ID invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            notFound:
+              summary: Workflow not found
+              value:
+                status: "error"
+                message: "Workflow not found"
+                statusCode: 404
+                timestamp: "2024-01-15T10:30:00Z"
+                path: "/fulfilment/status/invalid-id"
+
+    InternalServerError:
+      description: Internal server error or external service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            serverError:
+              summary: Internal server error
+              value:
+                status: "error"
+                message: "Internal server error"
+                statusCode: 500
+                timestamp: "2024-01-15T10:30:00Z"
+
+tags:
+  - name: Workflow Tracking
+    description: Endpoints for tracking workflow progress and status
+  - name: System
+    description: System health and status endpoints
+
