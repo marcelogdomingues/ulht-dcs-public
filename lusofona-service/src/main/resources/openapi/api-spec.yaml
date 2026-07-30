@@ -1,0 +1,789 @@
+openapi: 3.0.3
+info:
+  title: ULHT Digital Wallet API
+  description: |
+    The ULHT Digital Wallet API provides comprehensive student services for the Universidade Lusófona de Humanidades e Tecnologias. 
+    This API enables students to access their academic information, manage their digital wallet, and interact with various university services.
+  version: 1.0.0
+  contact:
+    name: ULHT Development Team
+    email: dev@ulusofona.pt
+    url: https://www.ulusofona.pt
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8085/api/v1
+    description: Development server
+  - url: https://api.ulusofona.pt/v1
+    description: Production server
+
+security:
+  - studentAuth: []
+
+paths:
+  /student/enrolment:
+    post:
+      tags:
+        - Student Services
+      summary: Get student enrolments
+      description: |
+        Retrieves comprehensive student enrolment information from the SIGES (Sistema de Gestão de Estudantes) system. 
+        This endpoint provides detailed information about the student's current and historical course enrollments, 
+        including course codes, names, academic years, and enrollment status.
+      operationId: getStudentEnrolments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentServiceRequest'
+            examples:
+              standardRequest:
+                summary: Standard student enrolment request
+                value:
+                  userName: "a12345678"
+                  installKey: "00000_0000000000000"
+                  language: "PT"
+                  platform: "ios"
+                  application: "org.cofac.mobile.ulht"
+                  versionCode: "1601206"
+      responses:
+        '200':
+          description: Successfully retrieved student enrolments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentEnrolments'
+              examples:
+                successResponse:
+                  summary: Student enrolments retrieved successfully
+                  value:
+                    count: 1
+                    enrolmentList:
+                      - academicYear: "2023/2024"
+                        courseName: "Licenciatura em Engenharia Informática"
+                        curricularUnitName: "Programação I"
+                        curricularUnitCode: 1001
+                        className: "LEI001"
+                        curricularYear: 1
+                        ects: 6
+                        programme: "LEI"
+                    errorCode: "SUCCESS"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /student/schedule:
+    post:
+      tags:
+        - Student Services
+      summary: Get student schedule
+      description: |
+        Retrieves the student's class schedule for the current semester. 
+        This endpoint provides detailed information about classes, including course names, 
+        professors, classrooms, and time slots.
+      operationId: getStudentSchedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentServiceRequest'
+            examples:
+              standardRequest:
+                summary: Standard student schedule request
+                value:
+                  userName: "a12345678"
+                  installKey: "00000_0000000000000"
+                  language: "PT"
+                  platform: "ios"
+                  application: "org.cofac.mobile.ulht"
+                  versionCode: "1601206"
+      responses:
+        '200':
+          description: Successfully retrieved student schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentSchedule'
+              examples:
+                successResponse:
+                  summary: Student schedule retrieved successfully
+                  value:
+                    schedule:
+                      - day: "Monday"
+                        time: "09:00-11:00"
+                        course: "Programação I"
+                        professor: "Dr. Silva"
+                        room: "A101"
+                        type: "Lecture"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /student/grades:
+    post:
+      tags:
+        - Student Services
+      summary: Get student grades
+      description: |
+        Retrieves comprehensive student grades from the SIGES system. 
+        This endpoint provides detailed information about the student's academic performance, 
+        including course grades, GPA, and academic standing.
+      operationId: getStudentGrades
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentServiceRequest'
+      responses:
+        '200':
+          description: Successfully retrieved student grades
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentGrades'
+              examples:
+                successResponse:
+                  summary: Student grades retrieved successfully
+                  value:
+                    grades:
+                      - courseCode: "LEI001"
+                        courseName: "Programação I"
+                        grade: 18
+                        credits: 6
+                        semester: 1
+                        academicYear: "2023/2024"
+                    errorCode: "SUCCESS"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /student/login:
+    post:
+      tags:
+        - Authentication
+      summary: Student login
+      description: |
+        Initiates student login and credential workflow process.
+        This endpoint starts an asynchronous workflow for student authentication and credential issuance.
+        Returns a correlation ID that can be used to track the workflow progress.
+      operationId: studentLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentServiceRequest'
+      responses:
+        '202':
+          description: Workflow started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                processingResponse:
+                  summary: Workflow started
+                  value:
+                    status: "PROCESSING"
+                    correlationId: "550e8400-e29b-41d4-a716-446655440000"
+                    expiresAt: "2024-01-15T18:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /student/registration:
+    post:
+      tags:
+        - Authentication
+      summary: Student registration
+      description: |
+        Handles student registration process with password. 
+        This endpoint allows new students to register for the digital wallet service 
+        by providing their credentials and platform information.
+      operationId: studentRegistration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRegistrationRequest'
+            examples:
+              registrationRequest:
+                summary: New student registration
+                value:
+                  userName: "a12345678"
+                  language: "PT"
+                  platform: "ios"
+                  password: "securePassword123"
+                  application: "org.cofac.mobile.ulht"
+                  versionCode: "1601206"
+      responses:
+        '200':
+          description: Successfully processed registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+              examples:
+                successResponse:
+                  summary: Registration successful
+                  value:
+                    status: "success"
+                    message: "Student registered successfully"
+                    data:
+                      studentId: "a12345678"
+                      registrationDate: "2024-01-15T10:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /student/evaluations:
+    post:
+      tags:
+        - Student Services
+      summary: Get student evaluations
+      description: |
+        Retrieves student evaluation information from the SIGES system. 
+        This endpoint provides detailed information about student evaluations, 
+        including evaluation types, dates, and results.
+      operationId: getStudentEvaluations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentServiceRequest'
+      responses:
+        '200':
+          description: Successfully retrieved student evaluations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentEvaluations'
+              examples:
+                successResponse:
+                  summary: Student evaluations retrieved successfully
+                  value:
+                    evaluations:
+                      - courseCode: "LEI001"
+                        courseName: "Programação I"
+                        evaluationType: "EXAM"
+                        date: "2024-01-15"
+                        grade: 18
+                        status: "COMPLETED"
+                    errorCode: "SUCCESS"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /student/course-credits:
+    post:
+      tags:
+        - Student Services
+      summary: Get student course credits
+      description: |
+        Retrieves student course credits information from the SIGES system. 
+        This endpoint provides detailed information about the student's earned credits, 
+        including total credits, remaining credits, and credit breakdown by course.
+      operationId: getStudentCourseCredits
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentServiceRequest'
+      responses:
+        '200':
+          description: Successfully retrieved student course credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentCourseCredits'
+              examples:
+                successResponse:
+                  summary: Student course credits retrieved successfully
+                  value:
+                    totalCredits: 30
+                    earnedCredits: 25
+                    gpa: 3.5
+                    remainingCredits: 5
+                    errorCode: "SUCCESS"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    studentAuth:
+      type: apiKey
+      in: header
+      name: X-Student-Auth
+      description: Student authentication token
+
+  schemas:
+    StudentServiceRequest:
+      type: object
+      required:
+        - userName
+        - installKey
+        - language
+        - platform
+        - application
+        - versionCode
+      properties:
+        userName:
+          type: string
+          description: Unique identifier for the user
+          example: "a12345678"
+          pattern: "^[a-z0-9]+$"
+        installKey:
+          type: string
+          description: Installation key for the mobile app
+          example: "00000_0000000000000"
+          minLength: 1
+        language:
+          type: string
+          description: Preferred language of the user
+          example: "PT"
+          enum: [PT, EN, ES]
+        platform:
+          type: string
+          description: The client platform
+          example: "ios"
+          enum: [ios, android, web]
+        application:
+          type: string
+          description: Application identifier
+          example: "org.cofac.mobile.ulht"
+          minLength: 1
+        versionCode:
+          type: string
+          description: Application version code
+          example: "1601206"
+          minLength: 1
+
+    StudentRegistrationRequest:
+      type: object
+      required:
+        - userName
+        - language
+        - platform
+        - password
+        - application
+        - versionCode
+      properties:
+        userName:
+          type: string
+          description: Unique identifier for the user
+          example: "a12345678"
+          pattern: "^[a-z0-9]+$"
+        language:
+          type: string
+          description: Preferred language of the user
+          example: "PT"
+          enum: [PT, EN, ES]
+        platform:
+          type: string
+          description: The client platform
+          example: "ios"
+          enum: [ios, android, web]
+        password:
+          type: string
+          description: User's chosen password for authentication
+          example: "securePassword123"
+          minLength: 8
+          format: password
+        application:
+          type: string
+          description: Application identifier
+          example: "org.cofac.mobile.ulht"
+          minLength: 1
+        versionCode:
+          type: string
+          description: Application version code
+          example: "1601206"
+          minLength: 1
+
+    StudentEnrolments:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Number of enrolments
+          example: 1
+        enrolmentList:
+          type: array
+          items:
+            $ref: '#/components/schemas/Enrolment'
+        errorCode:
+          type: string
+          description: Error code
+          example: "SUCCESS"
+
+    Enrolment:
+      type: object
+      properties:
+        academicYear:
+          type: string
+          example: "2023/2024"
+        courseName:
+          type: string
+          example: "Licenciatura em Engenharia Informática"
+        curricularUnitName:
+          type: string
+          example: "Programação I"
+        curricularUnitCode:
+          type: integer
+          example: 1001
+        className:
+          type: string
+          example: "LEI001"
+        curricularYear:
+          type: integer
+          example: 1
+        ects:
+          type: integer
+          example: 6
+        programme:
+          type: string
+          example: "LEI"
+
+    StudentSchedule:
+      type: object
+      properties:
+        schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleItem'
+
+    ScheduleItem:
+      type: object
+      properties:
+        day:
+          type: string
+          example: "Monday"
+        time:
+          type: string
+          example: "09:00-11:00"
+        course:
+          type: string
+          example: "Programação I"
+        professor:
+          type: string
+          example: "Dr. Silva"
+        room:
+          type: string
+          example: "A101"
+        type:
+          type: string
+          example: "Lecture"
+
+    StudentGrades:
+      type: object
+      properties:
+        grades:
+          type: array
+          items:
+            $ref: '#/components/schemas/Grade'
+        errorCode:
+          type: string
+          example: "SUCCESS"
+
+    Grade:
+      type: object
+      properties:
+        courseCode:
+          type: string
+          example: "LEI001"
+        courseName:
+          type: string
+          example: "Programação I"
+        grade:
+          type: integer
+          example: 18
+        credits:
+          type: integer
+          example: 6
+        semester:
+          type: integer
+          example: 1
+        academicYear:
+          type: string
+          example: "2023/2024"
+
+    LoginResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "PROCESSING"
+          description: "Status of the login request (PROCESSING, COMPLETED, FAILED)"
+        correlationId:
+          type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+          description: "Correlation ID to track the async workflow progress"
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T18:30:00Z"
+          description: "Expiration timestamp of the workflow (24 hours from creation)"
+
+    RegistrationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        message:
+          type: string
+          example: "Student registered successfully"
+        data:
+          type: object
+          properties:
+            studentId:
+              type: string
+              example: "a12345678"
+            registrationDate:
+              type: string
+              format: date-time
+              example: "2024-01-15T10:30:00Z"
+
+    StudentEvaluations:
+      type: object
+      properties:
+        evaluations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evaluation'
+        errorCode:
+          type: string
+          example: "SUCCESS"
+
+    Evaluation:
+      type: object
+      properties:
+        courseCode:
+          type: string
+          example: "LEI001"
+        courseName:
+          type: string
+          example: "Programação I"
+        evaluationType:
+          type: string
+          example: "EXAM"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        grade:
+          type: integer
+          example: 18
+        status:
+          type: string
+          example: "COMPLETED"
+
+    StudentCourseCredits:
+      type: object
+      properties:
+        totalCredits:
+          type: integer
+          example: 30
+        earnedCredits:
+          type: integer
+          example: 25
+        gpa:
+          type: number
+          format: float
+          example: 3.5
+        remainingCredits:
+          type: integer
+          example: 5
+        errorCode:
+          type: string
+          example: "SUCCESS"
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+        - errorCode
+        - statusCode
+        - timestamp
+      properties:
+        status:
+          type: string
+          example: "error"
+        message:
+          type: string
+          example: "Validation failed"
+        errorCode:
+          type: string
+          example: "TE-002"
+        statusCode:
+          type: integer
+          example: 400
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          example: "/student/enrolment"
+        details:
+          type: string
+        validationErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    ValidationError:
+      type: object
+      properties:
+        field:
+          type: string
+          example: "userName"
+        message:
+          type: string
+          example: "userName is required"
+        rejectedValue:
+          type: string
+          example: "null"
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input data or missing required fields
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validationError:
+              summary: Missing required field
+              value:
+                status: "error"
+                message: "userName is required"
+                errorCode: "TE-002"
+                statusCode: 400
+                timestamp: "2024-01-15T10:30:00Z"
+            invalidData:
+              summary: Invalid input data
+              value:
+                status: "error"
+                message: "Invalid platform value. Must be one of: ios, android, web"
+                errorCode: "TE-015"
+                statusCode: 400
+                timestamp: "2024-01-15T10:30:00Z"
+
+    Unauthorized:
+      description: Unauthorized - invalid student credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            authenticationError:
+              summary: Invalid credentials
+              value:
+                status: "error"
+                message: "Invalid student credentials"
+                errorCode: "TE-003"
+                statusCode: 401
+                timestamp: "2024-01-15T10:30:00Z"
+
+    NotFound:
+      description: Student not found or no data available
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            notFound:
+              summary: Student not found
+              value:
+                status: "error"
+                message: "Student not found"
+                errorCode: "TE-001"
+                statusCode: 404
+                timestamp: "2024-01-15T10:30:00Z"
+
+    Conflict:
+      description: Conflict - student already registered
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            conflictError:
+              summary: Student already registered
+              value:
+                status: "error"
+                message: "Student already registered"
+                errorCode: "TE-005"
+                statusCode: 409
+                timestamp: "2024-01-15T10:30:00Z"
+
+    InternalServerError:
+      description: Internal server error or external service unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            serverError:
+              summary: Internal server error
+              value:
+                status: "error"
+                message: "Unexpected error during operation"
+                errorCode: "TE-008"
+                statusCode: 500
+                timestamp: "2024-01-15T10:30:00Z"
+            externalServiceError:
+              summary: External service unavailable
+              value:
+                status: "error"
+                message: "SIGES service is currently unavailable"
+                errorCode: "TE-013"
+                statusCode: 500
+                timestamp: "2024-01-15T10:30:00Z"
+
+tags:
+  - name: Student Services
+    description: Endpoints for managing student data and academic information
+  - name: Authentication
+    description: Student authentication and registration endpoints

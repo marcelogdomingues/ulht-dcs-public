@@ -1,0 +1,18 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      group-id: fulfilment-service-test
+    producer:
+      acks: all
+      retries: 3
+  application:
+    name: fulfilment-service-test
+
+logging:
+  level:
+    pt.ulusofona: DEBUG
+    org.apache.kafka: WARN
+

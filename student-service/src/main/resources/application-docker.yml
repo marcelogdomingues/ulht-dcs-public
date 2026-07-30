@@ -1,0 +1,18 @@
+spring:
+  cloud:
+    consul:
+      host: consul
+      port: 8500
+      discovery:
+        service-name: student-service
+        instance-id: ${spring.application.name}-${random.uuid}
+        health-check-path: /api/v1/actuator/health
+        health-check-interval: 10s
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+
+# Service URLs for Docker
+services:
+  fulfilment:
+    url: ${FULFILMENT_SERVICE_URL:http://ulht-fulfilment-service:8087/api/v1}
+

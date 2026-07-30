@@ -1,0 +1,483 @@
+openapi: 3.0.3
+info:
+  title: ULHT Credential Service API
+  description: |
+    Comprehensive digital credential management and W3C Verifiable Credentials issuance service.
+    
+    ## Features
+    - W3C Verifiable Credentials issuance (JWT & SD-JWT)
+    - European educational credentials (SCHAC, ESC)
+    - Kafka-based workflow orchestration
+    - Real-time progress tracking
+    - OpenID4VCI protocol support
+    
+    ## Workflow
+    1. Student logs in via Lusofona Service
+    2. Student data published to Kafka (`credential.requests`)
+    3. Credential Service processes and issues credentials
+    4. Progress updates sent to Fulfilment Service
+    5. Student receives credentials
+  version: 1.0.0
+  contact:
+    name: ULHT Development Team
+    email: dev@ulusofona.pt
+    url: https://www.ulusofona.pt
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8086/api/v1
+    description: Local development server
+  - url: http://credential-service:8086/api/v1
+    description: Docker internal
+  - url: https://api.ulht.pt/credential-service/api/v1
+    description: Production server
+
+tags:
+  - name: Health
+    description: System health and monitoring endpoints
+  - name: W3C Credentials
+    description: W3C Verifiable Credentials issuance
+  - name: Flow Management
+    description: Credential issuance workflow management
+
+paths:
+  /api/health/ping:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Simple health check to verify service is running
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/health/status:
+    get:
+      tags: [Health]
+      summary: System health status
+      description: Comprehensive health information
+      responses:
+        '200':
+          description: Health status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /wallet/onboard-issuer:
+    post:
+      tags: [W3C Credentials]
+      summary: Onboard issuer
+      description: Creates signing key and DID for credential issuance. Run this first!
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keyType:
+                  type: string
+                  enum: [ed25519, secp256k1, secp256r1, RSA]
+                  default: secp256r1
+                didMethod:
+                  type: string
+                  enum: [key, jwk, web, cheqd]
+                  default: jwk
+            example:
+              keyType: secp256r1
+              didMethod: jwk
+      responses:
+        '200':
+          description: Issuer onboarded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardIssuerResponse'
+
+  /wallet/issue-university-degree:
+    post:
+      tags: [W3C Credentials]
+      summary: Issue university degree
+      description: Issues a university degree W3C Verifiable Credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UniversityDegreeRequest'
+      responses:
+        '200':
+          description: Credential issued successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: openid-credential-offer://?credential_offer_uri=...
+
+  /wallet/issue-educational-id:
+    post:
+      tags: [W3C Credentials]
+      summary: Issue educational ID
+      description: Issues SCHAC-compliant Educational ID credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EducationalIdRequest'
+      responses:
+        '200':
+          description: Credential issued successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /wallet/issue-european-student-card:
+    post:
+      tags: [W3C Credentials]
+      summary: Issue European Student Card
+      description: Issues European Student Card Initiative credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EuropeanStudentCardRequest'
+      responses:
+        '200':
+          description: Credential issued successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/flows/credential-issuance:
+    post:
+      tags: [Flow Management]
+      summary: Start credential issuance workflow
+      description: |
+        Triggers automatic W3C Verifiable Credentials issuance via Kafka workflow.
+        
+        **What happens:**
+        1. Publishes to `credential.requests` Kafka topic
+        2. CredentialWorkflowConsumer processes the request
+        3. Issues Educational ID, European Student Card, and degree credentials
+        4. Publishes progress to `credential.progress` (consumed by Fulfilment Service)
+        5. Publishes completion to `credential.completed` (consumed by Fulfilment Service)
+        
+        **Monitor progress:**
+        - Check availability: GET /api/flows/result/{correlationId}/available
+        - Get results: GET /api/flows/result/{correlationId}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialWorkflowRequest'
+            example:
+              userId: a12345678
+              studentData:
+                studentId: "511114706"
+                name: Luísa Costa
+                email: luisa.costa@alunos.ulusofona.pt
+                dateOfBirth: "1970-01-01"
+                courseName: Computer Science
+                academicLevel: bachelor
+                institutionPIC: "997605425"
+      responses:
+        '202':
+          description: Workflow started and published to Kafka
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  correlationId:
+                    type: string
+                    format: uuid
+                  flowType:
+                    type: string
+                    example: CredentialIssuance
+                  userId:
+                    type: string
+                  status:
+                    type: string
+                    example: STARTED
+                  message:
+                    type: string
+                  monitoring:
+                    type: object
+        '400':
+          description: Invalid request
+
+  /api/flows/result/{correlationId}:
+    get:
+      tags: [Flow Management]
+      summary: Get flow result
+      description: Retrieves the final result including issued credential URLs
+      parameters:
+        - name: correlationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Flow result retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowResult'
+        '404':
+          description: Result not found
+
+  /api/flows/result/{correlationId}/available:
+    get:
+      tags: [Flow Management]
+      summary: Check if result is available
+      description: Quick check to see if flow has completed
+      parameters:
+        - name: correlationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Availability status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  correlationId:
+                    type: string
+                  available:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/flows/active:
+    get:
+      tags: [Flow Management]
+      summary: Get all active flows
+      description: Lists all currently running flows
+      responses:
+        '200':
+          description: Active flows retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/FlowExecution'
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          example: HEALTHY
+        timestamp:
+          type: string
+          format: date-time
+        service:
+          type: string
+        version:
+          type: string
+
+    OnboardIssuerResponse:
+      type: object
+      properties:
+        issuerKey:
+          type: object
+          properties:
+            type:
+              type: string
+              example: jwk
+            jwk:
+              type: object
+        issuerDid:
+          type: string
+          example: did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2In0...
+
+    UniversityDegreeRequest:
+      type: object
+      required: [subjectDid, issuerDid, issuerKey, degreeName, universityName]
+      properties:
+        subjectDid:
+          type: string
+          example: did:jwk:student123
+        issuerDid:
+          type: string
+        issuerKey:
+          type: object
+        degreeName:
+          type: string
+          example: Bachelor of Computer Science
+        degreeType:
+          type: string
+          example: BachelorDegree
+        field:
+          type: string
+          example: Computer Science
+        universityName:
+          type: string
+          example: ULHT - Universidade Lusófona
+        graduationDate:
+          type: string
+          format: date
+        grade:
+          type: string
+          example: "18.5"
+
+    EducationalIdRequest:
+      type: object
+      required: [identifier, familyName, firstName, mail, schacHomeOrganization]
+      properties:
+        identifier:
+          type: string
+        familyName:
+          type: string
+        firstName:
+          type: string
+        mail:
+          type: string
+          format: email
+        dateOfBirth:
+          type: string
+          format: date
+        schacHomeOrganization:
+          type: string
+          example: ulusofona.pt
+        eduPersonPrimaryAffiliation:
+          type: string
+          enum: [student, faculty, staff, employee]
+        subjectDid:
+          type: string
+        issuerDid:
+          type: string
+        issuerKey:
+          type: object
+
+    EuropeanStudentCardRequest:
+      type: object
+      required: [givenName, familyName, email, esi, escn, institutionPIC]
+      properties:
+        givenName:
+          type: string
+        familyName:
+          type: string
+        email:
+          type: string
+        esi:
+          type: string
+          example: ESI-3618254416
+        escn:
+          type: string
+        institutionPIC:
+          type: string
+          example: "997605425"
+        academicLevel:
+          type: string
+          enum: [bachelor, master, doctorate, short-cycle]
+        cardType:
+          type: string
+          enum: [Digital, Physical, Hybrid]
+        subjectDid:
+          type: string
+        issuerDid:
+          type: string
+        issuerKey:
+          type: object
+
+    CredentialWorkflowRequest:
+      type: object
+      required: [userId, studentData]
+      properties:
+        userId:
+          type: string
+          example: a12345678
+        studentData:
+          type: object
+          description: Student data from Lusofona Service (real ULHT data)
+          properties:
+            studentId:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+            dateOfBirth:
+              type: string
+            courseName:
+              type: string
+            academicLevel:
+              type: string
+            institutionPIC:
+              type: string
+
+    FlowResult:
+      type: object
+      properties:
+        correlationId:
+          type: string
+        userId:
+          type: string
+        flowType:
+          type: string
+        status:
+          type: string
+          enum: [COMPLETED, FAILED]
+        completedAt:
+          type: string
+          format: date-time
+        result:
+          type: object
+          properties:
+            studentId:
+              type: string
+            credentialsIssued:
+              type: integer
+            credentialTypes:
+              type: array
+              items:
+                type: string
+            credentialOfferUrls:
+              type: array
+              items:
+                type: string
+        errorMessage:
+          type: string
+
+    FlowExecution:
+      type: object
+      properties:
+        correlationId:
+          type: string
+        userId:
+          type: string
+        flowDefinition:
+          type: object
+        currentStep:
+          type: string
+        status:
+          type: string
+
+

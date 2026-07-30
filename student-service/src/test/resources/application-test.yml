@@ -1,0 +1,18 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+      retries: 3
+  application:
+    name: student-service-test
+
+fulfilment:
+  service:
+    url: http://localhost:8087
+
+logging:
+  level:
+    pt.ulusofona: DEBUG
+    org.apache.kafka: WARN
+

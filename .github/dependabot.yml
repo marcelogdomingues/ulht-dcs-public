@@ -1,0 +1,86 @@
+# -----------------------------------------------------------------------------
+# Dependabot configuration
+# -----------------------------------------------------------------------------
+# Weekly dependency updates for every ecosystem in the repo:
+#   - maven          : one entry per service (each has its own pom.xml)
+#   - pub            : one entry per Flutter app
+#   - docker         : base images in each service Dockerfile
+#   - github-actions : the workflow action versions (root .github/workflows)
+# -----------------------------------------------------------------------------
+version: 2
+updates:
+  # --- Maven (backend microservices) -----------------------------------------
+  - package-ecosystem: maven
+    directory: /credential-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: maven
+    directory: /student-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: maven
+    directory: /lusofona-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: maven
+    directory: /fulfilment-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # --- Pub (Flutter mobile apps) ---------------------------------------------
+  - package-ecosystem: pub
+    directory: /mobile-apps/student-app
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: pub
+    directory: /mobile-apps/verifier-app
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: pub
+    directory: /mobile-apps/issuer-app
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # --- Docker (service Dockerfile base images) -------------------------------
+  - package-ecosystem: docker
+    directory: /credential-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: /student-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: /lusofona-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: /fulfilment-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # --- GitHub Actions (workflow action versions) -----------------------------
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

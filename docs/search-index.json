@@ -1,0 +1,65 @@
+[
+  {
+    "page": "index.html",
+    "pageTitle": "ULHT Digital Credential System - Home",
+    "sections": [
+      { "title": "System Overview", "level": 2, "id": "system-overview", "url": "index.html#system-overview" },
+      { "title": "Key Features", "level": 2, "id": "key-features", "url": "index.html#key-features" },
+      { "title": "Quick Start", "level": 2, "id": "quick-start", "url": "index.html#quick-start" },
+      { "title": "Documentation", "level": 2, "id": "documentation", "url": "index.html#documentation" },
+      { "title": "Microservices Architecture", "level": 2, "id": "microservices", "url": "index.html#microservices" }
+    ],
+    "keywords": ["W3C", "verifiable credentials", "generic credential system", "event-driven", "walt.id", "kafka", "microservices"]
+  },
+  {
+    "page": "api-reference.html",
+    "pageTitle": "API Reference",
+    "sections": [
+      { "title": "Authentication", "level": 2, "id": "authentication", "url": "api-reference.html#authentication" },
+      { "title": "Student Service API", "level": 2, "id": "student-service", "url": "api-reference.html#endpoints" },
+      { "title": "Lusofona Service API", "level": 2, "id": "lusofona-service", "url": "api-reference.html#lusofona-service" },
+      { "title": "Credential Service API", "level": 2, "id": "credential-service", "url": "api-reference.html#credential-service" },
+      { "title": "Fulfilment Service API", "level": 2, "id": "fulfilment-service", "url": "api-reference.html#fulfilment-service" },
+      { "title": "Response Formats", "level": 2, "id": "response-formats", "url": "api-reference.html#response-formats" },
+      { "title": "Error Codes", "level": 2, "id": "error-codes", "url": "api-reference.html#error-codes" }
+    ],
+    "keywords": ["API", "endpoints", "student service", "lusofona", "credential", "fulfilment", "error codes", "swagger"]
+  },
+  {
+    "page": "architecture.html",
+    "pageTitle": "Architecture",
+    "sections": [
+      { "title": "System Overview", "level": 2, "id": "system-overview", "url": "architecture.html#system-overview" },
+      { "title": "Architecture Diagrams", "level": 2, "id": "architecture-diagrams", "url": "architecture.html#architecture-diagrams" },
+      { "title": "Core Services", "level": 2, "id": "core-services", "url": "architecture.html#core-services" },
+      { "title": "Workflow Flow", "level": 2, "id": "workflow-flow", "url": "architecture.html#workflow-flow" },
+      { "title": "Kafka Topics", "level": 2, "id": "kafka-topics", "url": "architecture.html#kafka-topics" },
+      { "title": "Security Architecture", "level": 2, "id": "security-architecture", "url": "architecture.html#security-architecture" }
+    ],
+    "keywords": ["architecture", "microservices", "kafka", "event-driven", "workflow", "4 services", "student", "lusofona", "credential", "fulfilment"]
+  },
+  {
+    "page": "getting-started.html",
+    "pageTitle": "Getting Started",
+    "sections": [
+      { "title": "Prerequisites", "level": 2, "id": "prerequisites", "url": "getting-started.html#prerequisites" },
+      { "title": "Installation", "level": 2, "id": "installation", "url": "getting-started.html#installation" },
+      { "title": "Service Ports", "level": 2, "id": "service-ports", "url": "getting-started.html#service-ports" },
+      { "title": "Your First Credential", "level": 2, "id": "your-first-credential", "url": "getting-started.html#your-first-credential" },
+      { "title": "API Documentation", "level": 2, "id": "api-documentation", "url": "getting-started.html#api-documentation" },
+      { "title": "Troubleshooting", "level": 2, "id": "troubleshooting", "url": "getting-started.html#troubleshooting" },
+      { "title": "Adding New Credential Types", "level": 2, "id": "adding-credentials", "url": "getting-started.html#adding-credentials" }
+    ],
+    "keywords": ["setup", "installation", "Java 25", "Maven", "Docker", "Kafka", "walt.id", "ports", "8084", "8085", "8086", "8087"]
+  },
+  {
+    "page": "card-demo.html",
+    "pageTitle": "Card Design Demo",
+    "sections": [
+      { "title": "Enhanced Card Components", "level": 1, "id": "card-components", "url": "card-demo.html" },
+      { "title": "Feature Cards", "level": 2, "id": "feature-cards", "url": "card-demo.html#feature-cards" },
+      { "title": "Content Cards", "level": 2, "id": "content-cards", "url": "card-demo.html#content-cards" }
+    ],
+    "keywords": ["UI", "design", "cards", "components", "demo"]
+  }
+] 

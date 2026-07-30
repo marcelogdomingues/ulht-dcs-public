@@ -1,0 +1,124 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Scrape Docker container logs
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Only scrape containers with specific labels or names
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(ulht-.*|prometheus|grafana|loki|promtail|kafka|zookeeper|consul|kafka-exporter)'
+        action: keep
+      # Extract container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      # Extract service name from container name (only for microservices)
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/ulht-(.*)-service'
+        target_label: 'service'
+        replacement: '${1}'
+      # Set job label
+      - target_label: 'job'
+        replacement: 'docker'
+
+    pipeline_stages:
+      # Parse Docker JSON log format
+      - json:
+          expressions:
+            output: log
+            stream: stream
+      # Extract log level from Spring Boot logs (only for microservices)
+      - regex:
+          expression: '.*\[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\].*'
+      # Extract correlation ID if present (only for microservices)
+      - regex:
+          expression: '.*\[(?P<correlation_id>[a-f0-9-]{36})\].*'
+      # Set labels (minimal to reduce cardinality)
+      - labels:
+          level:
+          correlation_id:
+          stream:
+
+  # Scrape microservices logs specifically
+  - job_name: microservices
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Only scrape microservice containers
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/ulht-(student|lusofona|credential|fulfilment)-service'
+        action: keep
+      # Extract service name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/ulht-(.*)-service'
+        target_label: 'service'
+      # Extract container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      # Set job label
+      - target_label: 'job'
+        replacement: 'microservices'
+
+    pipeline_stages:
+      # Parse Docker JSON log format
+      - json:
+          expressions:
+            output: log
+            stream: stream
+      # Extract log level
+      - regex:
+          expression: '.*\[(?P<level>TRACE|DEBUG|INFO|WARN|ERROR|FATAL)\].*'
+      # Extract correlation ID
+      - regex:
+          expression: '.*\[(?P<correlation_id>[a-f0-9-]{36})\].*'
+      # Set labels (minimal to reduce cardinality)
+      - labels:
+          level:
+          correlation_id:
+          stream:
+
+  # Scrape infrastructure logs
+  - job_name: infrastructure
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Only scrape infrastructure containers
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(prometheus|grafana|loki|promtail|kafka|zookeeper|consul|kafka-exporter)'
+        action: keep
+      # Extract container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      # Set job label
+      - target_label: 'job'
+        replacement: 'infrastructure'
+
+    pipeline_stages:
+      # Parse Docker JSON log format
+      - json:
+          expressions:
+            output: log
+            stream: stream
+      # Extract log level
+      - regex:
+          expression: '.*(?P<level>level=(?i)(trace|debug|info|warn|error|fatal)).*'
+      # Set labels
+      - labels:
+          level:
+          stream:
+

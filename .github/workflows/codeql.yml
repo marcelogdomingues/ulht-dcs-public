@@ -1,0 +1,57 @@
+# -----------------------------------------------------------------------------
+# CodeQL
+# -----------------------------------------------------------------------------
+# Static security analysis of the Java backend. The four services are
+# INDEPENDENT Maven modules (no parent aggregator) and rely on Avro / OpenAPI
+# code generation, which makes CodeQL's `autobuild` unreliable here.
+#
+# We therefore use `build-mode: none`, which analyses the Java source directly
+# without compiling. This is the recommended, reliable mode for multi-module
+# repos that would otherwise need a bespoke build. (Generated sources are not
+# analysed, which is fine — they are not hand-written code.)
+# -----------------------------------------------------------------------------
+name: CodeQL
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Weekly scan (Mondays 06:00 UTC) to catch newly-disclosed query updates.
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (java-kotlin)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - java-kotlin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # No build required — analyse the source directly (reliable for this
+          # multi-module, code-generating project).
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
