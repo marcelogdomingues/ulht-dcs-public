@@ -39,7 +39,7 @@ jobs:
           - issuer-app
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Flutter (stable channel)
         uses: subosito/flutter-action@v2
