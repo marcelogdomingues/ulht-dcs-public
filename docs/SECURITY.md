@@ -2,7 +2,7 @@
 
 This document describes the security model of the ULHT Digital Credential System (DCS). The stack is a **hardened development / academic deployment**: sensible defaults are in place, but a number of manual steps (listed at the end) are required before it is safe to expose beyond `localhost`. This document is honest about that distinction.
 
-See also: [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [Getting Started](GETTING_STARTED.md) · [Deployment](DEPLOYMENT.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](../README.md)
+See also: [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [Getting Started](GETTING_STARTED.md) · [Deployment](DEPLOYMENT.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](index.md)
 
 ---
 

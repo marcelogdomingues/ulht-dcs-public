@@ -4,7 +4,7 @@ A practical problem → cause → fix guide for running the ULHT Digital Credent
 
 The stack is **Spring Boot 4.1.0 / Java 25** microservices, **KRaft-mode Kafka** (`confluentinc/cp-kafka:8.3.0`, no ZooKeeper), Consul, Prometheus/Grafana/Loki, and three [Flutter apps](MOBILE_APPS.md). The credential service talks to an external [walt.id](https://walt.id) stack.
 
-See also: [Getting Started](GETTING_STARTED.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [API](API.md) · [Architecture](ARCHITECTURE.md) · [Mobile Apps](MOBILE_APPS.md) · [Project README](../README.md)
+See also: [Getting Started](GETTING_STARTED.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [API](API.md) · [Architecture](ARCHITECTURE.md) · [Mobile Apps](MOBILE_APPS.md) · [Project README](index.md)
 
 ## Primary run command
 

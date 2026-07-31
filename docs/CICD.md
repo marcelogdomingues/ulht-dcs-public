@@ -5,7 +5,7 @@ implemented with **GitHub Actions**. This document explains what each pipeline d
 what triggers it, how to read a failure, the repository settings and secrets it needs,
 and how to reproduce every check locally.
 
-> See also: [Contributing](../CONTRIBUTING.md) · [Deployment](DEPLOYMENT.md) · [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) · [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Getting Started](GETTING_STARTED.md) · [Project README](../README.md)
+> See also: [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md) · [Deployment](DEPLOYMENT.md) · [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) · [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Getting Started](GETTING_STARTED.md) · [Project README](index.md)
 
 ---
 
@@ -171,13 +171,13 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 ```
 
 Matching CI locally is the fastest way to keep PRs green. For the day-to-day workflow
-and conventions, see [Contributing](../CONTRIBUTING.md).
+and conventions, see [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md).
 
 ---
 
 ## Related documentation
 
-- [Contributing](../CONTRIBUTING.md) — build, test, branch & PR conventions
+- [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md) — build, test, branch & PR conventions
 - [Deployment](DEPLOYMENT.md) — Compose files, images, KRaft, healthchecks
 - [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) — pre-deployment readiness
 - [Security](SECURITY.md) — secrets handling and hardening

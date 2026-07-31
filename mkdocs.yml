@@ -1,0 +1,80 @@
+site_name: ULHT Digital Credential System
+site_description: >-
+  Event-driven microservices platform that issues and verifies W3C Verifiable
+  Credentials for university students, with privacy-preserving selective disclosure.
+site_author: Marcelo Domingues
+repo_name: marcelogdomingues/ulht-dcs-public
+repo_url: https://github.com/marcelogdomingues/ulht-dcs-public
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  language: en
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - navigation.sections
+    - navigation.indexes
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.view
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting Started: GETTING_STARTED.md
+  - Architecture: ARCHITECTURE.md
+  - Configuration: CONFIGURATION.md
+  - Security: SECURITY.md
+  - API Reference: API.md
+  - Deployment: DEPLOYMENT.md
+  - Deployment Checklist: DEPLOYMENT_CHECKLIST.md
+  - Mobile Apps: MOBILE_APPS.md
+  - CI/CD: CICD.md
+  - Troubleshooting: TROUBLESHOOTING.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/marcelogdomingues/ulht-dcs-public

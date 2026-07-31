@@ -8,7 +8,7 @@ or production deployment.
 > This is an operational checklist. For the reasoning behind each control see
 > [Security](SECURITY.md) and [Deployment](DEPLOYMENT.md).
 >
-> See also: [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [CI/CD](CICD.md) · [Contributing](../CONTRIBUTING.md) · [Project README](../README.md)
+> See also: [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [CI/CD](CICD.md) · [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md) · [Project README](index.md)
 
 > **Never put real credentials in this file, in `.env.example`, in Compose files, or in
 > git.** Use placeholders like `<generate-a-strong-value>` everywhere. Real secrets live

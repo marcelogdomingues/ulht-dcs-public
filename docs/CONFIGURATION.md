@@ -2,7 +2,7 @@
 
 Reference for configuring the **ULHT Digital Credential System (DCS)**: environment variables, the `.env` workflow, Spring profiles, ports, per-service highlights, Kafka client config, and override mechanisms.
 
-Related docs: [Getting Started](GETTING_STARTED.md), [Architecture](ARCHITECTURE.md), [Security](SECURITY.md), [Deployment](DEPLOYMENT.md), [API](API.md), [Mobile Apps](MOBILE_APPS.md), [Troubleshooting](TROUBLESHOOTING.md), and the [project README](../README.md).
+Related docs: [Getting Started](GETTING_STARTED.md), [Architecture](ARCHITECTURE.md), [Security](SECURITY.md), [Deployment](DEPLOYMENT.md), [API](API.md), [Mobile Apps](MOBILE_APPS.md), [Troubleshooting](TROUBLESHOOTING.md), and the [project README](index.md).
 
 ## Environment variables
 

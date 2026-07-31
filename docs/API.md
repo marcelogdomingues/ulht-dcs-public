@@ -2,7 +2,7 @@
 
 Complete REST reference for the ULHT Digital Credential System (DCS) services.
 
-See also: [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [Getting Started](GETTING_STARTED.md) · [Deployment](DEPLOYMENT.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](../README.md)
+See also: [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [Getting Started](GETTING_STARTED.md) · [Deployment](DEPLOYMENT.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](index.md)
 
 ---
 

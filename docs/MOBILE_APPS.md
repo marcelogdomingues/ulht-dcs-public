@@ -1,8 +1,8 @@
 # Mobile Apps
 
-The ULHT Digital Credential System ships three [Flutter](https://flutter.dev) applications, one per role in the credential lifecycle. They live under [`mobile-apps/`](../mobile-apps) and share the same networking design: each app talks **directly to the backend microservices by port** and authenticates every request with an `apikey` header.
+The ULHT Digital Credential System ships three [Flutter](https://flutter.dev) applications, one per role in the credential lifecycle. They live under [`mobile-apps/`](https://github.com/marcelogdomingues/ulht-dcs-public/tree/main/mobile-apps) and share the same networking design: each app talks **directly to the backend microservices by port** and authenticates every request with an `apikey` header.
 
-See also: [Getting Started](GETTING_STARTED.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [API](API.md) · [Architecture](ARCHITECTURE.md) · [Project README](../README.md)
+See also: [Getting Started](GETTING_STARTED.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [API](API.md) · [Architecture](ARCHITECTURE.md) · [Project README](index.md)
 
 ## The three apps
 
@@ -35,9 +35,9 @@ All three apps are built with the same toolchain:
 | `url_launcher` | 6.x | all | Open external / credential-exchange URLs |
 
 > The exact dependency set differs per app — see each app's `pubspec.yaml`
-> ([student-app](../mobile-apps/student-app/pubspec.yaml),
-> [verifier-app](../mobile-apps/verifier-app/pubspec.yaml),
-> [issuer-app](../mobile-apps/issuer-app/pubspec.yaml)).
+> ([student-app](https://github.com/marcelogdomingues/ulht-dcs-public/tree/main/mobile-apps/student-app/pubspec.yaml),
+> [verifier-app](https://github.com/marcelogdomingues/ulht-dcs-public/tree/main/mobile-apps/verifier-app/pubspec.yaml),
+> [issuer-app](https://github.com/marcelogdomingues/ulht-dcs-public/tree/main/mobile-apps/issuer-app/pubspec.yaml)).
 
 ## Networking design — direct service calls, not the gateway
 
@@ -106,8 +106,8 @@ flutter run -d web-server --web-port=5001 --web-hostname=127.0.0.1
 
 The apps follow the same hardening principles as the backend (see [Security](SECURITY.md)):
 
-- **Secure storage for secrets and PII.** Auth tokens, the install key, and student PII are stored via `flutter_secure_storage` (see [`secure_store.dart`](../mobile-apps/student-app/lib/services/secure_store.dart)). Non-sensitive UI preferences use `shared_preferences`.
-- **QR / deep-link URL allowlist.** Before launching any scanned or arbitrary URL externally, it is validated against an allowlist so a malicious QR code cannot drive the wallet to an attacker-controlled site (see [`url_guard.dart`](../mobile-apps/student-app/lib/utils/url_guard.dart)). Allowed schemes: `openid4vp`, `openid4vci`, `haip`. Allowed http(s) hosts: `localhost`, `127.0.0.1`, `10.0.2.2` (Android emulator loopback), plus the `ensinolusofona.pt` / `ulusofona.pt` domain suffixes.
+- **Secure storage for secrets and PII.** Auth tokens, the install key, and student PII are stored via `flutter_secure_storage` (see [`secure_store.dart`](https://github.com/marcelogdomingues/ulht-dcs-public/tree/main/mobile-apps/student-app/lib/services/secure_store.dart)). Non-sensitive UI preferences use `shared_preferences`.
+- **QR / deep-link URL allowlist.** Before launching any scanned or arbitrary URL externally, it is validated against an allowlist so a malicious QR code cannot drive the wallet to an attacker-controlled site (see [`url_guard.dart`](https://github.com/marcelogdomingues/ulht-dcs-public/tree/main/mobile-apps/student-app/lib/utils/url_guard.dart)). Allowed schemes: `openid4vp`, `openid4vci`, `haip`. Allowed http(s) hosts: `localhost`, `127.0.0.1`, `10.0.2.2` (Android emulator loopback), plus the `ensinolusofona.pt` / `ulusofona.pt` domain suffixes.
 - **No hardcoded secrets.** API key and service URLs come from `--dart-define`; the previously hardcoded student credential was removed and is now injected at build time.
 - **`debugPrint`, not `print`.** Diagnostic logging uses `debugPrint` so it is stripped in release builds.
 

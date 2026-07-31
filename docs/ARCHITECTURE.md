@@ -2,7 +2,7 @@
 
 This document describes the architecture of the **ULHT Digital Credential System (DCS)** — an event-driven microservices platform that issues, stores, and verifies W3C Verifiable Credentials for Universidade Lusófona (ULHT) students, backed by [walt.id](#waltid-integration).
 
-> See also: [Deployment](DEPLOYMENT.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [Getting Started](GETTING_STARTED.md) · [API](API.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](../README.md)
+> See also: [Deployment](DEPLOYMENT.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [Getting Started](GETTING_STARTED.md) · [API](API.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](index.md)
 
 ---
 
@@ -313,4 +313,4 @@ Four W3C Verifiable Credential types are supported:
 - [Getting Started](GETTING_STARTED.md)
 - [API](API.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
-- [Project README](../README.md)
+- [Project README](index.md)

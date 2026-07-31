@@ -4,6 +4,7 @@
 [![Mobile CI](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/mobile.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/mobile.yml)
 [![Docker Build](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docker.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docker.yml)
 [![CodeQL](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/codeql.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/codeql.yml)
+[![Docs](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docs.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docs.yml)
 
 An event-driven microservices platform that issues **W3C Verifiable Credentials** to
 Universidade Lusófona (ULHT) students and verifies them with privacy-preserving,
@@ -29,7 +30,10 @@ Identity, European Student Card, and — for graduates — University Degree) th
 
 ## Documentation
 
-Full documentation lives in [`docs/`](docs/). Start here:
+📖 **Documentation site: <https://marcelogdomingues.github.io/ulht-dcs-public/>**
+(built from `docs/` with MkDocs Material; search, dark mode, and rendered diagrams).
+
+The source Markdown lives in [`docs/`](docs/). Start here:
 
 | Document | What it covers |
 |---|---|
@@ -42,8 +46,8 @@ Full documentation lives in [`docs/`](docs/). Start here:
 | [Mobile Apps](docs/MOBILE_APPS.md) | The three Flutter apps, `--dart-define` config, secure storage |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common failures and fixes (KRaft, walt.id, 401s, healthchecks) |
 
-There is also a browsable **HTML documentation site** in `docs/` (`index.html`,
-`architecture.html`, `api-reference.html`, …) — serve it with `cd docs && ./serve.sh`.
+To preview the site locally: `pip install mkdocs-material && mkdocs serve` then open
+<http://127.0.0.1:8000>.
 
 ---
 

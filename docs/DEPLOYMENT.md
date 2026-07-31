@@ -2,7 +2,7 @@
 
 How to build and run the **ULHT Digital Credential System (DCS)** locally with Docker Compose. For the system design behind these components, see [Architecture](ARCHITECTURE.md).
 
-> See also: [Architecture](ARCHITECTURE.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](../README.md)
+> See also: [Architecture](ARCHITECTURE.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](index.md)
 
 ---
 
@@ -242,4 +242,4 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 - [Security](SECURITY.md)
 - [Getting Started](GETTING_STARTED.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
-- [Project README](../README.md)
+- [Project README](index.md)

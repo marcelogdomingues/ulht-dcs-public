@@ -44,3 +44,6 @@ README.html
 .env
 docker-compose.override.yml
 !.env.example
+
+# MkDocs build output
+site/

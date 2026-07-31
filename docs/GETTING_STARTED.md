@@ -2,7 +2,7 @@
 
 This guide walks you through running the **ULHT Digital Credential System (DCS)** locally: from prerequisites to issuing your first credential end-to-end.
 
-For deeper reference material, see [Configuration](CONFIGURATION.md), [Architecture](ARCHITECTURE.md), [Security](SECURITY.md), [Deployment](DEPLOYMENT.md), [API](API.md), [Mobile Apps](MOBILE_APPS.md), and [Troubleshooting](TROUBLESHOOTING.md). See also the [project README](../README.md).
+For deeper reference material, see [Configuration](CONFIGURATION.md), [Architecture](ARCHITECTURE.md), [Security](SECURITY.md), [Deployment](DEPLOYMENT.md), [API](API.md), [Mobile Apps](MOBILE_APPS.md), and [Troubleshooting](TROUBLESHOOTING.md). See also the [project README](index.md).
 
 ## Prerequisites
 
