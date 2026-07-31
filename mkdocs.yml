@@ -43,6 +43,7 @@ theme:
 nav:
   - Home: index.md
   - Getting Started: GETTING_STARTED.md
+  - Demo (no setup): DEMO.md
   - Architecture: ARCHITECTURE.md
   - Standards & Conformance: STANDARDS.md
   - Configuration: CONFIGURATION.md

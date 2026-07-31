@@ -2,6 +2,7 @@
 # Provides convenient commands for managing the application stack
 
 .PHONY: help start stop restart logs status clean
+.PHONY: demo demo-stop demo-logs demo-status
 .PHONY: start-distributed stop-distributed restart-distributed status-distributed test-distributed
 .PHONY: project-start project-stop project-restart project-logs project-status
 .PHONY: infra-start infra-stop infra-restart infra-logs infra-status
@@ -45,11 +46,36 @@ help:
 	@echo "  project-logs    - Show Spring Boot services logs"
 	@echo "  project-status  - Show Spring Boot services status"
 	@echo ""
+	@echo "Demo Commands (self-contained, mock walt.id + SIS, no .env):"
+	@echo "  demo           - Build and start the one-command demo stack"
+	@echo "  demo-stop      - Stop and remove the demo stack"
+	@echo "  demo-logs      - Follow demo credential + lusofona logs"
+	@echo "  demo-status    - Show demo services status"
+	@echo ""
 	@echo "Development Commands:"
 	@echo "  build          - Build all application images"
 	@echo "  rebuild        - Rebuild all application images (no cache)"
 	@echo "  shell          - Open shell in a specific service"
 	@echo ""
+
+# Self-contained demo (mock walt.id + mock SIS, no external deps, no .env)
+demo:
+	@echo "🎬 Starting self-contained ULHT DCS demo (mock walt.id + SIS)..."
+	docker compose -f docker-compose.demo.yml up -d --build
+	@echo "✅ Demo stack starting. Poll status with: make demo-status"
+	@echo "   Entry point: http://localhost:8084/api/v1/student/issue (apikey: demo-key)"
+	@echo "   See docs/DEMO.md for issue/poll/fetch/verify curl commands."
+
+demo-stop:
+	@echo "🛑 Stopping demo stack..."
+	docker compose -f docker-compose.demo.yml down
+	@echo "✅ Demo stack stopped!"
+
+demo-logs:
+	docker compose -f docker-compose.demo.yml logs -f credential-service lusofona-service
+
+demo-status:
+	docker compose -f docker-compose.demo.yml ps
 
 # Application stack commands
 start:

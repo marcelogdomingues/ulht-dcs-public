@@ -38,6 +38,24 @@ straight from your browser in **[GitHub Codespaces](https://codespaces.new/marce
 
 ---
 
+## Try the demo (no setup)
+
+Run the **full issue → verify pipeline with one command** — no walt.id, no university
+SIS, no `.env`:
+
+```bash
+docker compose -f docker-compose.demo.yml up -d --build
+```
+
+A `demo` Spring profile swaps the two external dependencies (walt.id and the student
+information system) for in-memory mocks, so the whole workflow reaches `COMPLETED`
+with credential-offer URLs using only Kafka + Consul + the four services. The
+credentials are **illustrative only** (mock issuer/verifier). See
+[`docs/DEMO.md`](docs/DEMO.md) for the curl commands to issue, poll, fetch, and
+verify, and `make demo` as a shortcut.
+
+---
+
 ## Documentation
 
 📖 **Documentation site: <https://marcelogdomingues.github.io/ulht-dcs-public/>**

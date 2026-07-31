@@ -19,7 +19,8 @@ import java.util.Map;
 @FeignClient(
     name = "waltidVerifierClient",
     url = "${waltid.verifier.url}",
-    configuration = WaltidClientConfiguration.class
+    configuration = WaltidClientConfiguration.class,
+    primary = false
 )
 public interface WaltidVerifierClient {
 

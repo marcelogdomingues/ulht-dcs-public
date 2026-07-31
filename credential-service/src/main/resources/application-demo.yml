@@ -1,0 +1,30 @@
+# =============================================================================
+# DEMO profile - credential-service
+# =============================================================================
+# Activated alongside the `docker` profile (SPRING_PROFILES_INCLUDE=demo).
+# Real Kafka + Consul wiring is inherited from application-docker.yml; this file
+# only marks that the walt.id issuer/wallet/verifier calls are mocked.
+#
+# The mock walt.id client beans are provided by
+#   pt.ulusofona.ulht.credential.config.DemoConfiguration
+# which registers @Primary + @Profile("demo") implementations of
+# WaltidIssuerClient, WaltidWalletClient and WaltidVerifierClient, so NO real
+# walt.id services are ever contacted. Issued credentials are illustrative only.
+# =============================================================================
+demo:
+  enabled: true
+  description: "Mock walt.id issuer/wallet/verifier - no external dependencies"
+
+# Point the Feign clients at obviously-fake placeholders so nothing real is ever
+# contacted even if a mock were bypassed.
+waltid:
+  issuer:
+    url: http://waltid-issuer.demo.invalid
+  wallet:
+    url: http://waltid-wallet.demo.invalid
+  verifier:
+    url: http://waltid-verifier.demo.invalid
+
+logging:
+  level:
+    pt.ulusofona.ulht.credential.config.DemoConfiguration: INFO

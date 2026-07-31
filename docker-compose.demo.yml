@@ -1,0 +1,244 @@
+# =============================================================================
+# ULHT Digital Credential System - SELF-CONTAINED DEMO
+# =============================================================================
+# One command, no external services:
+#
+#     docker compose -f docker-compose.demo.yml up -d --build
+#
+# This stack runs the full issue -> verify pipeline with MOCK walt.id and MOCK
+# university SIS. The `demo` Spring profile (activated via SPRING_PROFILES_INCLUDE)
+# swaps in @Primary in-memory client stubs, so NO real walt.id and NO real SIS are
+# contacted. Credentials produced are illustrative only - not real or verifiable.
+#
+# Included: Kafka (KRaft single-node), Consul, and the four microservices.
+# NOT included: walt.id, Kong/API gateway, monitoring stack (kept minimal).
+#
+# Note: the service Dockerfiles hardcode `-Dspring.profiles.active=docker`, which
+# as a JVM system property takes precedence over SPRING_PROFILES_ACTIVE. We use
+# SPRING_PROFILES_INCLUDE=demo (spring.profiles.include) so the `demo` profile is
+# merged in additively alongside `docker` without editing the Dockerfiles.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Kafka (KRaft, single-node) - env copied from docker-compose.microservices.yml
+  # ---------------------------------------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:8.3.0
+    container_name: demo-kafka
+    hostname: kafka
+    ports:
+      - "127.0.0.1:9092:9092"
+      - "127.0.0.1:29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_LISTENERS: "CLIENT://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093"
+      KAFKA_ADVERTISED_LISTENERS: CLIENT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: CLIENT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_MESSAGE_MAX_BYTES: 10485760
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 10485760
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    networks:
+      - demo
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Consul (service discovery)
+  # ---------------------------------------------------------------------------
+  consul:
+    image: hashicorp/consul:1.22
+    container_name: demo-consul
+    hostname: consul
+    command: agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0
+    ports:
+      - "127.0.0.1:8500:8500"
+    environment:
+      CONSUL_BIND_INTERFACE: eth0
+      CONSUL_CLIENT_INTERFACE: eth0
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - demo
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Fulfilment service (tracks workflow status/result)
+  # ---------------------------------------------------------------------------
+  fulfilment-service:
+    build:
+      context: ./fulfilment-service
+      dockerfile: Dockerfile
+    container_name: demo-fulfilment-service
+    hostname: ulht-fulfilment-service
+    depends_on:
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_INCLUDE: demo
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+      APP_API_KEY: demo-key
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      JAVA_OPTS: -Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseContainerSupport
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8087/api/v1/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - demo
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Lusofona service (university SIS proxy - MOCKED in demo)
+  # ---------------------------------------------------------------------------
+  lusofona-service:
+    build:
+      context: ./lusofona-service
+      dockerfile: Dockerfile
+    container_name: demo-lusofona-service
+    hostname: ulht-lusofona-service
+    depends_on:
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_INCLUDE: demo
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+      APP_API_KEY: demo-key
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      JAVA_OPTS: -Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8085/api/v1/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - demo
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Credential service (walt.id issuer/wallet/verifier - MOCKED in demo)
+  # ---------------------------------------------------------------------------
+  credential-service:
+    build:
+      context: ./credential-service
+      dockerfile: Dockerfile
+    container_name: demo-credential-service
+    hostname: ulht-credential-service
+    depends_on:
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_INCLUDE: demo
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+      APP_API_KEY: demo-key
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      WALLET_PASSWORD_SECRET: demo-wallet-secret
+      WALLET_PASSWORD_SALT: demo-wallet-salt
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      JAVA_OPTS: -Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8086/api/v1/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - demo
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Student service (entry point: POST /api/v1/student/issue)
+  # ---------------------------------------------------------------------------
+  student-service:
+    build:
+      context: ./student-service
+      dockerfile: Dockerfile
+    container_name: demo-student-service
+    hostname: ulht-student-service
+    depends_on:
+      consul:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      fulfilment-service:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_INCLUDE: demo
+      SPRING_CLOUD_CONSUL_HOST: consul
+      SPRING_CLOUD_CONSUL_PORT: 8500
+      APP_API_KEY: demo-key
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      SERVER_PORT: 8084
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
+      FULFILMENT_SERVICE_URL: http://ulht-fulfilment-service:8087/api/v1
+      KAFKA_REPLY_ENABLED: "true"
+      KAFKA_REPLY_TIMEOUT: "30000"
+      JAVA_OPTS: -Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseContainerSupport
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8084/api/v1/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - demo
+    restart: unless-stopped
+
+networks:
+  demo:
+    driver: bridge

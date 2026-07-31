@@ -18,7 +18,8 @@ import java.util.Map;
 @FeignClient(
     name = "waltidIssuerClient",
     url = "${waltid.issuer.url}",
-    configuration = WaltidClientConfiguration.class
+    configuration = WaltidClientConfiguration.class,
+    primary = false
 )
 public interface WaltidIssuerClient {
 

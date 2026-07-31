@@ -2,12 +2,22 @@ package pt.ulusofona.digital.wallet.clients.hystrix;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import pt.ulusofona.digital.wallet.clients.LusofonaClient;
 import pt.ulusofona.digital.wallet.domain.student.*;
 
+/**
+ * Circuit-breaker fallback for {@link LusofonaClient}.
+ *
+ * <p>Excluded under the {@code demo} profile so that the only {@code LusofonaClient}
+ * bean present in demo mode is the {@code @Primary} in-memory mock provided by
+ * {@code DemoConfiguration}; this avoids a {@code NoUniqueBeanDefinitionException}
+ * from having multiple candidate beans.</p>
+ */
 @Component
+@Profile("!demo")
 public class LusofonaFallback implements LusofonaClient {
 
     private static final Logger logger = LoggerFactory.getLogger(LusofonaFallback.class);

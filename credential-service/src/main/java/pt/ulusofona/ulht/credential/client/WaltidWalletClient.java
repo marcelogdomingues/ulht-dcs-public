@@ -26,7 +26,8 @@ import java.util.List;
 @FeignClient(
     name = "waltidWalletClient",
     url = "${waltid.wallet.url}",
-    configuration = WaltidClientConfiguration.class
+    configuration = WaltidClientConfiguration.class,
+    primary = false
 )
 public interface WaltidWalletClient {
 

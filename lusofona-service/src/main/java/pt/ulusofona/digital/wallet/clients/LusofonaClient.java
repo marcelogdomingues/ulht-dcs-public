@@ -17,7 +17,8 @@ import pt.ulusofona.digital.wallet.domain.student.*;
 @FeignClient(name = "lusofonaClient",
         url = "${spring.cloud.openfeign.client.config.lusofonaClient.url}",
         configuration = ClientConfiguration.class,
-        fallback = LusofonaFallback.class)
+        fallback = LusofonaFallback.class,
+        primary = false)
 public interface LusofonaClient {
 
     @RequestMapping(method = RequestMethod.POST, value = "/GetSIGESEnrolments", consumes = "application/json")
