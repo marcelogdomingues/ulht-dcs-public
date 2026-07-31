@@ -1,0 +1,92 @@
+name: Bug Report
+description: Report a defect in the ULHT Digital Credential System
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report!
+
+        Please **do not include real secrets, API keys, real endpoints, or real
+        student/personal data** — redact anything sensitive and use placeholders.
+        For security vulnerabilities, follow the process in `SECURITY.md` instead
+        of opening a public issue.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I am using a supported version (1.0.x) or the latest `main`.
+          required: true
+        - label: This report contains no secrets, credentials, or real personal data.
+          required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug and its impact.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps so we can reproduce the behavior.
+      placeholder: |
+        1. Start the stack with `make up`
+        2. Call endpoint '...'
+        3. Observe '...'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which service or app?
+      description: Select the component most affected.
+      options:
+        - Student service
+        - Lusofona / SIS service
+        - Credential service
+        - Fulfilment service
+        - API gateway (Kong) / Consul
+        - Kafka / messaging
+        - Observability (Prometheus / Grafana / Loki)
+        - Flutter app - Student
+        - Flutter app - Verifier
+        - Flutter app - Issuer
+        - Documentation / MkDocs
+        - CI/CD / infrastructure
+        - Other / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions and environment
+      description: Release/commit SHA or image tag, OS, Docker/Compose versions, Java/Flutter versions as relevant.
+      placeholder: |
+        - Release/commit: v1.0.0 (or SHA)
+        - OS: macOS 15 / Ubuntu 24.04
+        - Docker: 27.x, Compose: v2.x
+        - Java: 25, Flutter: 3.x
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or output
+      description: Paste relevant log output. This will be rendered as code, so no backticks needed. Redact secrets.
+      render: shell
+    validations:
+      required: false

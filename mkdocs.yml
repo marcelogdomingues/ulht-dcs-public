@@ -44,6 +44,7 @@ nav:
   - Home: index.md
   - Getting Started: GETTING_STARTED.md
   - Architecture: ARCHITECTURE.md
+  - Standards & Conformance: STANDARDS.md
   - Configuration: CONFIGURATION.md
   - Security: SECURITY.md
   - API Reference: API.md
@@ -52,6 +53,14 @@ nav:
   - Mobile Apps: MOBILE_APPS.md
   - CI/CD: CICD.md
   - Troubleshooting: TROUBLESHOOTING.md
+  - Architecture Decisions:
+      - Overview: adr/README.md
+      - 1. Event-driven microservices: adr/0001-event-driven-microservices.md
+      - 2. Kafka KRaft over ZooKeeper: adr/0002-kafka-kraft-over-zookeeper.md
+      - 3. walt.id for VC issuance: adr/0003-waltid-for-vc-issuance.md
+      - 4. Selective disclosure: adr/0004-selective-disclosure-verification.md
+      - 5. API-key authentication: adr/0005-api-key-authentication.md
+      - 6. Spring Boot 4 / Java 25: adr/0006-spring-boot-4-java-25.md
 
 plugins:
   - search

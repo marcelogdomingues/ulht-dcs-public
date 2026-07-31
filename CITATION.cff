@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "ULHT Digital Credential System"
+version: 1.0.0
+date-released: "2026-07-31"
+license: MIT
+repository-code: "https://github.com/marcelogdomingues/ulht-dcs-public"
+url: "https://github.com/marcelogdomingues/ulht-dcs-public"
+abstract: >-
+  An event-driven microservices platform for issuing and verifying W3C
+  Verifiable Credentials (OID4VCI/OID4VP via walt.id), built on Java 25 and
+  Spring Boot 4 with Apache Kafka in KRaft mode, and accompanied by Flutter
+  applications for students, verifiers and issuers. The system derives from an
+  MSc thesis defended at Universidade Lusofona.
+authors:
+  - family-names: Domingues
+    given-names: Marcelo
+keywords:
+  - verifiable-credentials
+  - self-sovereign-identity
+  - microservices
+  - spring-boot
+  - kafka
+  - walt.id
+  - oid4vci
+  - oid4vp
+  - flutter
+preferred-citation:
+  type: thesis
+  title: "ULHT Digital Credential System"
+  authors:
+    - family-names: Domingues
+      given-names: Marcelo
+  year: 2026
+  month: 7
+  thesis-type: "MSc thesis"
+  institution:
+    name: "Universidade Lusofona"
+  url: "https://github.com/marcelogdomingues/ulht-dcs-public"

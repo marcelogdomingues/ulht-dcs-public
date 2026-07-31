@@ -1,0 +1,67 @@
+name: Feature Request
+description: Suggest an idea or enhancement for the ULHT Digital Credential System
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Please describe the problem you
+        want solved before proposing a specific solution.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate request.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem or limitation are you facing? Why does it matter?
+      placeholder: "I'm frustrated when ... / It is currently hard to ..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the change or feature you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you have thought about.
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the project does this affect?
+      options:
+        - Student service
+        - Lusofona / SIS service
+        - Credential service
+        - Fulfilment service
+        - API gateway (Kong) / Consul
+        - Kafka / messaging
+        - Observability (Prometheus / Grafana / Loki)
+        - Flutter app - Student
+        - Flutter app - Verifier
+        - Flutter app - Issuer
+        - Documentation / MkDocs
+        - CI/CD / infrastructure
+        - Cross-cutting / other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Mockups, references, or any other context that helps.
+    validations:
+      required: false

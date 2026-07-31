@@ -6,12 +6,22 @@
 [![CodeQL](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/codeql.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/codeql.yml)
 [![Docs](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docs.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docs.yml)
 
-An event-driven microservices platform that issues **W3C Verifiable Credentials** to
-Universidade Lusófona (ULHT) students and verifies them with privacy-preserving,
-selective disclosure. Students authenticate against the university (SIGES/Lusófona API),
-and the system issues a set of standards-compliant credentials (Educational ID,
-Identity, European Student Card, and — for graduates — University Degree) through a
-[walt.id](https://walt.id) identity backend.
+[![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-Codespaces-181717?logo=github)](https://codespaces.new/marcelogdomingues/ulht-dcs-public)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://marcelogdomingues.github.io/ulht-dcs-public/)
+
+> 📖 Documentation: <https://marcelogdomingues.github.io/ulht-dcs-public/> · 🧩 [Open in Codespaces](https://codespaces.new/marcelogdomingues/ulht-dcs-public)
+
+**Issue → hold → verify university credentials, the standards-compliant way.** ULHT DCS
+is an event-driven microservices platform that turns a single student login into a set of
+**W3C Verifiable Credentials** — then lets any verifier check exactly the one they need,
+with privacy-preserving selective disclosure. Java 25 · Spring Boot 4.1 · Kafka (KRaft) ·
+[walt.id](https://walt.id) · Flutter — all runnable with one `docker compose` command, or
+straight from your browser in **[GitHub Codespaces](https://codespaces.new/marcelogdomingues/ulht-dcs-public)**.
+
+<p align="center">
+  <img src="docs/SimpleArchitecture.png" alt="ULHT DCS architecture overview" width="820">
+</p>
 
 | | |
 |---|---|
@@ -109,6 +119,20 @@ never over-shares. This is a deliberate privacy/GDPR design choice; see
 
 **Event-driven** — services communicate asynchronously over Kafka; the HTTP request
 returns immediately with a correlation ID while issuance proceeds in the background.
+
+---
+
+## Screenshots & demo
+
+> 📸 **Coming soon.** The planned visuals live in [`docs/screenshots/`](docs/screenshots/):
+>
+> - **Mobile — issue & verify** — the student app receiving a credential and the verifier app checking it
+> - **Observability** — the Grafana dashboards and Prometheus targets
+> - **API** — the Swagger UI per service
+> - **Demo GIF** — the full *issue → hold → verify* flow
+>
+> See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the expected filenames
+> and recommended sizes.
 
 ---
 
