@@ -1,9 +1,6 @@
 # CI/CD
 
-Continuous integration and delivery for the **ULHT Digital Credential System (DCS)**,
-implemented with **GitHub Actions**. This document explains what each pipeline does,
-what triggers it, how to read a failure, the repository settings and secrets it needs,
-and how to reproduce every check locally.
+A thorough guide to continuous integration and delivery for the **ULHT Digital Credential System (DCS)**, implemented with **GitHub Actions**. It explains **every workflow** in `.github/workflows/`, what triggers each one, the path filters that scope them, how to read a failure, the repository settings and secrets they need, and how to reproduce every check locally. Dependabot and the docs-site pipeline are covered too.
 
 > See also: [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md) · [Deployment](DEPLOYMENT.md) · [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) · [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Getting Started](GETTING_STARTED.md) · [Project README](index.md)
 
@@ -11,100 +8,191 @@ and how to reproduce every check locally.
 
 ## Overview
 
-| Workflow | Purpose | Typical triggers |
-| --- | --- | --- |
-| **Backend CI** | `mvn -B verify` (matrix) over the four Maven services on Java 25 | push, pull request |
-| **Mobile CI** | `flutter pub get` + `flutter analyze` over the three Flutter apps | push, pull request |
-| **Docker Build** | Validate Compose config and build the four service images; optionally push to GHCR | push, pull request, tags |
-| **Dependabot** | Automated dependency update PRs (maven, pub, docker, github-actions) | scheduled by GitHub |
+| Workflow | File | Purpose | Triggers |
+| --- | --- | --- | --- |
+| **Backend CI** | `backend.yml` | `mvn -B -ntp verify` (matrix) over the four Maven services on Java 25 | push / PR on backend paths |
+| **Mobile CI** | `mobile.yml` | `flutter pub get` → `analyze` → `test` over the three Flutter apps | push / PR on `mobile-apps/**` |
+| **Docker Build** | `docker.yml` | Validate Compose config + build 4 service images; push to GHCR on `main`/tags | push / PR / `v*` tags |
+| **CodeQL** | `codeql.yml` | Static security analysis of the Java backend (`build-mode: none`) | push/PR on `main` + weekly cron |
+| **Docs** | `docs.yml` | Build MkDocs Material site → deploy to GitHub Pages | push on `docs/**`, `mkdocs.yml` + manual |
+| **Dependabot** | `dependabot.yml` | Automated dependency-update PRs (maven / pub / docker / actions) | GitHub schedule |
 
-The workflow definitions live in `.github/workflows/` and the Dependabot config in
-`.github/dependabot.yml`. (That directory is owned by the CI setup task; this document
-describes the intended behaviour and how to work with it.)
+All workflow definitions live in [`.github/workflows/`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/.github/workflows) and the Dependabot config in [`.github/dependabot.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/.github/dependabot.yml).
 
-> **The backend tests do not need Docker.** There are no Testcontainers in the suite,
-> so Backend CI runs `mvn -B verify` on a plain JDK 25 runner with no Docker daemon.
+!!! note "Backend tests need NO Docker"
+    There are **no Testcontainers** in the suite — the tests are plain unit / Spring-context tests. Backend CI runs `mvn -B -ntp verify` on a plain JDK 25 runner with **no Docker daemon**. Avro / OpenAPI code generation is handled automatically by `mvn verify`.
 
 ---
 
-## Backend CI
+## Pipeline at a glance
 
-**What it does.** Runs a build matrix — one job per service — over:
+```mermaid
+flowchart TB
+    subgraph triggers["Triggers"]
+        pr["Pull request"]
+        push["Push to main"]
+        tag["Tag v*"]
+        cron["Weekly cron"]
+        docspush["Push docs/** or mkdocs.yml"]
+    end
 
-- `student-service`
-- `lusofona-service`
-- `credential-service`
-- `fulfilment-service`
+    pr --> be & mob & dvalidate & dbuild & cq
+    push --> be & mob & dvalidate & dbuild & cq & ghcr
+    tag --> dbuild --> ghcr
+    cron --> cq
+    docspush --> docs
 
-Each matrix job checks out the repo, sets up **JDK 25** (`actions/setup-java`,
-Temurin) with Maven dependency caching, changes into the service directory, and runs:
+    subgraph backend["Backend CI (matrix ×4)"]
+        be["mvn -B -ntp verify<br/>credential · student · lusofona · fulfilment"]
+        be --> jars[["*-jar artifacts (7d)"]]
+    end
 
-```bash
-mvn -B verify
+    subgraph mobile["Mobile CI (matrix ×3)"]
+        mob["flutter pub get → analyze → test<br/>student-app · verifier-app · issuer-app"]
+    end
+
+    subgraph docker["Docker Build"]
+        dvalidate["compose-validate<br/>docker compose config"]
+        dbuild["images (matrix ×4)<br/>build multi-stage Dockerfiles"]
+        ghcr[("GHCR<br/>ghcr.io/&lt;owner&gt;/ulht-*:sha + :latest")]
+    end
+
+    subgraph security["CodeQL"]
+        cq["analyze java-kotlin<br/>build-mode: none"] --> sarif[["Security tab (SARIF)"]]
+    end
+
+    subgraph documentation["Docs"]
+        docs["mkdocs build --strict"] --> pages[("GitHub Pages")]
+    end
 ```
 
-This compiles the code, runs the unit/slice tests, and packages the JAR. Because the
-four services are independent Maven projects (no parent/aggregator POM), each is built
-in isolation; a failure in one service does not mask the others.
+---
 
-**Triggers.** Pushes and pull requests. Path filters may scope it to backend changes,
-but treat it as running on every PR that touches service code.
+## Backend CI (`backend.yml`)
 
-**What it checks.** Compilation on Java 25, passing tests, and a successful `package`
-phase for every service.
+**What it does.** A build matrix — one job per service, `fail-fast: false` so all four report — over:
+
+- `credential-service`
+- `student-service`
+- `lusofona-service`
+- `fulfilment-service`
+
+Each job checks out the repo, sets up **JDK 25 (Temurin)** via `actions/setup-java@v4` with `cache: maven`, changes into the service directory, and runs:
+
+```bash
+mvn -B -ntp verify
+```
+
+`-B` is batch (non-interactive) mode; `-ntp` suppresses transfer-progress noise. `verify` compiles, runs the unit/slice tests, and packages the JAR. On success, `actions/upload-artifact@v4` publishes `target/*.jar` as `<service>-jar` (retained **7 days**, `if-no-files-found: warn`).
+
+Because the four services are **independent** Maven projects (no parent/aggregator POM), each is built in isolation — a failure in one does not mask the others.
+
+**Triggers & path filters.** Push and pull request, scoped to the four service directories and `backend.yml` itself:
+
+```yaml
+paths:
+  - "credential-service/**"
+  - "student-service/**"
+  - "lusofona-service/**"
+  - "fulfilment-service/**"
+  - ".github/workflows/backend.yml"
+```
+
+`concurrency` cancels superseded runs on the same ref to save minutes.
 
 ---
 
-## Mobile CI
+## Mobile CI (`mobile.yml`)
 
-**What it does.** Runs a matrix over the three Flutter apps:
+**What it does.** A matrix (`fail-fast: false`) over the three Flutter apps:
 
 - `mobile-apps/student-app`
 - `mobile-apps/verifier-app`
 - `mobile-apps/issuer-app`
 
-Each job sets up Flutter (`subosito/flutter-action` or equivalent, Flutter 3.44 /
-Dart 3.12), then in each app directory runs:
+Each job sets up Flutter on the **`stable`** channel (`subosito/flutter-action@v2`, `cache: true`; the project targets Flutter 3.44.x / Dart 3.12), prints the version, then in the app directory runs:
 
 ```bash
 flutter pub get
 flutter analyze
+flutter test      # guarded — skipped if the app has no test/ directory
 ```
 
-**Triggers.** Pushes and pull requests.
+**What it checks.** Dependencies resolve cleanly and the Dart analyzer is **clean** — any analyzer warning/error fails the job. The `test` step is wrapped in an `if [ -d test ]` guard so an app without tests does not fail the pipeline.
 
-**What it checks.** Dependencies resolve cleanly and the Dart analyzer is **clean** —
-any analyzer warning or error fails the job. Fix analyzer findings rather than
-suppressing them.
+**Triggers & path filters.** Push / PR on `mobile-apps/**` and `.github/workflows/mobile.yml`.
 
 ---
 
-## Docker Build
+## Docker Build (`docker.yml`)
 
-**What it does.**
+Two jobs.
 
-1. **Validates the Compose configuration** — `docker compose ... config` parses and
-   resolves the primary and override files, catching syntax and interpolation errors
-   before anything is built.
-2. **Builds the four service images** using the multi-stage Dockerfiles
-   (`maven:3.9-eclipse-temurin-25` build stage → `eclipse-temurin:25-jre-alpine`
-   runtime, non-root). See [Deployment](DEPLOYMENT.md#dockerfile-build).
-3. **Optionally pushes to GHCR** — on the **default branch** and on **version tags**,
-   the built images are pushed to the **GitHub Container Registry** (`ghcr.io`).
-   On pull requests from feature branches the images are built but **not** pushed.
+### `compose-validate`
 
-**Triggers.** Pushes, pull requests, and tags. The push-to-registry step is gated on
-`github.ref` being the default branch or a tag.
+Statically validates that the Compose files parse and fully render. Because `.env` and the override are git-ignored, the job exports dummy values inline just for validation:
 
-**What it checks.** That the Compose files are valid and that every service image
-builds end-to-end.
+```yaml
+env:
+  APP_API_KEY: dummy-api-key
+  WALLET_PASSWORD_SECRET: dummy-secret
+  WALLET_PASSWORD_SALT: dummy-salt
+  GRAFANA_ADMIN_PASSWORD: dummy-grafana-pass
+  KAFKA_UI_PASSWORD: dummy-kafka-pass
+```
+
+Then it runs `docker compose -f docker-compose.microservices.yml config` and `docker compose -f docker-compose.infrastructure.yml config`.
+
+### `images`
+
+A matrix (`fail-fast: false`) over the four services. Each job sets up Buildx and builds the service image from its **multi-stage Dockerfile** (`maven:3.9-eclipse-temurin-25` build stage → `eclipse-temurin:25-jre-alpine` runtime, non-root — see [Deployment](DEPLOYMENT.md)). It uses the GitHub Actions cache (`cache-from`/`cache-to: type=gha`).
+
+- On **pull requests**: images are **built but not pushed**.
+- On **push to `main`** or a **`v*` tag**: after `docker/login-action` to `ghcr.io` (username `github.actor`, password `GITHUB_TOKEN`), images are **pushed to GHCR**:
+
+```
+ghcr.io/<owner>/ulht-<service>:<git-sha>
+ghcr.io/<owner>/ulht-<service>:latest
+```
+
+The `images` job declares `permissions: packages: write` so `GITHUB_TOKEN` can push.
+
+**Triggers & path filters.** Push to `main`, `v*` tags, and PRs — scoped to the service directories, `**/Dockerfile`, `docker-compose.*.yml`, and `docker.yml`.
 
 ---
 
-## Dependabot
+## CodeQL (`codeql.yml`)
 
-`.github/dependabot.yml` enables automated dependency-update pull requests across four
-ecosystems:
+**What it does.** Static security analysis of the Java backend (`language: java-kotlin`). Because the four services are independent Maven modules that rely on Avro / OpenAPI code generation, CodeQL's `autobuild` is unreliable here, so the workflow uses **`build-mode: none`** — it analyses the source directly without compiling. Generated sources are not analysed (they are not hand-written).
+
+Results are uploaded to the repo's **Security** tab as SARIF (`permissions: security-events: write`).
+
+**Triggers.** Push and PR on `main`, plus a **weekly cron** (Mondays 06:00 UTC) to pick up new query updates.
+
+---
+
+## Docs (`docs.yml`)
+
+**What it does.** Builds the **MkDocs Material** documentation site and deploys it to **GitHub Pages**.
+
+- `build` job: `actions/setup-python@v5` with `cache: pip` and **`cache-dependency-path: requirements-docs.txt`**, then `pip install -r requirements-docs.txt`, then `mkdocs build --strict` (fails on warnings/broken links), then uploads the `site/` Pages artifact.
+- `deploy` job: `actions/deploy-pages@v4` into the `github-pages` environment.
+
+`permissions: pages: write` + `id-token: write`; `concurrency: group: pages` allows one deploy at a time without cancelling an in-progress one.
+
+!!! note "The pip cache needs `requirements-docs.txt`"
+    The Python dependency cache is keyed on [`requirements-docs.txt`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/requirements-docs.txt) — that file must exist (it pins `mkdocs-material`), or the cache step and the install fail.
+
+**Triggers.** Push on `main` when `docs/**`, `mkdocs.yml`, or `docs.yml` change, plus manual `workflow_dispatch`.
+
+!!! tip "One-time setup"
+    Enable Pages once under **Settings → Pages → Build and deployment → Source: GitHub Actions**, or the deploy step has nowhere to publish.
+
+---
+
+## Dependabot (`dependabot.yml`)
+
+Automated dependency-update pull requests across four ecosystems:
 
 | Ecosystem | Covers |
 | --- | --- |
@@ -113,9 +201,7 @@ ecosystems:
 | `docker` | Base images in the service Dockerfiles |
 | `github-actions` | Action versions used by the workflows |
 
-Dependabot opens PRs on its schedule. Each PR runs the normal CI checks, so you can
-merge an update only once Backend/Mobile/Docker CI pass against it. Review changelogs
-for majors before merging.
+Each Dependabot PR runs the normal CI checks, so you only merge an update once Backend / Mobile / Docker CI (and CodeQL) pass against it. Review changelogs for majors before merging.
 
 ---
 
@@ -126,15 +212,18 @@ for majors before merging.
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| `mvn -B verify` compile error | Java 25 syntax/API issue or missing dependency | Reproduce locally with `mvn -B verify` in that service; fix and re-push |
-| Test failures in Backend CI | A unit/slice test regressed | Run `mvn -B test` locally; no Docker needed |
+| `mvn -B -ntp verify` compile error | Java 25 syntax/API issue or missing dependency | Reproduce with `mvn -B -ntp verify` in that service; fix and re-push |
+| Test failures in Backend CI | A unit/slice test regressed | Run `mvn -B test` locally; **no Docker needed** |
 | `flutter analyze` non-zero exit | Analyzer warning/error introduced | Run `flutter analyze` locally; resolve, don't suppress |
-| `docker compose ... config` error | Broken Compose YAML or unresolved `${VAR}` | Validate locally (see below); check `.env` interpolation |
-| Image build fails | Dockerfile/build-stage issue | Build the image locally to reproduce |
-| GHCR push denied | Missing package-write permission or packages disabled | See required settings below |
+| `flutter test` failure | A widget/unit test broke | Run `flutter test` in the app dir |
+| `docker compose ... config` error | Broken Compose YAML or unresolved `${VAR}` | Validate locally; check `.env` interpolation and the dummy-env pattern |
+| Image build fails | Dockerfile / build-stage issue | Build the image locally to reproduce |
+| GHCR push denied | Missing `packages: write` or packages disabled | See required settings below |
+| CodeQL alerts appear | New finding in Java source | Triage in the Security tab; fix or dismiss with justification |
+| Docs `mkdocs build --strict` fails | Broken internal link or warning | Build locally with `--strict`; fix links (bare filenames, no `../`) |
+| pip cache step fails | `requirements-docs.txt` missing/renamed | Ensure the file exists at repo root |
 
-Re-run a single failed job from the Actions UI ("Re-run failed jobs") once fixed;
-avoid re-running the whole matrix unnecessarily.
+Re-run a single failed job from the Actions UI ("Re-run failed jobs") once fixed; avoid re-running the whole matrix unnecessarily.
 
 ---
 
@@ -142,15 +231,14 @@ avoid re-running the whole matrix unnecessarily.
 
 | Item | Needed for | Notes |
 | --- | --- | --- |
-| `GITHUB_TOKEN` | All workflows, GHCR push | **Automatic** — GitHub injects it per run; no manual secret to create |
-| GHCR package writes | Docker Build push step | Grant Actions **`packages: write`** (workflow `permissions:` block and/or repo → Settings → Actions → Workflow permissions). The first push creates the package; then set its visibility |
-| Branch protection | Enforcing green CI on `main` | Settings → Branches → protect `main` → **require status checks to pass** (Backend CI, Mobile CI, Docker Build) before merge |
+| `GITHUB_TOKEN` | All workflows, GHCR push, Pages deploy | **Automatic** — GitHub injects it per run; nothing to create |
+| GHCR package writes | Docker Build push step | Grant Actions **`packages: write`** (the workflow's `permissions:` block and/or Settings → Actions → Workflow permissions). The first push creates the package; then set its visibility |
+| Pages source = GitHub Actions | Docs deploy | Settings → Pages → Build and deployment → Source: **GitHub Actions** |
+| `security-events: write` | CodeQL | Declared in the workflow; enables SARIF upload to the Security tab |
+| Branch protection | Enforcing green CI on `main` | Settings → Branches → protect `main` → **require status checks** (Backend CI, Mobile CI, Docker Build, CodeQL) before merge |
 | Dependabot | Update PRs | Enabled by committing `.github/dependabot.yml`; ensure Dependabot is allowed in repo/org settings |
 
-No third-party secrets are required for the core pipeline — GHCR uses the built-in
-`GITHUB_TOKEN`. If you later push to an external registry, add its credentials as
-**encrypted repository secrets** (Settings → Secrets and variables → Actions) and never
-place them in workflow YAML. See [Security](SECURITY.md).
+No third-party secrets are required for the core pipeline — GHCR uses the built-in `GITHUB_TOKEN`. If you later push to an external registry, add its credentials as **encrypted repository secrets** (Settings → Secrets and variables → Actions) and never place them in workflow YAML. See [Security](SECURITY.md).
 
 ---
 
@@ -159,19 +247,24 @@ place them in workflow YAML. See [Security](SECURITY.md).
 Reproduce each CI gate before pushing:
 
 ```bash
-# Backend — per service (no Docker required)
-cd student-service && mvn -B verify        # repeat for the other three services
+# Backend — per service (NO Docker required)
+cd credential-service && mvn -B -ntp verify   # repeat for student/lusofona/fulfilment
 
 # Mobile — per app
-cd mobile-apps/student-app && flutter pub get && flutter analyze
+cd mobile-apps/student-app && flutter pub get && flutter analyze && flutter test
 
 # Docker — validate compose config, then build images
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml config
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml build
+APP_API_KEY=dummy WALLET_PASSWORD_SECRET=dummy WALLET_PASSWORD_SALT=dummy \
+GRAFANA_ADMIN_PASSWORD=dummy KAFKA_UI_PASSWORD=dummy \
+  docker compose -f docker-compose.microservices.yml config >/dev/null
+docker build ./credential-service    # repeat per service (matches the CI build context)
+
+# Docs — build the site strictly (fails on warnings/broken links)
+pip install -r requirements-docs.txt
+mkdocs build --strict
 ```
 
-Matching CI locally is the fastest way to keep PRs green. For the day-to-day workflow
-and conventions, see [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md).
+Matching CI locally is the fastest way to keep PRs green. For day-to-day conventions, see [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md).
 
 ---
 
@@ -182,3 +275,4 @@ and conventions, see [Contributing](https://github.com/marcelogdomingues/ulht-dc
 - [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) — pre-deployment readiness
 - [Security](SECURITY.md) — secrets handling and hardening
 - [Configuration](CONFIGURATION.md) — environment variables
+- [Project README](index.md)

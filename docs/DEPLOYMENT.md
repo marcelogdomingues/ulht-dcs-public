@@ -1,195 +1,396 @@
 # Deployment
 
-How to build and run the **ULHT Digital Credential System (DCS)** locally with Docker Compose. For the system design behind these components, see [Architecture](ARCHITECTURE.md).
+A complete, hands-on guide to building and running the **ULHT Digital Credential System (DCS)** with Docker Compose — every container, network, volume, healthcheck, environment variable, and build stage, explained. For the system design behind these components, see [Architecture](ARCHITECTURE.md); for the full variable reference, see [Configuration](CONFIGURATION.md); for the auth model and hardening, see [Security](SECURITY.md).
 
-> See also: [Architecture](ARCHITECTURE.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](index.md)
+> See also: [Architecture](ARCHITECTURE.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) · [CI/CD](CICD.md) · [Project README](index.md)
+
+---
+
+## TL;DR — the one command
+
+```bash
+cp .env.example .env          # fill in the REQUIRED secrets first (see below)
+docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
+```
+
+That builds the four service images and starts the full application stack (Kafka, Consul, Kong, Kafka-UI, Kong-UI, and the four microservices) with the local override applied on top.
+
+!!! warning "Required secrets have no defaults"
+    `WALLET_PASSWORD_SECRET`, `WALLET_PASSWORD_SALT`, and `KAFKA_UI_PASSWORD` use the Compose `${VAR:?...}` form — Compose **refuses to start** if they are unset. `GRAFANA_ADMIN_PASSWORD` is additionally required by the infrastructure/observability stack. Copy `.env.example` and fill them in before your first `up`.
 
 ---
 
 ## Compose files
 
-The repository ships several compose files. Use the right combination:
+The repository ships several Compose files. Use the right combination for the job:
 
-| File | Role |
-| --- | --- |
-| **`docker-compose.microservices.yml`** | **PRIMARY** — the full application stack (services + infra + observability). |
-| `docker-compose.override.yml` | Local fixes, applied on top of the primary (see [Override file](#override-file)). |
-| `docker-compose.infrastructure.yml` | **Infrastructure only** (Kafka, Consul, gateway, observability). |
-| `docker-compose.dev.yml` | Development variant. |
-| `docker-compose.yml` (root) | **STALE — do not use.** References removed directories. |
+| File | Role | Contains |
+| --- | --- | --- |
+| **`docker-compose.microservices.yml`** | **PRIMARY** — the full application stack | Kafka, Consul, Kafka-UI, Kong (api-gateway), Kong-UI, and the 4 microservices |
+| `docker-compose.override.yml` | Local fixes, layered on top of the primary | busybox-`wget` healthchecks, Kafka-UI port remap, SIS endpoint injection |
+| `docker-compose.infrastructure.yml` | **Observability + infra** stack | Kafka, Consul, Kafka-UI, Kong, Kong-UI **plus** Prometheus, Grafana, Loki, Promtail, kafka-exporter |
+| `docker-compose.dev.yml` | Development variant (run services from your IDE) | infra only, for local IDE workflows |
+| `docker-compose.yml` (root) | **Legacy** — kept for reference | older single-file layout (uses `ulht-waltid-proxy`) |
 
-> Do **not** run the bare root `docker-compose.yml`; it will fail because it points at directories that no longer exist.
+!!! note "Primary vs. infrastructure"
+    `docker-compose.microservices.yml` is what you run day-to-day. The **monitoring** components (Prometheus / Grafana / Loki / Promtail / kafka-exporter) live only in `docker-compose.infrastructure.yml`. Bring up observability separately (see [Observability](#observability)) or compose both files together if you want everything in one `up`.
+
+---
+
+## Deployment topology
+
+The full stack is organised across three Docker bridge networks. `waltid_network` is **external** (it joins the separately-managed walt.id stack), so the credential path can reach the issuer/verifier/wallet.
+
+```mermaid
+flowchart TB
+    subgraph host["Host — all ports bound to 127.0.0.1 (loopback)"]
+        direction TB
+
+        subgraph frontend["frontend network (172.21.0.0/16)"]
+            kong["api-gateway<br/>kong:3.9<br/>8000 proxy · 8001 admin · 8443/8444 TLS"]
+            kongui["kong-ui<br/>nginx:1.29-alpine<br/>8082 → 80"]
+        end
+
+        subgraph backend["backend network (172.20.0.0/16)"]
+            kafka[("kafka<br/>cp-kafka:8.3.0 (KRaft)<br/>9092 · 29092 · 29093 ctrl")]
+            consul[("consul<br/>hashicorp/consul:1.22<br/>8500 · 8600")]
+            kui["kafka-ui<br/>kafbat/kafka-ui:v1.5.0<br/>8081→8080 (8181 via override)"]
+            student["ulht-student-service<br/>:8084"]
+            lusofona["ulht-lusofona-service<br/>:8085"]
+            credential["ulht-credential-service<br/>:8086"]
+            fulfilment["ulht-fulfilment-service<br/>:8087"]
+        end
+
+        subgraph waltid["waltid_network (external: docker-compose_default)"]
+            issuer["issuer-api :7002"]
+            verifier["verifier-api :7003"]
+            wallet["wallet-api :7001"]
+        end
+    end
+
+    kong --> student & lusofona & credential & fulfilment
+    student --> fulfilment
+    student -. request/reply .-> kafka
+    lusofona --> kafka
+    credential --> kafka
+    fulfilment --> kafka
+    student --> consul
+    lusofona --> consul
+    credential --> consul
+    fulfilment --> consul
+    kui --> kafka
+    credential --> issuer & verifier & wallet
+    lusofona -. SIS (external) .-> ext[("University SIS<br/>LUSOFONA_API_URL")]
+
+    vol1[("kafka_data")] --- kafka
+    vol2[("consul_data")] --- consul
+```
+
+Every microservice, Kong, Kafka-UI, and Kong-UI attach to both `frontend` and `backend`; only the components that must reach walt.id (Kong, Kafka-UI, credential, lusofona) also join `waltid_network`. Kafka and Consul sit on `backend` (Consul also on `frontend`).
 
 ---
 
 ## Run the stack
 
-Start the full stack (primary + override), building images as needed:
+### 1. Prepare the environment
+
+```bash
+cp .env.example .env
+# then edit .env — set the REQUIRED secrets and change the defaults you care about
+```
+
+| Variable | Default | Required? |
+| --- | --- | --- |
+| `APP_API_KEY` | `ulht-dev-local-CHANGE-ME` | Change for anything real |
+| `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:8000` | No |
+| `WALLET_PASSWORD_SECRET` | *(none)* | **Yes — startup fails if unset** |
+| `WALLET_PASSWORD_SALT` | *(none)* | **Yes — startup fails if unset** |
+| `KAFKA_UI_USER` | `admin` | No |
+| `KAFKA_UI_PASSWORD` | *(none)* | **Yes — startup fails if unset** |
+| `GRAFANA_ADMIN_USER` | `admin` | No |
+| `GRAFANA_ADMIN_PASSWORD` | *(none)* | **Yes for observability stack** |
+| `LUSOFONA_API_URL` | built-in default | No — point lusofona-service at your SIS |
+| `JVM_XMS` / `JVM_XMX` | `-Xms256m` / `-Xmx512m` | No — Kafka-UI JVM sizing |
+
+See [Configuration](CONFIGURATION.md) for the complete reference.
+
+### 2. Start the full stack
 
 ```bash
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
 ```
 
-Before configuring, copy the example environment file and fill in the required secrets (there are variables with **no defaults**):
+- `-f docker-compose.microservices.yml` — the primary stack.
+- `-f docker-compose.override.yml` — local fixes (must be passed explicitly; it is git-ignored and not auto-loaded because the primary file is not named `docker-compose.yml`).
+- `-d` — detached.
+- `--build` — (re)build the four service images from their Dockerfiles.
+
+### 3. Watch it come up
 
 ```bash
-cp .env.example .env
-# then edit .env — see the environment table below and the Configuration doc
+docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml ps
+docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml logs -f ulht-student-service
 ```
 
-### Environment variables
+Wait until every container reports `healthy`. First boot can take a minute or two while Kafka forms its KRaft quorum and the services register with Consul.
 
-| Variable | Default | Required |
+---
+
+## Startup ordering & healthchecks
+
+Startup is gated by `depends_on … condition: service_healthy`. Compose will not start a dependent until its dependency's healthcheck passes. The dependency chain:
+
+```mermaid
+flowchart LR
+    kafka["kafka<br/>(healthy: kafka-topics --list)"]
+    consul["consul<br/>(healthy: consul members)"]
+
+    kafka --> kui["kafka-ui"]
+    kafka --> credential["credential-service"]
+    kafka --> lusofona["lusofona-service"]
+    kafka --> fulfilment["fulfilment-service"]
+    consul --> credential
+    consul --> lusofona
+    consul --> fulfilment
+    consul --> student["student-service"]
+    kafka --> student
+    fulfilment --> student
+    kong["api-gateway (kong)"] --> kongui["kong-ui"]
+```
+
+`student-service` is intentionally last in the application tier: it depends on `kafka`, `consul`, **and** `ulht-fulfilment-service` being healthy (it calls fulfilment synchronously and via Kafka request/reply).
+
+### Healthcheck reference
+
+| Service | Test command (base image) | interval / timeout / retries / start_period |
 | --- | --- | --- |
-| `APP_API_KEY` | `ulht-dev-local-CHANGE-ME` | Change for anything real |
-| `WALLET_PASSWORD_SECRET` | *(none)* | **Yes** |
-| `WALLET_PASSWORD_SALT` | *(none)* | **Yes** |
-| `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:8000` | No |
-| `GRAFANA_ADMIN_USER` | `admin` | No |
-| `GRAFANA_ADMIN_PASSWORD` | *(none)* | **Yes** |
-| `KAFKA_UI_USER` | `admin` | No |
-| `KAFKA_UI_PASSWORD` | *(none)* | **Yes** |
+| kafka | `kafka-topics --bootstrap-server localhost:9092 --list` | 30s / 10s / 3 / — |
+| consul | `consul members` | 10s / 5s / 5 / 30s |
+| kafka-ui | `curl -f http://localhost:8080/actuator/health` | 30s / 10s / 3 / 30s |
+| api-gateway (kong) | `kong health` | 30s / 10s / 3 / — |
+| credential-service | `curl -f http://localhost:8086/api/v1/actuator/health` | 30s / 10s / 5 / 60s |
+| student-service | `curl -f http://localhost:8084/api/v1/actuator/health` | 30s / 10s / 5 / 40s |
+| lusofona-service | `curl -f http://localhost:8085/api/v1/actuator/health` | 30s / 10s / 5 / 60s |
+| fulfilment-service | `curl -f http://localhost:8087/api/v1/actuator/health` | 30s / 10s / 5 / 60s |
 
-See [Configuration](CONFIGURATION.md) for the full reference.
+!!! danger "The `curl` healthchecks fail on the alpine runtime — that's what the override fixes"
+    The service runtime image is `eclipse-temurin:25-jre-alpine`, which **does not ship `curl`**. The base `curl`-based healthchecks above will therefore report `unhealthy` even when the app is up. The **override replaces them with busybox `wget`** (see [Override file](#override-file)). Always run with the override.
 
----
-
-## Kafka (KRaft mode)
-
-Kafka runs as **Confluent `cp-kafka:8.3.0` in KRaft mode** — **no ZooKeeper**. It is a single-node combined **broker + controller**.
-
-| Setting | Value |
-| --- | --- |
-| Image | `confluentinc/cp-kafka:8.3.0` |
-| Mode | KRaft (combined broker + controller) |
-| `CLUSTER_ID` | `MkU3OEVBNTcwNTJENDM2Qk` |
-| Internal listener | `CLIENT://kafka:9092` |
-| Host listener | `EXTERNAL://localhost:29092` |
-| Controller listener | `CONTROLLER://kafka:29093` (internal only) |
-| Auto-create topics | Enabled |
-
-Kafka data is persisted in the **`kafka_data`** volume.
-
-> **⚠️ `kafka_data` wipe caveat.** If you are **migrating from a previous ZooKeeper-based setup**, the old metadata is incompatible with KRaft. You must **wipe the volume before the first KRaft start**:
->
-> ```bash
-> docker volume rm ulht-dcs_kafka_data
-> ```
->
-> Failing to do this causes the broker to refuse to start against pre-existing ZooKeeper-era metadata.
-
----
-
-## Container images
-
-| Component | Image | Version |
-| --- | --- | --- |
-| Kafka | `confluentinc/cp-kafka` | `8.3.0` |
-| Consul | `hashicorp/consul` | `1.22` |
-| API gateway | `kong` | `3.9` |
-| Kafka-UI | `kafbat/kafka-ui` | `v1.5.0` |
-| Prometheus | `prom/prometheus` | `v3.13.1` |
-| Grafana | `grafana/grafana` | `13.1.1` |
-| Loki | `grafana/loki` | `3.7.4` |
-| Promtail | `grafana/promtail` | `3.7.4` |
-| Reverse proxy | `nginx` | `1.29-alpine` |
-| Kafka exporter | `danielqsj/kafka-exporter` | `v1.9.0` |
-
-### Exposed ports
-
-All service and infra ports are bound to **`127.0.0.1` (loopback)**.
-
-| Component | Port(s) |
-| --- | --- |
-| student-service | `8084` |
-| lusofona-service | `8085` |
-| credential-service | `8086` |
-| fulfilment-service | `8087` |
-| Kong proxy / admin / TLS | `8000` / `8001` (loopback only) / `8443` / `8444` |
-| Kong-UI | `8080` |
-| Kafka | `9092`, `29092` |
-| Consul | `8500`, `8600` |
-| Kafka-UI | `8081` → remapped to **`8181`** by the override |
-| Grafana | `3000` |
-| Prometheus | `9090` |
-| Loki | `3100` |
-| Promtail | `9080` |
-| Kafka exporter | `9308` |
-
----
-
-## Dockerfile build
-
-The microservices use a **multi-stage** Docker build that produces a small, non-root runtime image.
-
-```dockerfile
-# --- build stage ---
-FROM maven:3.9-eclipse-temurin-25 AS build
-# ... mvn package ...
-
-# --- runtime stage ---
-FROM eclipse-temurin:25-jre-alpine
-USER app          # runs as a non-root user
-# ... copy jar, ENTRYPOINT ...
-```
-
-| Aspect | Value |
-| --- | --- |
-| Build stage image | `maven:3.9-eclipse-temurin-25` |
-| Runtime image | `eclipse-temurin:25-jre-alpine` |
-| Runs as | non-root `USER app` |
-
----
-
-## Volumes
-
-| Volume | Contents |
-| --- | --- |
-| `kafka_data` | Kafka (KRaft) log + metadata |
-| `consul_data` | Consul service catalog / KV state |
-
----
-
-## Healthchecks
-
-Compose healthchecks gate startup ordering. The runtime images are **alpine-based and do not ship `curl`**, so the override redefines the healthchecks to use **busybox `wget`** instead.
-
-```yaml
-# override healthcheck pattern (busybox wget — curl is absent in alpine)
-healthcheck:
-  test: ["CMD", "wget", "--spider", "-q", "http://localhost:8084/api/v1/actuator/health"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-```
-
-The public health endpoints (`/api/v1/actuator/health`, `/info`, `/prometheus`, and Swagger) do not require the `apikey` header — see [Security](SECURITY.md).
+The public health/metrics endpoints (`/api/v1/actuator/health`, `/info`, `/prometheus`, Swagger UI) do **not** require the `apikey` header — see [Security](SECURITY.md).
 
 ---
 
 ## Override file
 
-`docker-compose.override.yml` layers **local fixes** on top of the primary compose file. It is applied automatically when you include it with `-f`. Its purpose:
+`docker-compose.override.yml` layers **local fixes** on top of the primary Compose file. It is passed explicitly with `-f`. Its three jobs:
 
-- **Healthchecks** — switch to **busybox `wget`** because the alpine runtime images lack `curl`.
-- **Kafka-UI port remap** — moves Kafka-UI from `8081` to **`8181`** to avoid a local port conflict.
-- **lusofona `SPRING_APPLICATION_JSON`** — injects the **real ULHT API endpoint** into `lusofona-service` at runtime.
+### 1. busybox-`wget` healthchecks
 
-Always include it in the run command alongside the primary file.
+The alpine runtime images have no `curl`, so the healthchecks are redefined to use `wget`, which busybox ships:
+
+```yaml
+services:
+  ulht-student-service:
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/api/v1/actuator/health"]
+  ulht-credential-service:
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8086/api/v1/actuator/health"]
+  # …lusofona (8085), fulfilment (8087) likewise
+```
+
+The same fix applies to `kafka-ui` — the `kafbat/kafka-ui` image ships `wget` but not `curl`, so its default `curl` healthcheck reports unhealthy even though the UI is up.
+
+### 2. Kafka-UI host-port remap
+
+The override moves Kafka-UI off `8081` (a common local conflict) using the `!override` tag so the mapping is replaced, not merged:
+
+```yaml
+  kafka-ui:
+    ports: !override
+      - "127.0.0.1:8181:8080"
+```
+
+The **internal** container port is unchanged, so inter-service links still work; only the host port moves to **`8181`**.
+
+### 3. SIS endpoint via `LUSOFONA_API_URL` / `SPRING_APPLICATION_JSON`
+
+`lusofona-service` talks to the university **Student Information System (SIS)**. The override injects the real endpoint at runtime (via `SPRING_APPLICATION_JSON`, wiring the OpenFeign client `url`). In this public repo the value is a **placeholder** — set `LUSOFONA_API_URL` in your `.env` to your institution's SIS base URL:
+
+```bash
+LUSOFONA_API_URL=https://your-sis-endpoint/api
+```
+
+!!! tip
+    Keep site-specific values (SIS URL, secrets) in `.env` and out of the committed Compose/override files. `.env` is git-ignored.
 
 ---
 
-## Infra-only vs full stack
+## Kafka in KRaft mode (no ZooKeeper)
 
-**Infrastructure only** (Kafka, Consul, gateway, observability — no application services):
+Kafka runs as **Confluent `cp-kafka:8.3.0` in KRaft mode** — there is **no ZooKeeper**. A single node acts as both **broker and controller**.
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| `KAFKA_NODE_ID` | `1` | Node identity in the KRaft quorum |
+| `KAFKA_PROCESS_ROLES` | `broker,controller` | Combined mode — one process is both |
+| `KAFKA_CONTROLLER_QUORUM_VOTERS` | `1@kafka:29093` | The (single-node) controller quorum |
+| `KAFKA_CONTROLLER_LISTENER_NAMES` | `CONTROLLER` | Names the controller listener |
+| `CLUSTER_ID` | `MkU3OEVBNTcwNTJENDM2Qk` | Fixed cluster UUID (formats storage on first boot) |
+| `KAFKA_LISTENERS` | `CLIENT://0.0.0.0:9092, EXTERNAL://0.0.0.0:29092, CONTROLLER://0.0.0.0:29093` | Three listeners |
+| `KAFKA_ADVERTISED_LISTENERS` | `CLIENT://kafka:9092, EXTERNAL://localhost:29092` | In-network vs. host access |
+| `KAFKA_INTER_BROKER_LISTENER_NAME` | `CLIENT` | Brokers talk over `CLIENT` |
+| Security protocol map | `CLIENT:PLAINTEXT, EXTERNAL:PLAINTEXT, CONTROLLER:PLAINTEXT` | PLAINTEXT for local dev |
+| Replication factors | `1` (offsets, txn state) | Single node |
+
+**Listeners at a glance:** services inside the network connect to `kafka:9092` (CLIENT); host tools connect to `localhost:29092` (EXTERNAL); the controller protocol runs on `29093` (CONTROLLER, internal only).
+
+!!! danger "`kafka_data` wipe caveat when migrating from ZooKeeper mode"
+    A `kafka_data` volume that was previously written by a **ZooKeeper-mode** broker holds metadata that is **incompatible with KRaft**. The KRaft broker will refuse to start against it. Wipe the volume before the first KRaft start:
+    ```bash
+    docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down
+    docker volume rm ulht-dcs_kafka_data     # volume name = <project>_kafka_data
+    docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d
+    ```
+    Confirm the volume name first with `docker volume ls | grep kafka_data`. `down -v` also removes it.
+
+---
+
+## Container images & versions
+
+| Component | Image | Version | Compose file(s) |
+| --- | --- | --- | --- |
+| Kafka | `confluentinc/cp-kafka` | `8.3.0` | primary + infra |
+| Consul | `hashicorp/consul` | `1.22` | primary + infra |
+| API gateway | `kong` | `3.9` | primary + infra |
+| Kafka-UI | `kafbat/kafka-ui` | `v1.5.0` | primary + infra |
+| Kong-UI / reverse proxy | `nginx` | `1.29-alpine` | primary + infra |
+| Prometheus | `prom/prometheus` | `v3.13.1` | infra |
+| Grafana | `grafana/grafana` | `13.1.1` | infra |
+| Loki | `grafana/loki` | `3.7.4` | infra |
+| Promtail | `grafana/promtail` | `3.6.11` | infra |
+| Kafka exporter | `danielqsj/kafka-exporter` | `v1.9.0` | infra |
+| credential-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
+| student-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
+| lusofona-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
+| fulfilment-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
+
+### Exposed ports
+
+All host ports are bound to **`127.0.0.1` (loopback only)**.
+
+| Component | Host port(s) | Container |
+| --- | --- | --- |
+| student-service | `8084` | `8084` |
+| lusofona-service | `8085` | `8085` |
+| credential-service | `8086` | `8086` |
+| fulfilment-service | `8087` | `8087` |
+| Kong proxy / admin / TLS | `8000` / `8001` / `8443` / `8444` | same |
+| Kong-UI | `8082` | `80` |
+| Kafka | `9092`, `29092` | `9092`, `29092` |
+| Consul | `8500` (UI/API), `8600` (DNS) | same |
+| Kafka-UI | `8081` → **`8181`** via override | `8080` |
+| Prometheus *(infra)* | `9090` | `9090` |
+| Grafana *(infra)* | `3000` | `3000` |
+| Loki *(infra)* | `3100` | `3100` |
+| Kafka exporter *(infra)* | `9308` | `9308` |
+
+---
+
+## Dockerfile build (multi-stage)
+
+Each microservice uses a **two-stage** build: a fat Maven+JDK image compiles the JAR, then a slim JRE-alpine runtime image runs it as a **non-root** user. Only the runtime layer ships.
+
+```mermaid
+flowchart LR
+    subgraph build["Stage 1 — builder"]
+        b1["FROM maven:3.9-eclipse-temurin-25"]
+        b2["COPY pom.xml + src"]
+        b3["RUN mvn clean package -DskipTests"]
+        b4[["/build/target/*.jar"]]
+        b1 --> b2 --> b3 --> b4
+    end
+    subgraph runtime["Stage 2 — runtime (shipped)"]
+        r1["FROM eclipse-temurin:25-jre-alpine"]
+        r2["COPY --from=builder …/*.jar app.jar"]
+        r3["addgroup/adduser app · USER app (non-root)"]
+        r4["EXPOSE 808x · ENTRYPOINT java -jar app.jar"]
+        r1 --> r2 --> r3 --> r4
+    end
+    b4 -->|"COPY --from=builder"| r2
+```
+
+| Aspect | Value |
+| --- | --- |
+| Build-stage image | `maven:3.9-eclipse-temurin-25` |
+| Runtime image | `eclipse-temurin:25-jre-alpine` |
+| Runs as | non-root `USER app` (created via `addgroup`/`adduser`) |
+| Build cache | `BUILDKIT_INLINE_CACHE: 1` build arg (Compose) + GitHub Actions cache in CI |
+| Tests | skipped at image build (`-DskipTests`); run in Backend CI, see [CI/CD](CICD.md) |
+
+!!! note "The Dockerfile bakes a `curl` HEALTHCHECK too"
+    The Dockerfile itself declares a `curl`-based `HEALTHCHECK`, but the alpine runtime has no `curl`, so — like the Compose healthchecks — the effective check comes from the busybox-`wget` override. See [Override file](#override-file).
+
+---
+
+## Building & pulling images from GHCR
+
+The **Docker Build** workflow builds one image per service and, on the default branch or a `v*` tag, pushes to the **GitHub Container Registry (GHCR)** using the built-in `GITHUB_TOKEN`. Image tags:
+
+```
+ghcr.io/<owner>/ulht-<service>:<git-sha>
+ghcr.io/<owner>/ulht-<service>:latest
+```
+
+Pull a published image locally (packages must be public, or `docker login ghcr.io` first):
+
+```bash
+docker pull ghcr.io/<owner>/ulht-credential-service:latest
+```
+
+To run pre-built images instead of building locally, drop `--build` and set an `image:` per service (or add an override that pins `image:` to the GHCR tag). See [CI/CD](CICD.md) for the full pipeline, triggers, and required repo settings.
+
+---
+
+## Volumes & persistence
+
+| Volume | Used by | Contents | Compose file |
+| --- | --- | --- | --- |
+| `kafka_data` | kafka | KRaft log segments + cluster metadata | primary + infra |
+| `consul_data` | consul | Service catalog / KV state | primary + infra |
+| `prometheus_data` | prometheus | Time-series TSDB (30d retention) | infra |
+| `grafana_data` | grafana | Dashboards, users, plugin state | infra |
+| `loki_data` | loki | Aggregated log chunks/index | infra |
+
+Named volumes survive `down`; they are destroyed only by `down -v` or an explicit `docker volume rm`.
+
+---
+
+## Observability
+
+The monitoring stack is defined in **`docker-compose.infrastructure.yml`**: Prometheus, Grafana, Loki, Promtail, and kafka-exporter.
+
+- **Prometheus** (`:9090`) scrapes each service at `/api/v1/actuator/prometheus`, plus `kafka-exporter:9308` and `consul:8500`. Targets are declared in [`monitoring/prometheus.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/monitoring/prometheus.yml).
+- **Grafana** (`:3000`, admin/`GRAFANA_ADMIN_PASSWORD`) auto-provisions dashboards from [`monitoring/grafana`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/monitoring/grafana).
+- **Loki** (`:3100`) + **Promtail** ship container logs (Promtail reads `/var/lib/docker/containers`).
+
+Bring it up alongside (or instead of) the primary stack:
 
 ```bash
 docker compose -f docker-compose.infrastructure.yml up -d
 ```
 
-Useful when running the microservices from your IDE while pointing them at containerised Kafka/Consul.
+---
 
-**Full stack** (primary + override, build included):
+## Infra-only vs. full stack
+
+**Infrastructure only** (run the microservices from your IDE against containerised Kafka/Consul):
+
+```bash
+docker compose -f docker-compose.infrastructure.yml up -d
+```
+
+**Full application stack** (primary + override, build included):
 
 ```bash
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
@@ -199,21 +400,26 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 
 ## walt.id dependency
 
-The [walt.id](ARCHITECTURE.md#waltid-integration) components (issuer `:7002`, verifier `:7003`, wallet `:7001`, plus vc-repo + postgres) are **external to this repo** and run on a shared Docker network joined by `credential-service`.
+The [walt.id](ARCHITECTURE.md) components — issuer (`:7002`), verifier (`:7003`), wallet (`:7001`), plus vc-repo + postgres — are **external to this repo** and run on a shared Docker network joined via `waltid_network` (external name `docker-compose_default`). `credential-service`, `lusofona-service`, Kong, and Kafka-UI join that network.
 
-> Some `issuer-api` versions crash with `notBefore cannot be in the past` (expired example certs). Use a patched / newer issuer-api (e.g. **0.22.0**). Without walt.id, `credential-service` returns **503** on issuance/verify (auth still passes). See [Troubleshooting](TROUBLESHOOTING.md).
+!!! warning "issuer-api time-bomb"
+    Some `issuer-api` versions crash with `notBefore cannot be in the past` (expired example certificates). Use a patched / newer `issuer-api`. Without walt.id reachable, `credential-service` returns **503** on issuance/verify (auth still passes). See [Troubleshooting](TROUBLESHOOTING.md).
 
 ---
 
 ## Production hardening
 
-The defaults are tuned for **local development**. Before any real deployment:
+The defaults are tuned for **local development**. Before any real deployment, work through [Security](SECURITY.md) and the [Deployment Checklist](DEPLOYMENT_CHECKLIST.md), and at minimum:
 
-- **Enable TLS** everywhere — terminate HTTPS at the edge (Kong `8443`/`8444`) and use encrypted listeners.
-- **Use real secrets** — replace `APP_API_KEY` (default `ulht-dev-local-CHANGE-ME`), and set strong `WALLET_PASSWORD_SECRET`, `WALLET_PASSWORD_SALT`, `GRAFANA_ADMIN_PASSWORD`, and `KAFKA_UI_PASSWORD`. Never commit `.env`.
-- **Do not expose the Kong admin API** (`:8001`) — keep it loopback-only or firewalled; exposing it hands over full gateway control.
-- **Rotate keys** regularly — API keys and wallet secrets.
-- Review [Security](SECURITY.md) for the full authentication model and the endpoints exposed without auth.
+- **Enable TLS everywhere** — terminate HTTPS at the edge (Kong `8443`/`8444`), and use encrypted listeners between components.
+- **Use real secrets** — replace `APP_API_KEY` (default `ulht-dev-local-CHANGE-ME`); set strong `WALLET_PASSWORD_SECRET`, `WALLET_PASSWORD_SALT`, `GRAFANA_ADMIN_PASSWORD`, `KAFKA_UI_PASSWORD`. Never commit `.env`.
+- **Do not expose the Kong admin API (`:8001`)** — keep it loopback-only or firewalled; exposing it hands over full gateway control.
+- **Restrict CORS** — set `APP_CORS_ALLOWED_ORIGINS` to the exact origins you serve, not a wildcard.
+- **Secure Kafka** — enable **SASL/TLS** instead of PLAINTEXT for any non-loopback deployment; the current listeners are PLAINTEXT.
+- **Use a secret manager** — inject secrets from Vault / cloud secret store rather than a plaintext `.env` file.
+- **Rotate keys** — API keys and wallet secrets on a schedule.
+
+See [Security](SECURITY.md) for the full authentication model and the endpoints exposed without auth.
 
 ---
 
@@ -225,13 +431,14 @@ Stop and remove containers (volumes **retained**):
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down
 ```
 
-Stop and remove containers **and volumes** (destroys `kafka_data` and `consul_data`):
+Stop and remove containers **and volumes** (destroys `kafka_data`, `consul_data`, and — for the infra file — `prometheus_data`, `grafana_data`, `loki_data`):
 
 ```bash
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down -v
 ```
 
-> Use `down -v` to get a completely clean slate — this also removes the Kafka log/metadata, which is what you want when reinitialising KRaft.
+!!! tip
+    Use `down -v` for a completely clean slate — it also removes the Kafka log/metadata, which is exactly what you want when reinitialising KRaft.
 
 ---
 
@@ -242,4 +449,6 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 - [Security](SECURITY.md)
 - [Getting Started](GETTING_STARTED.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
+- [Deployment Checklist](DEPLOYMENT_CHECKLIST.md)
+- [CI/CD](CICD.md)
 - [Project README](index.md)

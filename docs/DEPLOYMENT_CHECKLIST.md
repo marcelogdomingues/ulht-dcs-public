@@ -1,186 +1,193 @@
 # Deployment Checklist
 
-A pre-deployment and infrastructure-readiness checklist for the **ULHT Digital
-Credential System (DCS)**. Work through it top to bottom before exposing the stack
-beyond a local machine. Every item is a checkbox — nothing is optional for a shared
-or production deployment.
+A professional, actionable **pre-deployment and infrastructure-readiness checklist** for the **ULHT Digital Credential System (DCS)**. Work top to bottom; do not tick a box you cannot demonstrate. This complements the step-by-step [Deployment](DEPLOYMENT.md) guide, the [Security](SECURITY.md) hardening model, and the [CI/CD](CICD.md) pipeline.
 
-> This is an operational checklist. For the reasoning behind each control see
-> [Security](SECURITY.md) and [Deployment](DEPLOYMENT.md).
->
-> See also: [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [CI/CD](CICD.md) · [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md) · [Project README](index.md)
-
-> **Never put real credentials in this file, in `.env.example`, in Compose files, or in
-> git.** Use placeholders like `<generate-a-strong-value>` everywhere. Real secrets live
-> only in the untracked `.env` or a secret manager.
+> See also: [Deployment](DEPLOYMENT.md) · [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [CI/CD](CICD.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](index.md)
 
 ---
 
-## 1. Prerequisites (infrastructure)
+## The READY path
 
-- [ ] **Docker Engine** (recent) installed and running on the host.
-- [ ] **Docker Compose v2** available as `docker compose` (not legacy `docker-compose`).
-- [ ] Host has adequate **resources** — CPU, RAM, and disk for the four services plus
-      Kafka, Consul, Kong, and the observability stack (Prometheus, Grafana, Loki,
-      Promtail). Budget generously; Kafka and the JVMs are the heaviest tenants.
-- [ ] **Network / DNS** planned — hostname(s) for the public entry point resolve, and
-      firewall rules are defined for exactly the ports you intend to expose.
-- [ ] The **external walt.id backend** is reachable and healthy. It is **not** part of
-      this repo and must run on the shared Docker network joined by `credential-service`:
-  - [ ] Issuer API on `7002`
-  - [ ] Verifier API on `7003`
-  - [ ] Wallet API on `7001`
-  - [ ] A **patched / newer `issuer-api`** (e.g. `0.22.0`) is used to avoid the
-        `notBefore cannot be in the past` crash. Without walt.id, `credential-service`
-        returns **503** on issuance/verify (auth still passes). See
-        [Troubleshooting](TROUBLESHOOTING.md).
+```mermaid
+flowchart TD
+    A[Start] --> B{Prerequisites met?<br/>Docker · walt.id up · SIS reachable}
+    B -- No --> B1[Install / provision · fix] --> B
+    B -- Yes --> C{All required secrets set?<br/>no ${VAR:?} failures}
+    C -- No --> C1[Populate .env from a secret manager] --> C
+    C -- Yes --> D{Security hardening done?<br/>TLS · admin API closed · CORS · Kafka SASL/TLS}
+    D -- No --> D1[Apply hardening] --> D
+    D -- Yes --> E{CI green?<br/>Backend · Mobile · Docker · CodeQL}
+    E -- No --> E1[Fix failing checks] --> E
+    E -- Yes --> F[Build & deploy]
+    F --> G{Smoke tests pass?<br/>health 200 · authed issue}
+    G -- No --> G1[Diagnose · rollback if needed] --> F
+    G -- Yes --> H{Observability live?<br/>Prometheus targets UP · Grafana · Loki}
+    H -- No --> H1[Fix scrape/log wiring] --> H
+    H -- Yes --> I{Backup & rollback rehearsed?}
+    I -- No --> I1[Configure backups · test restore] --> I
+    I -- Yes --> J[Sign-off table complete] --> K([GO LIVE])
+```
+
+---
+
+## 1. Prerequisites
+
+- [ ] Docker Engine + Docker Compose v2 installed on the target host (`docker compose version`).
+- [ ] Host has enough resources for the stack (allow ~6–8 GB RAM headroom for Kafka + four JVM services + Kong + observability).
+- [ ] Repository checked out at the intended commit/tag on the host (or CI/CD delivery configured).
+- [ ] Outbound network access from the host to GHCR (`ghcr.io`) if pulling pre-built images.
+- [ ] **External walt.id stack is running and reachable** on the shared network (`waltid_network` → `docker-compose_default`):
+    - [ ] issuer-api on `:7002`
+    - [ ] verifier-api on `:7003`
+    - [ ] wallet-api on `:7001`
+    - [ ] issuer-api is a **patched/newer** build (no `notBefore cannot be in the past` time-bomb).
+- [ ] The `waltid_network` external network exists (`docker network ls | grep docker-compose_default`).
+- [ ] **University SIS endpoint reachable** from the host (set later via `LUSOFONA_API_URL`).
+- [ ] Host ports free on `127.0.0.1`: `8000/8001/8443/8444` (Kong), `8082` (Kong-UI), `8084–8087` (services), `8181` (Kafka-UI via override), `9092/29092` (Kafka), `8500/8600` (Consul), and — for observability — `9090/3000/3100/9308`.
 
 ---
 
 ## 2. Required secrets & environment
 
-Copy the template and fill in strong, unique values: `cp .env.example .env`.
-Confirm **none** of the following are left at their defaults or placeholders.
+Copy the template and populate it — ideally from a secret manager, not by hand:
 
-- [ ] `APP_API_KEY` set to a **strong, unique, non-default** value
-      (not `ulht-dev-local-CHANGE-ME`).
-- [ ] `WALLET_PASSWORD_SECRET` set to a long random secret (**no default** — service
-      fails fast without it).
-- [ ] `WALLET_PASSWORD_SALT` set to a random salt (**no default** — service fails fast
-      without it).
-- [ ] `GRAFANA_ADMIN_PASSWORD` set to a strong value (**no default**).
-- [ ] `KAFKA_UI_PASSWORD` set to a strong value (**no default**).
-- [ ] `APP_CORS_ALLOWED_ORIGINS` set to the **real** front-end origin(s) — never `*`.
-- [ ] `.env` is present on the host, is **not** committed to git, and file permissions
-      restrict it to the deploy user.
-- [ ] Every variable in `.env.example` has been reviewed and given an appropriate value.
+```bash
+cp .env.example .env
+```
 
-See [Configuration](CONFIGURATION.md) for the full variable reference.
+**Must be set (no defaults — Compose `${VAR:?}` fails startup if missing):**
 
----
+- [ ] `WALLET_PASSWORD_SECRET` — long random secret (credential-service wallet derivation).
+- [ ] `WALLET_PASSWORD_SALT` — random salt (credential-service wallet derivation).
+- [ ] `KAFKA_UI_PASSWORD` — Kafka-UI login password.
+- [ ] `GRAFANA_ADMIN_PASSWORD` — Grafana admin password (observability stack).
 
-## 3. Security hardening (before any exposure)
+**Must be changed from the insecure default before any real exposure:**
 
-- [ ] **TLS / HTTPS termination** in place at the edge — terminate at Kong
-      (`8443`/`8444`) and/or a reverse proxy; disable plaintext listeners for
-      externally reachable traffic.
-- [ ] **Kong admin API (`8001`) is NOT publicly exposed** — keep it loopback-bound or
-      firewalled. Exposing it hands over full gateway control.
-- [ ] **CORS restricted** via `APP_CORS_ALLOWED_ORIGINS` to the real origins only
-      (no wildcard).
-- [ ] **Kafka secured** with **SASL authentication and TLS** before any shared or
-      multi-host deployment (default is loopback-bound PLAINTEXT, no auth).
-- [ ] **University install key rotated** and **purged from git history**
-      (e.g. `git filter-repo`), then the old key invalidated upstream.
-- [ ] **Loopback-published ports bound or firewalled** — service/infra ports default to
-      `127.0.0.1`; if the host is multi-tenant or the ports must move to `0.0.0.0`,
-      protect them with host firewall rules.
-- [ ] **Secrets in a manager** — real secrets moved into a dedicated secret store
-      (Vault, AWS Secrets Manager, or the platform's secret store) rather than a plain
-      `.env` for production.
-- [ ] Containers confirmed running **non-root**; images **pinned** to known versions.
+- [ ] `APP_API_KEY` — default is `ulht-dev-local-CHANGE-ME`; replace with a strong, unique key.
 
-Full rationale: [Security](SECURITY.md) and
-[Deployment → Production hardening](DEPLOYMENT.md#production-hardening).
+**Should be reviewed / set for the environment:**
+
+- [ ] `APP_CORS_ALLOWED_ORIGINS` — set to the exact front-end origin(s), not a wildcard.
+- [ ] `LUSOFONA_API_URL` — your institution's SIS base URL (placeholder in the public repo).
+- [ ] `KAFKA_UI_USER` / `GRAFANA_ADMIN_USER` — change from `admin` if policy requires.
+- [ ] `JVM_XMS` / `JVM_XMX` — sized for the host (Kafka-UI JVM).
+
+**Hygiene:**
+
+- [ ] `.env` is **git-ignored** and never committed (`git check-ignore .env`).
+- [ ] Secrets are stored in a secret manager / CI secret store, not in shell history or tickets.
+- [ ] File permissions on `.env` are locked down (`chmod 600 .env`).
 
 ---
 
-## 4. Build & deploy
+## 3. Security hardening (before exposure)
 
-- [ ] **Obtain images** — either build locally or **pull from GHCR** (`ghcr.io`) if the
-      Docker Build pipeline published them (see [CI/CD](CICD.md)).
-- [ ] **Bring up the stack** with both Compose files:
+- [ ] **TLS enabled at the edge** — Kong proxy serves HTTPS (`:8443`); certificates valid and not self-signed for production.
+- [ ] **Kong admin API (`:8001`) NOT exposed** — loopback-only or firewalled. Exposing it grants full gateway control.
+- [ ] **CORS restricted** — `APP_CORS_ALLOWED_ORIGINS` is an explicit allow-list.
+- [ ] **Kafka not PLAINTEXT on the wire** for non-loopback deployments — **SASL/TLS** configured (default listeners are PLAINTEXT).
+- [ ] **Kafka-UI and Grafana** are behind auth (they are, by default) and not publicly reachable without need.
+- [ ] **Only intended host ports are published** — everything binds to `127.0.0.1` by default; confirm nothing is on `0.0.0.0` unintentionally.
+- [ ] **Secrets injected from a manager** (Vault / cloud secret store), not a plaintext file baked into an image.
+- [ ] **Key rotation plan** documented for `APP_API_KEY` and wallet secrets.
+- [ ] Reviewed [Security](SECURITY.md) — including which endpoints are intentionally unauthenticated (`/actuator/health`, `/info`, `/prometheus`, Swagger).
+
+---
+
+## 4. Build, deploy & smoke tests
+
+**Build / deploy:**
+
+- [ ] Validate the Compose config renders (catches YAML / `${VAR}` errors):
+  ```bash
+  docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml config >/dev/null
+  ```
+- [ ] Bring up the stack:
   ```bash
   docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
   ```
-  (Never run the stale root `docker-compose.yml`.)
-- [ ] **All containers healthy** — every service reports `healthy`:
+- [ ] All containers report **healthy**:
   ```bash
   docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml ps
   ```
-- [ ] **Smoke test — health** (public endpoint, no key needed):
+
+**Smoke tests:**
+
+- [ ] Each service health endpoint returns **HTTP 200** (no `apikey` needed):
   ```bash
-  curl http://127.0.0.1:8084/api/v1/actuator/health   # expect {"status":"UP"}
+  for p in 8084 8085 8086 8087; do
+    curl -fsS "http://127.0.0.1:$p/api/v1/actuator/health" && echo " OK :$p"
+  done
   ```
-- [ ] **Smoke test — authenticated issuance** with the `apikey` header:
+- [ ] Gateway routes are live through Kong (`http://127.0.0.1:8000/...`).
+- [ ] **Authenticated write path** works — issuing a student credential with the API key returns success:
   ```bash
-  curl -X POST http://127.0.0.1:8084/api/v1/student/issue \
-    -H "apikey: <APP_API_KEY>" \
+  curl -fsS -X POST "http://127.0.0.1:8084/api/v1/student/issue" \
+    -H "apikey: $APP_API_KEY" \
     -H "Content-Type: application/json" \
-    -d '{"userName":"<test-username>","installKey":"<test-install-key>"}'
-  # expect 202 Accepted with a correlationId and status PROCESSING
+    -d '{ ... issuance payload ... }'
   ```
-- [ ] A protected endpoint **without** a valid `apikey` returns **401** (auth is enforced).
+- [ ] A request **without** the `apikey` header is rejected (401/403) — confirms auth is enforced.
+- [ ] credential-service can reach walt.id (issuance/verify does **not** return 503).
 
 ---
 
 ## 5. Data & persistence
 
-- [ ] Named volumes present and backed up according to policy:
-  - [ ] **`kafka_data`** — Kafka (KRaft) log + metadata.
-  - [ ] **`consul_data`** — Consul service catalog / KV state.
-- [ ] **KRaft migration caveat understood.** Kafka runs in **KRaft mode (no ZooKeeper)**.
-      Only **wipe `kafka_data`** when migrating from an **old ZooKeeper-based** volume —
-      the legacy metadata is incompatible and the broker will refuse to start:
+- [ ] `kafka_data` volume present and writable (KRaft log + metadata).
+- [ ] `consul_data` volume present (service catalog / KV).
+- [ ] For the observability stack: `prometheus_data`, `grafana_data`, `loki_data` present.
+- [ ] **KRaft wipe caveat handled** — if this host previously ran Kafka in **ZooKeeper mode**, the old `kafka_data` is incompatible; it was wiped before first KRaft boot:
   ```bash
-  docker volume rm ulht-dcs_kafka_data   # ONLY when migrating off ZooKeeper
+  docker volume ls | grep kafka_data          # confirm the name
+  docker volume rm <project>_kafka_data        # only when migrating from ZooKeeper
   ```
-      Do **not** wipe it on a normal restart — you would lose event history.
-- [ ] Volume storage sized and monitored so Kafka logs do not fill the disk.
+- [ ] Volume backups configured for stateful volumes (see §7).
 
 ---
 
 ## 6. Observability
 
-- [ ] **Prometheus targets healthy** — check `http://<host>:9090/targets`; all service
-      scrape targets are `UP`.
-- [ ] **Grafana reachable** and dashboards load; logged in with the configured
-      `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` (default admin password changed).
-- [ ] **Loki receiving logs** — Promtail is shipping and log queries return results in
-      Grafana.
-- [ ] Alerting / notification channels configured if required by the operating team.
+- [ ] Observability stack up (`docker-compose.infrastructure.yml`).
+- [ ] **Prometheus targets all UP** at `http://127.0.0.1:9090/targets` — the four services (`/api/v1/actuator/prometheus`), `kafka-exporter:9308`, `consul:8500`, and Prometheus itself.
+- [ ] **Grafana** reachable at `http://127.0.0.1:3000`, login works with `GRAFANA_ADMIN_PASSWORD`, provisioned dashboards render with data.
+- [ ] **Loki + Promtail** shipping logs — logs visible in Grafana Explore / the logs dashboards.
+- [ ] Alerting path decided (Alertmanager is commented out in `monitoring/prometheus.yml` — wire it up if alerts are required).
 
 ---
 
 ## 7. Backup, rollback & scaling
 
-- [ ] **Backup** — `kafka_data` and `consul_data` volumes and the host `.env` (or secret
-      manager entries) are backed up on a defined schedule; restores have been tested.
-- [ ] **Rollback plan** — the previous known-good image tags are recorded so you can
-      redeploy them; `docker compose ... down` then `up -d` with pinned tags is
-      rehearsed. Volumes are **retained** on `down` (use `down -v` only for a clean slate).
-- [ ] **Scaling notes reviewed** — Kafka is a **single-node** KRaft broker/controller and
-      the services are stateless behind the gateway. Horizontal scaling of the services
-      is possible, but Kafka would need a proper multi-broker cluster (and SASL/TLS)
-      before it is production-grade. Document the intended topology.
+- [ ] **Backup** — scheduled backups of `kafka_data`, `consul_data`, and `grafana_data`; restore procedure tested at least once.
+- [ ] **Rollback** — previous image tags (GHCR `:<sha>`) retained; documented steps to redeploy the last-good tag.
+- [ ] **Rollback rehearsed** — a redeploy-to-previous-tag has actually been performed in a non-prod environment.
+- [ ] **Scaling notes reviewed** — Kafka is **single-node** (`replication-factor=1`); horizontal scaling of the broker requires a multi-node KRaft quorum and higher replication factors. Stateless services can be scaled behind Kong, but confirm Kafka consumer-group semantics first.
+- [ ] Resource limits (`deploy.resources`) reviewed against the host's capacity.
 
 ---
 
 ## 8. Go-live sign-off
 
-Confirm and record who signed off and when.
-
-- [ ] All sections above complete; no secret left at a default/placeholder value.
-- [ ] Security hardening (Section 3) reviewed and approved.
-- [ ] Smoke tests (Section 4) passed against the target environment.
-- [ ] Backup and rollback (Section 7) verified.
-- [ ] Monitoring and alerting (Section 6) confirmed operational.
-
-| Field | Value |
-| --- | --- |
-| Environment | `<staging / production>` |
-| Release / image tag | `<tag or commit>` |
-| Deployed by | `<name>` |
-| Reviewed by | `<name>` |
-| Date | `<YYYY-MM-DD>` |
-| Notes | `<known limitations / follow-ups>` |
+| Area | Owner | Verified (date) | Status |
+| --- | --- | --- | --- |
+| Prerequisites (Docker, walt.id, SIS) |  |  | ☐ |
+| Secrets & environment |  |  | ☐ |
+| Security hardening |  |  | ☐ |
+| CI green (Backend / Mobile / Docker / CodeQL) |  |  | ☐ |
+| Build & deploy + smoke tests |  |  | ☐ |
+| Data & persistence (KRaft caveat) |  |  | ☐ |
+| Observability (Prometheus / Grafana / Loki) |  |  | ☐ |
+| Backup / rollback rehearsed |  |  | ☐ |
+| **Final approval to GO LIVE** |  |  | ☐ |
 
 ---
 
 ## Related documentation
 
-- [Security](SECURITY.md) — authentication model and remaining production steps
-- [Deployment](DEPLOYMENT.md) — Compose files, images, KRaft, volumes, healthchecks
-- [CI/CD](CICD.md) — building and publishing images
-- [Configuration](CONFIGURATION.md) — environment variables
-- [Troubleshooting](TROUBLESHOOTING.md) — common failures, walt.id `notBefore` issue
+- [Deployment](DEPLOYMENT.md) — full run guide, topology, healthchecks, KRaft
+- [Security](SECURITY.md) — auth model & hardening
+- [Configuration](CONFIGURATION.md) — environment variable reference
+- [CI/CD](CICD.md) — pipelines, GHCR, required repo settings
+- [Troubleshooting](TROUBLESHOOTING.md) — common failure modes
+- [Project README](index.md)
