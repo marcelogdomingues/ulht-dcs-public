@@ -50,6 +50,7 @@ public class CredentialWorkflowConsumer {
     private final GenericCredentialBuilder genericCredentialBuilder;
     private final pt.ulusofona.ulht.credential.service.CredentialExpirationChecker credentialExpirationChecker;
     private final pt.ulusofona.ulht.credential.service.ProcessedEventService processedEventService;
+    private final pt.ulusofona.ulht.credential.service.CredentialStatusService credentialStatusService;
     
     // Map to store pending wallet requests (correlationId -> CompletableFuture)
     private final Map<String, CompletableFuture<StudentWalletService.StudentWalletInfo>> pendingWalletRequests = 
@@ -466,7 +467,19 @@ public class CredentialWorkflowConsumer {
                 
                 credentialOfferUrls.add(offerUrl);
                 issuedCredentialTypes.add(template.getType());
-                
+
+                // Register the issued credential in the status registry as VALID so it can
+                // later be revoked/suspended and surfaced in the Bitstring Status List.
+                // walt.id returns an offer URL (not a stable VC id) so we generate an id here.
+                // Failure-isolated: a registry error must never break the issuance happy path.
+                try {
+                    String credentialId = java.util.UUID.randomUUID().toString();
+                    credentialStatusService.record(credentialId, template.getType(), subjectDid);
+                } catch (Exception statusException) {
+                    log.warn("⚠️  Failed to record credential status for {} (issuance still succeeded): {}",
+                            template.getType(), statusException.getMessage());
+                }
+
                 log.info("✅ {} issued and stored in wallet successfully", template.getType());
                 
             } catch (Exception e) {

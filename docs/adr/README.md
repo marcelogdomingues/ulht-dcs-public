@@ -29,6 +29,8 @@ considered**.
 | [0004](0004-selective-disclosure-verification.md) | Selective / least-disclosure verification for privacy & GDPR | Accepted |
 | [0005](0005-api-key-authentication.md) | Shared API-key authentication enforced at every service | Accepted |
 | [0006](0006-spring-boot-4-java-25.md) | Spring Boot 4.1 on Java 25 as the runtime platform | Accepted |
+| [0007](0007-credential-revocation.md) | Credential revocation via a status registry and W3C Bitstring Status List | Accepted |
+| [0008](0008-auth-and-key-management-roadmap.md) | Authentication & key-management roadmap (OIDC, KMS/Vault, SD-JWT, mobile login) | Proposed |
 
 ## How to add a new ADR
 
