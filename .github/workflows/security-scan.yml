@@ -48,16 +48,19 @@ jobs:
             | sh -s -- -b "$RUNNER_TEMP/trivy-bin"
           echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
 
+      # --offline-scan: don't reach out to remote Maven/registries to resolve
+      # dependency versions. Without it, Trivy hits repo.maven.apache.org and a
+      # 429 (rate limit) becomes a FATAL error that fails the job.
       - name: Run Trivy filesystem scan (table)
         run: |
           trivy fs --scanners vuln,secret,misconfig \
-            --severity CRITICAL,HIGH \
+            --severity CRITICAL,HIGH --offline-scan \
             --exit-code 0 --no-progress --format table .
 
       - name: Run Trivy filesystem scan (SARIF)
         run: |
           trivy fs --scanners vuln,secret,misconfig \
-            --severity CRITICAL,HIGH \
+            --severity CRITICAL,HIGH --offline-scan \
             --exit-code 0 --no-progress --format sarif --output trivy.sarif .
 
       - name: Upload Trivy SARIF
