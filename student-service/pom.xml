@@ -36,6 +36,19 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+
+        <!--
+          Shared security building blocks (API-key filter + SecurityFilterChain)
+          provided by the standalone ulht-commons module. This artifact is NOT on
+          Maven Central: install it locally first with
+          `mvn -q -f ulht-commons/pom.xml -DskipTests install` before building
+          this service (the Dockerfile does this automatically).
+        -->
+        <dependency>
+            <groupId>pt.ulusofona</groupId>
+            <artifactId>ulht-commons</artifactId>
+            <version>1.0.0</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>

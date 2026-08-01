@@ -1,15 +1,21 @@
 # Build Stage
+#
+# NOTE: the build context for this Dockerfile is the REPOSITORY ROOT (see
+# docker-compose.*.yml -> build.context: . / dockerfile: fulfilment-service/Dockerfile),
+# because the service depends on the shared `ulht-commons` module which lives at
+# the repo root and must be installed into the local Maven repo before the
+# service is packaged.
 FROM maven:3.9-eclipse-temurin-25 AS builder
 
-# Set the working directory
 WORKDIR /build
 
-# Copy the project files
-COPY pom.xml ./pom.xml
-COPY src ./src
+# 1. Build & install the shared commons module into the local Maven repository.
+COPY ulht-commons ./ulht-commons
+RUN mvn -q -f ulht-commons/pom.xml -DskipTests install
 
-# Build the project
-RUN mvn clean package -DskipTests -Dmaven.test.skip=true
+# 2. Build the service (now that pt.ulusofona:ulht-commons is available).
+COPY fulfilment-service ./fulfilment-service
+RUN mvn -q -f fulfilment-service/pom.xml clean package -DskipTests -Dmaven.test.skip=true
 
 # Runtime Stage
 FROM eclipse-temurin:25-jre-alpine
@@ -18,7 +24,7 @@ FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Copy the built JAR from the builder stage
-COPY --from=builder /build/target/*.jar app.jar
+COPY --from=builder /build/fulfilment-service/target/*.jar app.jar
 
 # Create a non-root user and ensure app files are owned by it
 RUN addgroup -S app && adduser -S app -G app && chown -R app:app /app

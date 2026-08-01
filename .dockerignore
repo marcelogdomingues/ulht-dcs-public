@@ -1,0 +1,36 @@
+# Docker build context is the repository ROOT (so the shared `ulht-commons`
+# module is available alongside each service). Keep the context lean: only the
+# service source trees + ulht-commons are needed; everything below is excluded.
+
+# VCS & IDE
+.git
+.github
+.idea
+.vscode
+.devcontainer
+
+# Maven build output (rebuilt inside the image)
+**/target
+
+# Node / mobile / docs / monitoring — not needed for the Java service images
+mobile-apps
+kong-ui
+docs
+monitoring
+postman
+docker
+node_modules
+
+# Compose / infra files & local overrides
+docker-compose*.yml
+*.override.yml
+.env
+.env.*
+
+# Large binary / diagram assets
+*.png
+*.excalidraw
+
+# Misc
+*.md
+Makefile

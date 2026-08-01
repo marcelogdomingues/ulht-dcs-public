@@ -1,9 +1,14 @@
-package pt.ulusofona.digital.wallet.config;
+package pt.ulusofona.commons.security;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,13 +24,36 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * API-key based security configuration for the lusofona service.
- * Stateless: every request must present a valid {@code apikey} header,
- * except public endpoints (health/info + swagger).
+ * Shared API-key based security auto-configuration for the ULHT services.
+ *
+ * <p>Stateless: every request must present a valid {@code apikey} header, except
+ * the public endpoints (actuator health/info/prometheus + swagger).
+ *
+ * <p>This is registered via Spring Boot auto-configuration
+ * ({@code META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports}),
+ * so a service only needs the {@code ulht-commons} dependency on its classpath —
+ * no per-service {@code @Import} is required, and it works regardless of the
+ * service's own base package.
+ *
+ * <p>Every bean is guarded with {@link ConditionalOnMissingBean} so an individual
+ * service can still fully override the behaviour by declaring its own
+ * {@code SecurityFilterChain} / {@code CorsConfigurationSource}.
+ *
+ * <p>Configuration properties:
+ * <ul>
+ *   <li>{@code app.security.api-key} — the shared secret required in the {@code apikey} header.</li>
+ *   <li>{@code app.cors.allowed-origins} — comma separated list of allowed origins
+ *       (defaults to {@code http://localhost:8000,http://localhost:3000}).</li>
+ * </ul>
  */
-@Configuration
+@AutoConfiguration(before = {
+        SecurityAutoConfiguration.class,
+        ServletWebSecurityAutoConfiguration.class,
+        UserDetailsServiceAutoConfiguration.class
+})
+@ConditionalOnClass({SecurityFilterChain.class, HttpSecurity.class})
 @EnableWebSecurity
-public class SecurityConfig {
+public class ApiKeySecurityAutoConfiguration {
 
     private static final String[] PUBLIC_PATHS = {
             "/actuator/health",
@@ -44,6 +72,7 @@ public class SecurityConfig {
     private String[] allowedOrigins;
 
     @Bean
+    @ConditionalOnMissingBean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         AuthenticationEntryPoint entryPoint = (request, response, authException) ->
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
@@ -68,6 +97,7 @@ public class SecurityConfig {
      * config lets Security auto-permit preflight (OPTIONS) requests.
      */
     @Bean
+    @ConditionalOnMissingBean(CorsConfigurationSource.class)
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));

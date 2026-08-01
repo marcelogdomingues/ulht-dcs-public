@@ -5,6 +5,11 @@
 # its own pom.xml (there is no parent aggregator), so we use a matrix and build
 # each one in its own directory with `mvn -B -ntp verify`.
 #
+# Each service depends on the standalone `ulht-commons` module (shared security),
+# which is NOT on Maven Central. It is therefore installed into the local Maven
+# repository first (`mvn -f ulht-commons/pom.xml install`) before each service is
+# built.
+#
 # The tests are plain unit / Spring context tests (no Testcontainers), so this
 # job needs NO Docker daemon. Code generation (Avro / OpenAPI generator plugins)
 # is handled automatically by `mvn verify`.
@@ -15,6 +20,7 @@ on:
   push:
     # Only run when backend code or this workflow changes.
     paths:
+      - "ulht-commons/**"
       - "credential-service/**"
       - "student-service/**"
       - "lusofona-service/**"
@@ -22,6 +28,7 @@ on:
       - ".github/workflows/backend.yml"
   pull_request:
     paths:
+      - "ulht-commons/**"
       - "credential-service/**"
       - "student-service/**"
       - "lusofona-service/**"
@@ -57,6 +64,11 @@ jobs:
           java-version: "25"
           # Cache the local Maven repository keyed off pom.xml files.
           cache: maven
+
+      # Install the shared commons module into the local Maven repository so the
+      # service build can resolve pt.ulusofona:ulht-commons.
+      - name: Install ulht-commons
+        run: mvn -B -ntp -f ulht-commons/pom.xml -DskipTests install
 
       - name: Build & test (mvn verify)
         working-directory: ${{ matrix.service }}

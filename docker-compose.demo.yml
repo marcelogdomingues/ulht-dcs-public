@@ -112,8 +112,8 @@ services:
   # ---------------------------------------------------------------------------
   fulfilment-service:
     build:
-      context: ./fulfilment-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: fulfilment-service/Dockerfile
     container_name: demo-fulfilment-service
     hostname: ulht-fulfilment-service
     depends_on:
@@ -155,8 +155,8 @@ services:
   # ---------------------------------------------------------------------------
   lusofona-service:
     build:
-      context: ./lusofona-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: lusofona-service/Dockerfile
     container_name: demo-lusofona-service
     hostname: ulht-lusofona-service
     depends_on:
@@ -193,8 +193,8 @@ services:
   # ---------------------------------------------------------------------------
   credential-service:
     build:
-      context: ./credential-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: credential-service/Dockerfile
     container_name: demo-credential-service
     hostname: ulht-credential-service
     depends_on:
@@ -238,8 +238,8 @@ services:
   # ---------------------------------------------------------------------------
   student-service:
     build:
-      context: ./student-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: student-service/Dockerfile
     container_name: demo-student-service
     hostname: ulht-student-service
     depends_on:

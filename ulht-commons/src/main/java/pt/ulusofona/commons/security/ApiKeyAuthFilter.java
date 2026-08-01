@@ -1,4 +1,4 @@
-package pt.ulusofona.ulht.credential.config;
+package pt.ulusofona.commons.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,6 +18,9 @@ import java.util.List;
  * Filter that authenticates requests using a shared API key supplied in the
  * {@code apikey} header. The provided key is compared to the configured
  * expected key using a constant-time comparison to avoid timing attacks.
+ *
+ * <p>This is the single canonical implementation shared by all ULHT services
+ * via the {@code ulht-commons} module.
  */
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
 

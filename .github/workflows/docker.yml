@@ -21,6 +21,7 @@ on:
     tags:
       - "v*"
     paths:
+      - "ulht-commons/**"
       - "credential-service/**"
       - "student-service/**"
       - "lusofona-service/**"
@@ -30,6 +31,7 @@ on:
       - ".github/workflows/docker.yml"
   pull_request:
     paths:
+      - "ulht-commons/**"
       - "credential-service/**"
       - "student-service/**"
       - "lusofona-service/**"
@@ -105,8 +107,10 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
-          # Build context is the service directory (matches `docker build ./<service>`).
-          context: ./${{ matrix.service }}
+          # Build context is the REPOSITORY ROOT so the shared ulht-commons module
+          # is available to the service Dockerfile (which installs it first).
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
           # Push on any non-PR event; build-only on pull requests.
           push: ${{ github.event_name != 'pull_request' }}
           tags: |

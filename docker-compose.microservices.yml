@@ -238,8 +238,8 @@ services:
   
   ulht-credential-service:
     build:
-      context: ./credential-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: credential-service/Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
     container_name: ulht-credential-service
@@ -297,8 +297,8 @@ services:
           cpus: '0.5'
   ulht-student-service:
     build:
-      context: ./student-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: student-service/Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
     container_name: ulht-student-service
@@ -349,8 +349,8 @@ services:
 
   ulht-lusofona-service:
     build:
-      context: ./lusofona-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: lusofona-service/Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
     container_name: ulht-lusofona-service
@@ -402,8 +402,8 @@ services:
 
   ulht-fulfilment-service:
     build:
-      context: ./fulfilment-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: fulfilment-service/Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
     container_name: ulht-fulfilment-service
