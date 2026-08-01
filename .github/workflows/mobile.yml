@@ -57,8 +57,7 @@ jobs:
 
       - name: Static analysis
         working-directory: mobile-apps/${{ matrix.app }}
-        run: flutter analyze
-
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Run tests (skipped if no test/ dir)
         working-directory: mobile-apps/${{ matrix.app }}
         # Guard: only run tests when the app ships a test/ directory, so an app

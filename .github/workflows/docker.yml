@@ -60,6 +60,7 @@ jobs:
       WALLET_PASSWORD_SALT: dummy-salt
       GRAFANA_ADMIN_PASSWORD: dummy-grafana-pass
       KAFKA_UI_PASSWORD: dummy-kafka-pass
+      POSTGRES_PASSWORD: dummy-pg
     steps:
       - name: Checkout
         uses: actions/checkout@v4
