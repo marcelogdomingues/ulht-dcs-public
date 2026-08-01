@@ -241,6 +241,10 @@
             <plugin>
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro-maven-plugin</artifactId>
+                <!-- Pin the plugin version (matches avro-core) so the build never
+                     has to resolve "latest" from Central metadata, which is flaky
+                     and intermittently fails with a PluginVersionResolutionException. -->
+                <version>${avro.version}</version>
                 <executions>
                     <execution>
                         <id>schemas</id>
