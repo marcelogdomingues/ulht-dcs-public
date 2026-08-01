@@ -84,6 +84,11 @@ public class ApiKeySecurityAutoConfiguration {
             "/actuator/prometheus",
             "/swagger-ui/**",
             "/swagger-ui.html",
+            // OpenAPI spec. Services override springdoc.api-docs.path to
+            // "/api-docs", so permit both that and the springdoc default,
+            // otherwise Swagger UI loads but gets 401 fetching its spec
+            // (and /api-docs/swagger-config, which the UI needs on startup).
+            "/api-docs/**",
             "/v3/api-docs/**"
     };
 
