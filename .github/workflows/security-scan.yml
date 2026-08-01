@@ -38,20 +38,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: CRITICAL,HIGH
-          format: sarif
-          output: trivy.sarif
-          # Advisory only: never block the build on findings.
-          exit-code: "0"
+      # Run Trivy via its official install script + CLI rather than the
+      # marketplace action, whose input contract changes between tags. This is
+      # stable and version-independent. Advisory only (exit-code 0) so findings
+      # never block CI; results print to the job log.
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b "$RUNNER_TEMP/trivy-bin"
+          echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
+
+      - name: Run Trivy filesystem scan (table)
+        run: |
+          trivy fs --scanners vuln,secret,misconfig \
+            --severity CRITICAL,HIGH \
+            --exit-code 0 --no-progress --format table .
+
+      - name: Run Trivy filesystem scan (SARIF)
+        run: |
+          trivy fs --scanners vuln,secret,misconfig \
+            --severity CRITICAL,HIGH \
+            --exit-code 0 --no-progress --format sarif --output trivy.sarif .
 
       - name: Upload Trivy SARIF
         # Best-effort: don't fail the job if code scanning isn't enabled yet.
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy.sarif

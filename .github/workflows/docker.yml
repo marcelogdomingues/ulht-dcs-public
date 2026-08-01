@@ -112,8 +112,12 @@ jobs:
           # is available to the service Dockerfile (which installs it first).
           context: .
           file: ${{ matrix.service }}/Dockerfile
-          # Push on any non-PR event; build-only on pull requests.
-          push: ${{ github.event_name != 'pull_request' }}
+          # Build-only in CI: this verifies every service image builds on each
+          # push/PR. Publishing to GHCR is done from the release workflow (or
+          # manually) because GHCR package writes require the package to exist
+          # and be linked with write access, which is a one-time repo/account
+          # setup step rather than something CI should own.
+          push: false
           tags: |
             ghcr.io/${{ github.repository_owner }}/ulht-${{ matrix.service }}:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/ulht-${{ matrix.service }}:latest
