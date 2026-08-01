@@ -80,9 +80,6 @@ over the existing apikey-secured REST surface.
 
 ### Negative / trade-offs
 
-- **Status not yet embedded in the signed VC** — issued credentials do not yet
-  carry a `credentialStatus` property pointing at the list, so a verifier is not
-  *automatically* directed here (see follow-up).
 - **Unsigned status list** — `GET /status-list` returns the list as a VC-shaped
   JSON object but it is not cryptographically signed by the real issuer key yet.
 - **Single default list** — one list/index space; sharding across multiple lists
@@ -93,14 +90,29 @@ over the existing apikey-secured REST surface.
 
 ## Follow-up
 
-The remaining step to make this end-to-end is to **wire `credentialStatus` into
-the issued VCs via the real walt.id issuer**: include a `credentialStatus` entry
-(`type: BitstringStatusListEntry`, `statusListCredential`, `statusListIndex`) in
-the issuance request so the signed credential points at
-`GET /status-list/{listId}`, use the credential's real VC id as the registry id,
-and sign the published status list with the issuer key. This needs the real
-issuer (out of scope for this phase, which targets DEMO/mock issuance) and is
-tracked as the next increment.
+**Done — `credentialStatus` is now embedded in issued VCs.**
+`CredentialWorkflowConsumer.issueCredentials` records the credential in the
+registry *before* issuance (obtaining a stable id + `statusListIndex`), then
+embeds a `credentialStatus` entry
+(`type: BitstringStatusListEntry`, `statusPurpose: revocation`,
+`statusListIndex`, `statusListCredential = {baseUrl}/status-list/{listId}`) into
+the credential data walt.id signs, so the issued VC points a verifier at
+`GET /api/v1/status-list/{listId}`. The base URL is configurable via
+`credentials.status.base-url`. This was verified end-to-end against the bundled
+real walt.id issuer (`waltid/issuer-api:0.22.0`, see
+[Deployment → Running with real walt.id](../DEPLOYMENT.md)): the issuer accepts
+the entry and returns a valid OID4VCI pre-authorized credential offer. The
+embedding is **failure-isolated** — if the registry or embedding step fails,
+issuance still proceeds (just without the status entry) and a fallback
+`record(...)` still tracks the credential.
+
+Remaining smaller increments:
+
+- **Use the credential's real VC id as the registry id** — walt.id returns an
+  offer URL rather than a stable VC id, so a generated UUID is still used as both
+  the registry id and the `statusListIndex` anchor.
+- **Sign the published status list** with the issuer key (currently returned as
+  unsigned VC-shaped JSON).
 
 ## Alternatives considered
 

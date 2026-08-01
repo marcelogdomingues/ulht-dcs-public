@@ -1,0 +1,157 @@
+# =============================================================================
+# REAL walt.id backend for the NON-demo stack
+# =============================================================================
+# Stands up walt.id's Issuer, Verifier and Wallet APIs so credential-service can
+# issue REAL Verifiable Credentials instead of the demo mocks.
+#
+# This is ADDITIVE. It does NOT touch the demo mock path
+# (docker-compose.demo.yml) or the app stack (docker-compose.microservices.yml).
+#
+# HOW IT WIRES UP
+# ---------------
+# docker-compose.microservices.yml declares an EXTERNAL network:
+#     waltid_network:
+#       external: true
+#       name: docker-compose_default
+# ...and credential-service (docker profile, application-docker.yml) already
+# points its Feign clients at the in-network hostnames issuer-api:7002,
+# verifier-api:7003, wallet-api:7001.
+#
+# This file creates a network literally NAMED `docker-compose_default` and runs
+# the three walt.id services on it under those exact service names, so the app
+# services resolve them by DNS with no changes to the app compose or config.
+#
+# RUN (walt.id first, then the app stack joins the shared external network):
+#   1) docker compose -f docker-compose.waltid.yml -p docker-compose up -d
+#   2) docker compose -f docker-compose.microservices.yml up -d
+# The `-p docker-compose` project name is what makes the default/declared network
+# resolve to `docker-compose_default`.
+#
+# TEAR DOWN:
+#   docker compose -f docker-compose.microservices.yml down
+#   docker compose -f docker-compose.waltid.yml -p docker-compose down
+#
+# IMAGE PINNING / known cert time-bomb
+# ------------------------------------
+# Some issuer-api versions (0.15.x, 0.16.x) ship example signing certs whose
+# `notBefore` is now in the past and CRASH at startup with
+# "notBefore cannot be in the past". issuer-api is pinned to 0.22.0, which is
+# confirmed to boot cleanly. Wallet/verifier are pinned to 0.15.1 (stable, no
+# such issue). Bump together after verifying a newer set boots.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # ISSUER API - OID4VCI credential issuance (:7002)
+  # ---------------------------------------------------------------------------
+  issuer-api:
+    image: waltid/issuer-api:0.22.0
+    container_name: issuer-api
+    hostname: issuer-api
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:7002:7002"
+    volumes:
+      - ./docker/waltid/issuer-api/config:/waltid-issuer-api/config:ro
+    healthcheck:
+      # busybox wget is present in the walt.id images (no curl).
+      # issuer-api 0.22.0 serves OID4VCI metadata under the draft path.
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7002/draft13/.well-known/openid-credential-issuer"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - waltid
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # ---------------------------------------------------------------------------
+  # VERIFIER API - OID4VP presentation verification (:7003)
+  # ---------------------------------------------------------------------------
+  verifier-api:
+    image: waltid/verifier-api:0.15.1
+    container_name: verifier-api
+    hostname: verifier-api
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:7003:7003"
+    volumes:
+      - ./docker/waltid/verifier-api/config:/waltid-verifier-api/config:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7003/openid4vc/policy-list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - waltid
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # ---------------------------------------------------------------------------
+  # WALLET API - holder wallet backend (:7001). Embedded SQLite (see db.conf),
+  # so no separate Postgres container is required for this bundled stack.
+  # ---------------------------------------------------------------------------
+  wallet-api:
+    image: waltid/wallet-api:0.15.1
+    container_name: wallet-api
+    hostname: wallet-api
+    platform: linux/amd64
+    depends_on:
+      issuer-api:
+        condition: service_started
+      verifier-api:
+        condition: service_started
+    ports:
+      - "127.0.0.1:7001:7001"
+    environment:
+      # Consumed by wallet-api to reach issuer/verifier for offer redemption /
+      # presentation. Kept in-network so everything resolves via compose DNS.
+      WALLET_BACKEND_PORT: "7001"
+    volumes:
+      - ./docker/waltid/wallet-api/config:/waltid-wallet-api/config:ro
+      - waltid_wallet_data:/waltid-wallet-api/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7001/livez"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    networks:
+      - waltid
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: '1.0'
+        reservations:
+          memory: 768M
+          cpus: '0.5'
+
+volumes:
+  waltid_wallet_data:
+    driver: local
+
+# The app stack (docker-compose.microservices.yml) joins THIS network as an
+# `external` network named `docker-compose_default`. Naming it here (and running
+# this file under `-p docker-compose`) is what makes that reference resolve.
+networks:
+  waltid:
+    name: docker-compose_default
+    driver: bridge

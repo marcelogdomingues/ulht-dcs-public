@@ -407,6 +407,52 @@ The [walt.id](ARCHITECTURE.md) components — issuer (`:7002`), verifier (`:7003
 
 ---
 
+## Running with real walt.id (bundled)
+
+By default the full stack expects an **external** walt.id. To run a **real** walt.id backend from this repo (so `credential-service` in its normal `docker` profile — **not** `demo` — issues real Verifiable Credentials), use the bundled overlay `docker-compose.waltid.yml` + the config scaffold under `docker/waltid/`.
+
+It stands up walt.id's **issuer** (`:7002`), **verifier** (`:7003`) and **wallet** (`:7001`) APIs on a network **named `docker-compose_default`** — exactly the external network name `docker-compose.microservices.yml` already declares as `waltid_network` — so the app services resolve `issuer-api` / `verifier-api` / `wallet-api` by DNS with **no app-config changes**. The wallet-api uses an embedded SQLite DB (config in `docker/waltid/wallet-api/config/db.conf`), so no extra Postgres container is needed.
+
+Images are **pinned**: `issuer-api:0.22.0` (confirmed to avoid the `notBefore` crash), `verifier-api:0.15.1`, `wallet-api:0.15.1`.
+
+```bash
+# 1) Bring up the real walt.id backend FIRST (creates docker-compose_default).
+#    The -p docker-compose project name is what makes the network name resolve.
+docker compose -f docker-compose.waltid.yml -p docker-compose up -d
+
+# 2) Bring up the app stack; it joins the shared external network.
+docker compose -f docker-compose.microservices.yml up -d
+
+# 3) Issue a REAL credential (docker profile — no `demo`):
+curl -X POST http://localhost:8084/api/v1/student/issue \
+  -H "apikey: $APP_API_KEY" -H "Content-Type: application/json" \
+  -d '{"userName":"<student>","installKey":"<key>"}'
+```
+
+Verify walt.id is healthy:
+
+```bash
+curl -s http://localhost:7002/draft13/.well-known/openid-credential-issuer   # issuer metadata
+curl -s http://localhost:7003/openid4vc/policy-list                          # verifier
+curl -s http://localhost:7001/livez                                          # wallet
+```
+
+Tear down (walt.id last):
+
+```bash
+docker compose -f docker-compose.microservices.yml down
+docker compose -f docker-compose.waltid.yml -p docker-compose down          # add -v to drop the wallet SQLite volume
+```
+
+!!! danger "Dev keys only"
+    `docker/waltid/wallet-api/config/auth.conf` ships **non-production placeholder** keys (`encryptionKey`, `signKey`, `tokenKey`) purely so the stack boots out-of-the-box. **Rotate all of them** before any real deployment.
+
+### Revocation-aware issued VCs (ADR 0007)
+
+When issuing against the real walt.id, `credential-service` embeds a W3C `credentialStatus` entry (`type: BitstringStatusListEntry`, `statusPurpose: revocation`, `statusListIndex`, `statusListCredential`) into each VC, pointing at `GET /api/v1/status-list/{listId}`. Set the externally-reachable base URL via `credentials.status.base-url` (default `http://ulht-credential-service:8086/api/v1`) so verifiers can resolve the list. See [ADR 0007](adr/0007-credential-revocation.md).
+
+---
+
 ## Production hardening
 
 The defaults are tuned for **local development**. Before any real deployment, work through [Security](SECURITY.md) and the [Deployment Checklist](DEPLOYMENT_CHECKLIST.md), and at minimum:

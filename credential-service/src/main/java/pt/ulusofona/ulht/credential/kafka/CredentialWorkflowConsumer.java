@@ -51,7 +51,22 @@ public class CredentialWorkflowConsumer {
     private final pt.ulusofona.ulht.credential.service.CredentialExpirationChecker credentialExpirationChecker;
     private final pt.ulusofona.ulht.credential.service.ProcessedEventService processedEventService;
     private final pt.ulusofona.ulht.credential.service.CredentialStatusService credentialStatusService;
-    
+
+    /**
+     * Public base URL of THIS credential-service, used to build the
+     * {@code statusListCredential} URL embedded in issued VCs (ADR 0007).
+     * A verifier must be able to GET {baseUrl}/status-list/{listId}. Defaults to
+     * the in-cluster hostname; override via {@code credentials.status.base-url}.
+     */
+    @org.springframework.beans.factory.annotation.Value(
+            "${credentials.status.base-url:http://ulht-credential-service:8086/api/v1}")
+    private String statusBaseUrl;
+
+    /** Identifier of the single default status list published by this service. */
+    @org.springframework.beans.factory.annotation.Value(
+            "${credentials.status.list-id:credential-status-list-1}")
+    private String statusListId;
+
     // Map to store pending wallet requests (correlationId -> CompletableFuture)
     private final Map<String, CompletableFuture<StudentWalletService.StudentWalletInfo>> pendingWalletRequests = 
             new ConcurrentHashMap<>();
@@ -412,7 +427,24 @@ public class CredentialWorkflowConsumer {
                 // Build credential data using template
                 Map<String, Object> credentialData = genericCredentialBuilder.buildCredential(
                     template, dataMap, subjectDid, issuerDid);
-                
+
+                // --- ADR 0007 follow-up: make the issued VC revocation-aware ---------
+                // Register the credential in the status registry FIRST so we obtain a
+                // stable id + statusListIndex, then embed a W3C `credentialStatus`
+                // entry (BitstringStatusListEntry) in the credential data walt.id will
+                // sign. A verifier reading the signed VC is then directed to
+                // GET /api/v1/status-list/{listId} to resolve revocation.
+                // Failure-isolated: any registry/embedding error must NOT break issuance.
+                String credentialId = java.util.UUID.randomUUID().toString();
+                try {
+                    var statusEntity = credentialStatusService.record(
+                            credentialId, template.getType(), subjectDid);
+                    embedCredentialStatus(credentialData, statusEntity.getStatusListIndex());
+                } catch (Exception statusException) {
+                    log.warn("⚠️  Failed to embed credentialStatus for {} (issuance continues without it): {}",
+                            template.getType(), statusException.getMessage());
+                }
+
                 // Build credential mapping for dynamic fields (id, timestamps, DIDs)
                 // Note: We don't include issuer mapping since issuer is already set correctly in credentialData
                 // The mapping would override it with <issuerDid> placeholder which might not be replaced correctly
@@ -468,12 +500,12 @@ public class CredentialWorkflowConsumer {
                 credentialOfferUrls.add(offerUrl);
                 issuedCredentialTypes.add(template.getType());
 
-                // Register the issued credential in the status registry as VALID so it can
-                // later be revoked/suspended and surfaced in the Bitstring Status List.
-                // walt.id returns an offer URL (not a stable VC id) so we generate an id here.
+                // Ensure the issued credential is registered as VALID in the status
+                // registry. This is idempotent by id: if it was already recorded above
+                // (to embed the credentialStatus entry) this is a no-op; if that step
+                // failed, this is the fallback so the credential is still trackable.
                 // Failure-isolated: a registry error must never break the issuance happy path.
                 try {
-                    String credentialId = java.util.UUID.randomUUID().toString();
                     credentialStatusService.record(credentialId, template.getType(), subjectDid);
                 } catch (Exception statusException) {
                     log.warn("⚠️  Failed to record credential status for {} (issuance still succeeded): {}",
@@ -633,7 +665,50 @@ public class CredentialWorkflowConsumer {
         sdConfig.put("fields", fields);
         return sdConfig;
     }
-    
+
+    /**
+     * Embeds a W3C {@code credentialStatus} entry (BitstringStatusListEntry) into the
+     * credential data that walt.id will sign, so the issued VC is revocation-aware
+     * and points a verifier at this service's Bitstring Status List (ADR 0007).
+     *
+     * <p>The entry follows the
+     * <a href="https://www.w3.org/TR/vc-bitstring-status-list/">W3C Bitstring Status
+     * List</a> shape:
+     * <pre>
+     * "credentialStatus": {
+     *   "id": "{baseUrl}/status-list/{listId}#{index}",
+     *   "type": "BitstringStatusListEntry",
+     *   "statusPurpose": "revocation",
+     *   "statusListIndex": "{index}",
+     *   "statusListCredential": "{baseUrl}/status-list/{listId}"
+     * }
+     * </pre>
+     * Skips silently if the credential data is missing/immutable.</p>
+     *
+     * @param credentialData   the mutable credential map passed to walt.id
+     * @param statusListIndex  this credential's bit position in the status list
+     */
+    private void embedCredentialStatus(Map<String, Object> credentialData, long statusListIndex) {
+        if (credentialData == null) {
+            return;
+        }
+        String statusListCredential = statusBaseUrl + "/status-list/" + statusListId;
+
+        Map<String, Object> credentialStatus = new java.util.LinkedHashMap<>();
+        credentialStatus.put("id", statusListCredential + "#" + statusListIndex);
+        credentialStatus.put("type", "BitstringStatusListEntry");
+        credentialStatus.put("statusPurpose", "revocation");
+        credentialStatus.put("statusListIndex", String.valueOf(statusListIndex));
+        credentialStatus.put("statusListCredential", statusListCredential);
+
+        try {
+            credentialData.put("credentialStatus", credentialStatus);
+            log.info("🔗 Embedded credentialStatus (index={}) -> {}", statusListIndex, statusListCredential);
+        } catch (UnsupportedOperationException immutable) {
+            log.warn("⚠️  credentialData is immutable; skipping credentialStatus embedding");
+        }
+    }
+
     /**
      * Publishes credential progress events (standardized topic name)
      */
