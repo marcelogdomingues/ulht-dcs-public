@@ -2,6 +2,7 @@ package pt.ulusofona.digital.wallet.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -51,8 +52,14 @@ public class StudentLoginConsumer {
         String correlationId = (String) payload.get("correlationId");
         String userName = (String) payload.get("userName");
         String installKey = (String) payload.get("installKey");
-        
-        log.info("📨 Received student login from Kafka: correlationId={}, userName={}", 
+
+        // Put the business correlationId into the MDC so every log line emitted while
+        // processing this message is filterable by correlationId. Cleared in finally.
+        if (correlationId != null) {
+            MDC.put("correlationId", correlationId);
+        }
+
+        log.info("📨 Received student login from Kafka: correlationId={}, userName={}",
                  correlationId, userName);
 
         try {
@@ -162,10 +169,12 @@ public class StudentLoginConsumer {
             // CRITICAL: Unexpected error - DO NOT issue credentials with fake data!
             log.error("❌ Unexpected error for user {}: {} - Workflow will FAIL (no credentials issued)", 
                      userName, e.getMessage(), e);
-            publishError(correlationId, userName, 
+            publishError(correlationId, userName,
                 "Failed to retrieve student data from ULHT API: " + e.getMessage(),
                 ErrorCodes.INTERNAL_SERVER_ERROR);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.INTERNAL_SERVER_ERROR);
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     

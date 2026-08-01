@@ -3,6 +3,7 @@ package pt.ulusofona.ulht.credential.kafka;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
@@ -57,21 +58,28 @@ public class WalletWorkflowConsumer {
         }
 
         String correlationId = (String) request.get("correlationId");
-        String operationType = (String) request.get("operationType");
-        String userId = (String) request.get("userId");
-        Object studentData = request.get("studentData");
-
-        if (correlationId == null || operationType == null || studentData == null) {
-            log.error("❌ Invalid wallet workflow request - missing required fields: {}", request);
-            publishWalletError(correlationId, "INVALID_REQUEST", "Missing required fields");
-            return;
+        if (correlationId != null) {
+            MDC.put("correlationId", correlationId);
         }
-
         try {
-            processWalletWorkflow(correlationId, operationType, userId, studentData);
-        } catch (Exception e) {
-            log.error("❌ Error processing wallet workflow for correlationId: {}", correlationId, e);
-            publishWalletError(correlationId, "WORKFLOW_ERROR", e.getMessage());
+            String operationType = (String) request.get("operationType");
+            String userId = (String) request.get("userId");
+            Object studentData = request.get("studentData");
+
+            if (correlationId == null || operationType == null || studentData == null) {
+                log.error("❌ Invalid wallet workflow request - missing required fields: {}", request);
+                publishWalletError(correlationId, "INVALID_REQUEST", "Missing required fields");
+                return;
+            }
+
+            try {
+                processWalletWorkflow(correlationId, operationType, userId, studentData);
+            } catch (Exception e) {
+                log.error("❌ Error processing wallet workflow for correlationId: {}", correlationId, e);
+                publishWalletError(correlationId, "WORKFLOW_ERROR", e.getMessage());
+            }
+        } finally {
+            MDC.remove("correlationId");
         }
     }
 

@@ -48,10 +48,14 @@ spring:
         spring.json.use.type.headers: false
         # Request-Reply Configuration
         spring.kafka.listener.reply-template: kafkaTemplate
+    # Propagate trace context across Kafka (producer -> consumer).
+    template:
+      observation-enabled: true
     listener:
       ack-mode: manual_immediate
       concurrency: 3
       poll-timeout: 3000
+      observation-enabled: true
 
 # Kafka Topics
 kafka:
@@ -113,6 +117,16 @@ management:
     tags:
       application: ${spring.application.name}
       version: ${spring.application.version}
+  # Distributed tracing (Micrometer Tracing + OpenTelemetry).
+  tracing:
+    sampling:
+      # Full sampling for dev/demo; LOWER THIS IN PRODUCTION (e.g. 0.1).
+      probability: 1.0
+  otlp:
+    tracing:
+      # OTLP export endpoint. INERT when unset (empty default) - no collector is
+      # required. Point at Tempo/Jaeger via OTEL_EXPORTER_OTLP_ENDPOINT when ready.
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}
 
 # Logging
 logging:
@@ -127,6 +141,8 @@ logging:
     feign: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+    # Carry trace context (traceId/spanId) in every log line for correlation.
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
 
 # Application security / CORS
 app:

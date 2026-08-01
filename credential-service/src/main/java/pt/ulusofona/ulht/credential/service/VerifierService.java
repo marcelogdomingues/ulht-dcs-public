@@ -1,5 +1,7 @@
 package pt.ulusofona.ulht.credential.service;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -91,11 +93,13 @@ public class VerifierService {
      * @return Verification response with URL for wallet
      * @throws ExternalServiceException if verification initiation fails
      */
+    @CircuitBreaker(name = "waltid", fallbackMethod = "initiateVerificationFallback")
+    @Retry(name = "waltid")
     public VerificationResponse initiateVerification(
-            VerificationRequest request, 
+            VerificationRequest request,
             VerificationHeaders headers) throws ExternalServiceException {
-        
-        log.info("Initiating verification request for {} credentials", 
+
+        log.info("Initiating verification request for {} credentials",
                 request.getRequestCredentials() != null ? request.getRequestCredentials().size() : 0);
 
         return executeOperation(() -> {
@@ -175,6 +179,8 @@ public class VerifierService {
      * @return Verification status with policy results
      * @throws ExternalServiceException if status retrieval fails
      */
+    @CircuitBreaker(name = "waltid", fallbackMethod = "getVerificationStatusFallback")
+    @Retry(name = "waltid")
     public VerificationStatusResponse getVerificationStatus(String state) throws ExternalServiceException {
         log.info("Retrieving verification status for state: {}", state);
 
@@ -215,8 +221,10 @@ public class VerifierService {
      * @return Decoded presented credentials
      * @throws ExternalServiceException if credential retrieval fails
      */
+    @CircuitBreaker(name = "waltid", fallbackMethod = "getPresentedCredentialsFallback")
+    @Retry(name = "waltid")
     public PresentedCredentialsResponse getPresentedCredentials(String sessionId, String viewMode) throws ExternalServiceException {
-        log.info("Retrieving presented credentials for session: {} (viewMode: {})", 
+        log.info("Retrieving presented credentials for session: {} (viewMode: {})",
                 sessionId, viewMode);
 
         return executeOperation(() -> {
@@ -283,9 +291,60 @@ public class VerifierService {
         }
     }
     
+    // -------------------------------------------------------------------------
+    // Resilience4j fallbacks for walt.id verifier calls.
+    //
+    // Invoked when the circuit breaker is OPEN or retries are exhausted for a
+    // walt.id outage. They translate the failure into the project's graceful
+    // ExternalServiceException (preserving an existing ExternalServiceException
+    // cause) rather than surfacing a raw exception. The DEMO profile mocks always
+    // succeed, so fallbacks never trigger there and the happy path is unchanged.
+    // -------------------------------------------------------------------------
+
+    @SuppressWarnings("unused")
+    private VerificationResponse initiateVerificationFallback(
+            VerificationRequest request, VerificationHeaders headers, Throwable t)
+            throws ExternalServiceException {
+        throw toExternalServiceException("verification initiation", t);
+    }
+
+    @SuppressWarnings("unused")
+    private VerificationStatusResponse getVerificationStatusFallback(String state, Throwable t)
+            throws ExternalServiceException {
+        throw toExternalServiceException("verification status retrieval", t);
+    }
+
+    @SuppressWarnings("unused")
+    private PresentedCredentialsResponse getPresentedCredentialsFallback(
+            String sessionId, String viewMode, Throwable t) throws ExternalServiceException {
+        throw toExternalServiceException("presented credentials retrieval", t);
+    }
+
+    /**
+     * Translates a resilience4j failure into the project's graceful
+     * {@link ExternalServiceException}, preserving an existing cause when present.
+     */
+    private ExternalServiceException toExternalServiceException(String operationName, Throwable t) {
+        log.error("walt.id verifier resilience fallback triggered for {}: {}", operationName,
+                t != null ? t.getMessage() : "unknown", t);
+        Throwable cause = t;
+        while (cause != null) {
+            if (cause instanceof ExternalServiceException) {
+                return (ExternalServiceException) cause;
+            }
+            cause = cause.getCause();
+        }
+        String reason = (t != null && t.getMessage() != null) ? t.getMessage()
+                : (t != null ? t.getClass().getSimpleName() : "walt.id unavailable");
+        return new ExternalServiceException(
+                String.format("walt.id verifier is currently unavailable during %s: %s",
+                        operationName, reason),
+                "WaltID Verifier");
+    }
+
     /**
      * Extracts the state parameter from a verification URL.
-     * 
+     *
      * @param url Verification URL
      * @return State value, or null if not found
      */

@@ -52,10 +52,14 @@ spring:
       max-partition-fetch-bytes: 10485760
       properties:
         spring.json.trusted.packages: "pt.ulusofona.ulht.fulfilment,java.util,java.lang"
+    # Propagate trace context across Kafka (producer -> consumer).
+    template:
+      observation-enabled: true
     listener:
       ack-mode: manual_immediate
       concurrency: 3
       poll-timeout: 3000
+      observation-enabled: true
 
 # Fulfilment Service Configuration for Docker
 fulfilment-service:
@@ -97,6 +101,8 @@ logging:
     org.apache.kafka: WARN
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    # Carry trace context (traceId/spanId) in every log line for correlation.
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
 
 # Management and Monitoring
 management:
@@ -113,3 +119,13 @@ management:
     export:
       prometheus:
         enabled: true
+  # Distributed tracing (Micrometer Tracing + OpenTelemetry).
+  tracing:
+    sampling:
+      # Full sampling for dev/demo; LOWER THIS IN PRODUCTION (e.g. 0.1).
+      probability: 1.0
+  otlp:
+    tracing:
+      # OTLP export endpoint. INERT when unset (empty default) - no collector is
+      # required. Point at Tempo/Jaeger via OTEL_EXPORTER_OTLP_ENDPOINT when ready.
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}

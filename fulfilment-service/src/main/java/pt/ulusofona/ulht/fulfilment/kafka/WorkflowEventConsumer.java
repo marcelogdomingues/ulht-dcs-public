@@ -2,6 +2,7 @@ package pt.ulusofona.ulht.fulfilment.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -39,10 +40,13 @@ public class WorkflowEventConsumer {
         
         try {
             String correlationId = (String) event.get("correlationId");
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
             String status = (String) event.get("status");
             Integer progress = (Integer) event.get("progress");
             String message = (String) event.get("message");
-            
+
             if (correlationId != null) {
                 fulfilmentService.publishProgress(correlationId, status, progress, message);
                 log.debug("Processed progress event for correlationId: {}", correlationId);
@@ -51,6 +55,8 @@ public class WorkflowEventConsumer {
             }
         } catch (Exception e) {
             log.error("Error processing workflow progress event: {}", event, e);
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     
@@ -71,8 +77,11 @@ public class WorkflowEventConsumer {
         
         try {
             String correlationId = (String) event.get("correlationId");
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
             Object result = event.get("result");
-            
+
             if (correlationId != null) {
                 fulfilmentService.publishCompletion(correlationId, result);
                 log.info("Processed completion event for correlationId: {}", correlationId);
@@ -81,6 +90,8 @@ public class WorkflowEventConsumer {
             }
         } catch (Exception e) {
             log.error("Error processing workflow completion event: {}", event, e);
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     
@@ -101,19 +112,24 @@ public class WorkflowEventConsumer {
         
         try {
             String correlationId = (String) event.get("correlationId");
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
             String errorCode = (String) event.get("errorCode");
             String errorName = (String) event.get("errorName");
             String errorMessage = (String) event.get("errorMessage");
-            
+
             if (correlationId != null) {
                 fulfilmentService.publishError(correlationId, errorMessage, errorCode, errorName);
-                log.error("Processed error event for correlationId: {} - {} ({})", 
+                log.error("Processed error event for correlationId: {} - {} ({})",
                          correlationId, errorCode, errorName);
             } else {
                 log.warn("Received workflow error event without correlationId: {}", event);
             }
         } catch (Exception e) {
             log.error("Error processing workflow error event: {}", event, e);
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     
@@ -136,22 +152,27 @@ public class WorkflowEventConsumer {
         
         try {
             String correlationId = (String) event.get("correlationId");
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
             String status = (String) event.get("status");
             Integer progress = (Integer) event.get("progress");
             String message = (String) event.get("message");
-            
-            log.info("📥 Processing verification progress event: correlationId={}, status={}, progress={}%", 
+
+            log.info("📥 Processing verification progress event: correlationId={}, status={}, progress={}%",
                     correlationId, status, progress);
-            
+
             if (correlationId != null) {
                 fulfilmentService.publishProgress(correlationId, status, progress, message);
-                log.info("✅ Processed verification progress event for correlationId: {} - status: {}, progress: {}%", 
+                log.info("✅ Processed verification progress event for correlationId: {} - status: {}, progress: {}%",
                         correlationId, status, progress);
             } else {
                 log.warn("⚠️ Received verification progress event without correlationId: {}", event);
             }
         } catch (Exception e) {
             log.error("❌ Error processing verification progress event: {}", event, e);
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     
@@ -172,8 +193,11 @@ public class WorkflowEventConsumer {
         
         try {
             String correlationId = (String) event.get("correlationId");
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
             Object result = event.get("result");
-            
+
             if (correlationId != null) {
                 fulfilmentService.publishCompletion(correlationId, result);
                 log.info("✅ Processed verification completion event for correlationId: {}", correlationId);
@@ -182,6 +206,8 @@ public class WorkflowEventConsumer {
             }
         } catch (Exception e) {
             log.error("❌ Error processing verification completion event: {}", event, e);
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     
@@ -202,19 +228,24 @@ public class WorkflowEventConsumer {
         
         try {
             String correlationId = (String) event.get("correlationId");
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
             String errorCode = (String) event.get("errorCode");
             String errorName = (String) event.get("errorName");
             String errorMessage = (String) event.get("errorMessage");
-            
+
             if (correlationId != null) {
                 fulfilmentService.publishError(correlationId, errorMessage, errorCode, errorName);
-                log.error("✅ Processed verification error event for correlationId: {} - {} ({})", 
+                log.error("✅ Processed verification error event for correlationId: {} - {} ({})",
                          correlationId, errorCode, errorName);
             } else {
                 log.warn("⚠️ Received verification error event without correlationId: {}", event);
             }
         } catch (Exception e) {
             log.error("❌ Error processing verification error event: {}", event, e);
+        } finally {
+            MDC.remove("correlationId");
         }
     }
 }

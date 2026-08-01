@@ -2,6 +2,7 @@ package pt.ulusofona.ulht.credential.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
@@ -65,31 +66,38 @@ public class VerificationWorkflowConsumer {
         }
 
         String correlationId = (String) request.get("correlationId");
-        String credentialType = (String) request.get("credentialType");
-        String format = (String) request.get("format");
-        String userId = (String) request.get("userId");
-        
-        // userId is optional for verification - use default if not provided
-        if (userId == null || userId.isEmpty()) {
-            userId = "verifier";
-            log.debug("No userId provided, using default: {}", userId);
+        if (correlationId != null) {
+            MDC.put("correlationId", correlationId);
         }
-        
-        if (correlationId == null || credentialType == null) {
-            log.error("❌ Invalid verification request - missing required fields: {}", request);
-            publishVerificationError(correlationId, "INVALID_REQUEST", "Missing required fields: correlationId or credentialType");
-            return buildErrorReply(correlationId, userId, "INVALID_REQUEST", "Missing required fields: correlationId or credentialType");
-        }
-        
-        log.info("🔍 Processing verification workflow: correlationId={}, type={}, userId={}", 
-                correlationId, credentialType, userId);
-        
         try {
-            return processVerificationWorkflow(correlationId, credentialType, format, userId, request);
-        } catch (Exception e) {
-            log.error("❌ Error processing verification workflow for correlationId: {}", correlationId, e);
-            publishVerificationError(correlationId, "WORKFLOW_ERROR", e.getMessage());
-            return buildErrorReply(correlationId, userId, "WORKFLOW_ERROR", e.getMessage());
+            String credentialType = (String) request.get("credentialType");
+            String format = (String) request.get("format");
+            String userId = (String) request.get("userId");
+
+            // userId is optional for verification - use default if not provided
+            if (userId == null || userId.isEmpty()) {
+                userId = "verifier";
+                log.debug("No userId provided, using default: {}", userId);
+            }
+
+            if (correlationId == null || credentialType == null) {
+                log.error("❌ Invalid verification request - missing required fields: {}", request);
+                publishVerificationError(correlationId, "INVALID_REQUEST", "Missing required fields: correlationId or credentialType");
+                return buildErrorReply(correlationId, userId, "INVALID_REQUEST", "Missing required fields: correlationId or credentialType");
+            }
+
+            log.info("🔍 Processing verification workflow: correlationId={}, type={}, userId={}",
+                    correlationId, credentialType, userId);
+
+            try {
+                return processVerificationWorkflow(correlationId, credentialType, format, userId, request);
+            } catch (Exception e) {
+                log.error("❌ Error processing verification workflow for correlationId: {}", correlationId, e);
+                publishVerificationError(correlationId, "WORKFLOW_ERROR", e.getMessage());
+                return buildErrorReply(correlationId, userId, "WORKFLOW_ERROR", e.getMessage());
+            }
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     

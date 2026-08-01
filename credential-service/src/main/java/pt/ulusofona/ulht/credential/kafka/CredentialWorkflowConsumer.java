@@ -3,6 +3,7 @@ package pt.ulusofona.ulht.credential.kafka;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
@@ -68,49 +69,56 @@ public class CredentialWorkflowConsumer {
                                      @Header(KafkaHeaders.OFFSET) long offset) {
         
         String correlationId = (String) event.get("correlationId");
-        log.info("📨 Received wallet completion event for correlationId: {} (topic: {}, partition: {}, offset: {})", 
-                correlationId, topic, partition, offset);
-        
-        @SuppressWarnings("unchecked")
-        Map<String, Object> result = (Map<String, Object>) event.get("result");
-        
-        if (result == null) {
-            log.error("❌ Wallet completion event missing 'result' field for correlationId: {}", correlationId);
-            return;
+        if (correlationId != null) {
+            MDC.put("correlationId", correlationId);
         }
-        
-        if (correlationId == null) {
-            log.error("❌ Wallet completion event missing 'correlationId' field");
-            return;
-        }
-        
-        // Extract wallet info from result (including sessionCookie for credential acceptance)
-        StudentWalletService.StudentWalletInfo walletInfo = 
-            StudentWalletService.StudentWalletInfo.builder()
-                .email((String) result.get("email"))
-                .walletId((String) result.get("walletId"))
-                .subjectDid((String) result.get("subjectDid"))
-                .sessionCookie((String) result.get("sessionCookie"))  // Required for accepting credentials into wallet
-                .build();
-        
-        // Log session cookie status for debugging
-        if (walletInfo.getSessionCookie() == null || walletInfo.getSessionCookie().isEmpty()) {
-            log.warn("⚠️  Session cookie is null/empty in wallet completion event for correlationId: {}", correlationId);
-        } else {
-            log.debug("✅ Session cookie included in wallet completion event (length: {})", 
-                    walletInfo.getSessionCookie().length());
-        }
-        
-        // Complete the pending future
-        CompletableFuture<StudentWalletService.StudentWalletInfo> future = 
-            pendingWalletRequests.remove(correlationId);
-        if (future != null) {
-            future.complete(walletInfo);
-            log.info("✅ Completed wallet request for correlationId: {} (email: {}, walletId: {}, subjectDid: {})", 
-                    correlationId, walletInfo.getEmail(), walletInfo.getWalletId(), walletInfo.getSubjectDid());
-        } else {
-            log.warn("⚠️  No pending wallet request found for correlationId: {}. Available keys: {}", 
-                    correlationId, pendingWalletRequests.keySet());
+        try {
+            log.info("📨 Received wallet completion event for correlationId: {} (topic: {}, partition: {}, offset: {})",
+                    correlationId, topic, partition, offset);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = (Map<String, Object>) event.get("result");
+
+            if (result == null) {
+                log.error("❌ Wallet completion event missing 'result' field for correlationId: {}", correlationId);
+                return;
+            }
+
+            if (correlationId == null) {
+                log.error("❌ Wallet completion event missing 'correlationId' field");
+                return;
+            }
+
+            // Extract wallet info from result (including sessionCookie for credential acceptance)
+            StudentWalletService.StudentWalletInfo walletInfo =
+                StudentWalletService.StudentWalletInfo.builder()
+                    .email((String) result.get("email"))
+                    .walletId((String) result.get("walletId"))
+                    .subjectDid((String) result.get("subjectDid"))
+                    .sessionCookie((String) result.get("sessionCookie"))  // Required for accepting credentials into wallet
+                    .build();
+
+            // Log session cookie status for debugging
+            if (walletInfo.getSessionCookie() == null || walletInfo.getSessionCookie().isEmpty()) {
+                log.warn("⚠️  Session cookie is null/empty in wallet completion event for correlationId: {}", correlationId);
+            } else {
+                log.debug("✅ Session cookie included in wallet completion event (length: {})",
+                        walletInfo.getSessionCookie().length());
+            }
+
+            // Complete the pending future
+            CompletableFuture<StudentWalletService.StudentWalletInfo> future =
+                pendingWalletRequests.remove(correlationId);
+            if (future != null) {
+                future.complete(walletInfo);
+                log.info("✅ Completed wallet request for correlationId: {} (email: {}, walletId: {}, subjectDid: {})",
+                        correlationId, walletInfo.getEmail(), walletInfo.getWalletId(), walletInfo.getSubjectDid());
+            } else {
+                log.warn("⚠️  No pending wallet request found for correlationId: {}. Available keys: {}",
+                        correlationId, pendingWalletRequests.keySet());
+            }
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     
@@ -128,26 +136,33 @@ public class CredentialWorkflowConsumer {
                                  @Header(KafkaHeaders.OFFSET) long offset) {
         
         String correlationId = (String) event.get("correlationId");
-        String errorMessage = (String) event.get("errorMessage");
-        String errorCode = (String) event.get("errorCode");
-        
-        log.error("📨 Received wallet error event for correlationId: {} - {} (code: {}, topic: {}, partition: {}, offset: {})", 
-                correlationId, errorMessage, errorCode, topic, partition, offset);
-        
-        // Complete the pending future with exception
         if (correlationId != null) {
-            CompletableFuture<StudentWalletService.StudentWalletInfo> future = 
-                pendingWalletRequests.remove(correlationId);
-            if (future != null) {
-                future.completeExceptionally(
-                    new RuntimeException("Wallet workflow failed: " + errorMessage + " (code: " + errorCode + ")"));
-                log.info("✅ Completed wallet request with exception for correlationId: {}", correlationId);
+            MDC.put("correlationId", correlationId);
+        }
+        try {
+            String errorMessage = (String) event.get("errorMessage");
+            String errorCode = (String) event.get("errorCode");
+
+            log.error("📨 Received wallet error event for correlationId: {} - {} (code: {}, topic: {}, partition: {}, offset: {})",
+                    correlationId, errorMessage, errorCode, topic, partition, offset);
+
+            // Complete the pending future with exception
+            if (correlationId != null) {
+                CompletableFuture<StudentWalletService.StudentWalletInfo> future =
+                    pendingWalletRequests.remove(correlationId);
+                if (future != null) {
+                    future.completeExceptionally(
+                        new RuntimeException("Wallet workflow failed: " + errorMessage + " (code: " + errorCode + ")"));
+                    log.info("✅ Completed wallet request with exception for correlationId: {}", correlationId);
+                } else {
+                    log.warn("⚠️  No pending wallet request found for correlationId: {} (error). Available keys: {}",
+                            correlationId, pendingWalletRequests.keySet());
+                }
             } else {
-                log.warn("⚠️  No pending wallet request found for correlationId: {} (error). Available keys: {}", 
-                        correlationId, pendingWalletRequests.keySet());
+                log.error("❌ Wallet error event missing 'correlationId' field");
             }
-        } else {
-            log.error("❌ Wallet error event missing 'correlationId' field");
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     
@@ -173,20 +188,27 @@ public class CredentialWorkflowConsumer {
         }
 
         String correlationId = (String) request.get("correlationId");
-        String userId = (String) request.get("userId");
-        Object studentData = request.get("studentData");
-        
-        if (correlationId == null || userId == null) {
-            log.error("Invalid workflow request - missing correlationId or userId: {}", request);
-            publishWorkflowError(correlationId, "INVALID_REQUEST", "Missing required fields");
-            return;
+        if (correlationId != null) {
+            MDC.put("correlationId", correlationId);
         }
-        
         try {
-            processCredentialWorkflow(correlationId, userId, studentData);
-        } catch (Exception e) {
-            log.error("Error processing credential workflow for correlationId: {}", correlationId, e);
-            publishWorkflowError(correlationId, "WORKFLOW_ERROR", e.getMessage());
+            String userId = (String) request.get("userId");
+            Object studentData = request.get("studentData");
+
+            if (correlationId == null || userId == null) {
+                log.error("Invalid workflow request - missing correlationId or userId: {}", request);
+                publishWorkflowError(correlationId, "INVALID_REQUEST", "Missing required fields");
+                return;
+            }
+
+            try {
+                processCredentialWorkflow(correlationId, userId, studentData);
+            } catch (Exception e) {
+                log.error("Error processing credential workflow for correlationId: {}", correlationId, e);
+                publishWorkflowError(correlationId, "WORKFLOW_ERROR", e.getMessage());
+            }
+        } finally {
+            MDC.remove("correlationId");
         }
     }
     

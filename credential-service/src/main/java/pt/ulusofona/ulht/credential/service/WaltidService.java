@@ -2,6 +2,8 @@ package pt.ulusofona.ulht.credential.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -674,9 +676,11 @@ public class WaltidService {
      * @param didMethod DID method to use (key, jwk, web, cheqd)
      * @return OnboardIssuerResponse containing the generated key and DID
      */
+    @CircuitBreaker(name = "waltid", fallbackMethod = "onboardIssuerFallback")
+    @Retry(name = "waltid")
     public pt.ulusofona.ulht.credential.dto.waltid.OnboardIssuerResponse onboardIssuer(
             String keyType, String didMethod) throws ExternalServiceException {
-        
+
         logger.info("Onboarding issuer with keyType: {} and didMethod: {}", keyType, didMethod);
         
         pt.ulusofona.ulht.credential.dto.waltid.KeyConfig keyConfig = 
@@ -728,11 +732,13 @@ public class WaltidService {
      * @param statusCallbackUri Optional callback URI for issuance status updates
      * @return OID4VCI credential offer URL
      */
+    @CircuitBreaker(name = "waltid", fallbackMethod = "issueCredentialFallback")
+    @Retry(name = "waltid")
     public String issueJwtCredential(
             pt.ulusofona.ulht.credential.dto.waltid.IssueCredentialRequest request,
             String statusCallbackUri) throws ExternalServiceException {
-        
-        logger.info("Issuing JWT credential with configuration: {}", 
+
+        logger.info("Issuing JWT credential with configuration: {}",
             request.getCredentialConfigurationId());
         
         ResponseEntity<String> response = executeOperation(
@@ -766,11 +772,13 @@ public class WaltidService {
      * @param statusCallbackUri Optional callback URI for issuance status updates
      * @return OID4VCI credential offer URL
      */
+    @CircuitBreaker(name = "waltid", fallbackMethod = "issueCredentialFallback")
+    @Retry(name = "waltid")
     public String issueSdJwtCredential(
             pt.ulusofona.ulht.credential.dto.waltid.IssueCredentialRequest request,
             String statusCallbackUri) throws ExternalServiceException {
-        
-        logger.info("Issuing SD-JWT credential with configuration: {}", 
+
+        logger.info("Issuing SD-JWT credential with configuration: {}",
             request.getCredentialConfigurationId());
         
         ResponseEntity<String> response = executeOperation(
@@ -780,8 +788,65 @@ public class WaltidService {
         
         String offerUrl = response.getBody();
         logger.info("Successfully issued SD-JWT credential, offer URL generated");
-        
+
         return offerUrl;
+    }
+
+    // -------------------------------------------------------------------------
+    // Resilience4j fallbacks for walt.id outward calls.
+    //
+    // These are invoked by resilience4j when the circuit breaker is OPEN or when
+    // retries are exhausted for a walt.id outage. They translate the failure into
+    // the project's graceful ExternalServiceException (the same 503-style error the
+    // callers already handle) rather than surfacing a raw exception. The DEMO
+    // profile mocks always succeed, so fallbacks never trigger there and the happy
+    // path is unchanged.
+    //
+    // Fallback signatures must match the guarded method's parameters plus a trailing
+    // Throwable. If the original failure is already an ExternalServiceException it is
+    // preserved as-is (executeOperation already produced the graceful error).
+    // -------------------------------------------------------------------------
+
+    /**
+     * Fallback for {@link #onboardIssuer(String, String)}.
+     */
+    @SuppressWarnings("unused")
+    private pt.ulusofona.ulht.credential.dto.waltid.OnboardIssuerResponse onboardIssuerFallback(
+            String keyType, String didMethod, Throwable t) throws ExternalServiceException {
+        throw toExternalServiceException("WaltID Issuer Onboarding", t);
+    }
+
+    /**
+     * Fallback for {@link #issueJwtCredential(pt.ulusofona.ulht.credential.dto.waltid.IssueCredentialRequest, String)}
+     * and {@link #issueSdJwtCredential(pt.ulusofona.ulht.credential.dto.waltid.IssueCredentialRequest, String)}.
+     */
+    @SuppressWarnings("unused")
+    private String issueCredentialFallback(
+            pt.ulusofona.ulht.credential.dto.waltid.IssueCredentialRequest request,
+            String statusCallbackUri, Throwable t) throws ExternalServiceException {
+        throw toExternalServiceException("WaltID Credential Issuance", t);
+    }
+
+    /**
+     * Translates a resilience4j failure (circuit open / retries exhausted) into the
+     * project's graceful {@link ExternalServiceException}, preserving an existing
+     * {@link ExternalServiceException} cause when present.
+     */
+    private ExternalServiceException toExternalServiceException(String serviceName, Throwable t) {
+        logger.error("walt.id resilience fallback triggered for {}: {}", serviceName,
+                t != null ? t.getMessage() : "unknown", t);
+        Throwable cause = t;
+        while (cause != null) {
+            if (cause instanceof ExternalServiceException) {
+                return (ExternalServiceException) cause;
+            }
+            cause = cause.getCause();
+        }
+        String reason = (t != null && t.getMessage() != null) ? t.getMessage()
+                : (t != null ? t.getClass().getSimpleName() : "walt.id unavailable");
+        return new ExternalServiceException(
+                String.format("walt.id %s is currently unavailable: %s", serviceName, reason),
+                serviceName);
     }
 
     /**
