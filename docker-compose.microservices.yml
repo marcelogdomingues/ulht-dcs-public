@@ -408,12 +408,17 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8087:8087"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_CLOUD_CONSUL_HOST: consul
       SPRING_CLOUD_CONSUL_PORT: 8500
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fulfilment
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-ulht}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
       APP_API_KEY: ${APP_API_KEY:-ulht-dev-local-CHANGE-ME}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:8000}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -447,12 +452,37 @@ services:
           memory: 512M
           cpus: '0.5'
 
+  # =============================================================================
+  # POSTGRESQL - durable store (fulfilment-service workflow state)
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: ulht-postgres
+    hostname: postgres
+    environment:
+      POSTGRES_DB: fulfilment
+      POSTGRES_USER: ${POSTGRES_USER:-ulht}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ulht} -d fulfilment"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - backend
+    restart: unless-stopped
+
 # =============================================================================
 # VOLUMES
 # =============================================================================
 
 volumes:
   kafka_data:
+    driver: local
+  postgres_data:
     driver: local
   consul_data:
     driver: local
