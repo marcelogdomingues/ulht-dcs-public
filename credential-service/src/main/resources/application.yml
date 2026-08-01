@@ -4,6 +4,22 @@ spring:
     version: 1.0.0
   main:
     allow-bean-definition-overriding: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/credential}
+    username: ${SPRING_DATASOURCE_USERNAME:ulht}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:demo-pg}}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
   cloud:
     openfeign:
       client:

@@ -3,123 +3,196 @@ package pt.ulusofona.ulht.credential.service.issuer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pt.ulusofona.ulht.credential.domain.issuer.RegisteredStudent;
 import pt.ulusofona.ulht.credential.domain.issuer.Session;
+import pt.ulusofona.ulht.credential.persistence.IssuerRegistrationEntity;
+import pt.ulusofona.ulht.credential.persistence.IssuerRegistrationRepository;
+import pt.ulusofona.ulht.credential.persistence.IssuerSessionEntity;
+import pt.ulusofona.ulht.credential.persistence.IssuerSessionRepository;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing conference sessions.
- * Uses in-memory storage (ConcurrentHashMap) for now.
- * For production, replace with database-backed repository.
+ *
+ * <p>Durable session and registration state is persisted in PostgreSQL via Spring
+ * Data JPA (replacing the previous in-memory {@code ConcurrentHashMap} store), so it
+ * survives restarts and is shared across horizontally-scaled instances. Behaviour and
+ * IDs are identical to the previous map-backed implementation; domain objects are
+ * mapped to/from JPA entities at this boundary so controllers are unchanged.</p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SessionService {
-    
-    private final Map<String, Session> sessions = new ConcurrentHashMap<>();
-    private final Map<String, List<RegisteredStudent>> registeredStudents = new ConcurrentHashMap<>();
-    
+
+    private final IssuerSessionRepository sessionRepository;
+    private final IssuerRegistrationRepository registrationRepository;
+
+    @Transactional
     public Session createSession(Session session) {
         if (session.getId() == null) {
             session.setId(UUID.randomUUID().toString());
         }
         if (session.getCreatedAt() == null) {
-            session.setCreatedAt(java.time.Instant.now());
+            session.setCreatedAt(Instant.now());
         }
-        sessions.put(session.getId(), session);
-        registeredStudents.put(session.getId(), new ArrayList<>());
+        sessionRepository.save(toEntity(session));
         log.info("Created session: {} - {}", session.getId(), session.getTitle());
+        // Registrations start empty for a new session.
+        session.setRegisteredCount(0);
         return session;
     }
-    
+
+    @Transactional(readOnly = true)
     public Optional<Session> getSession(String id) {
-        Session session = sessions.get(id);
-        if (session != null) {
-            // Update registered count from actual registrations
-            List<RegisteredStudent> students = registeredStudents.getOrDefault(id, new ArrayList<>());
-            session.setRegisteredCount(students.size());
-        }
-        return Optional.ofNullable(session);
+        return sessionRepository.findById(id)
+                .map(entity -> {
+                    Session session = toDomain(entity);
+                    // Update registered count from actual registrations
+                    session.setRegisteredCount((int) registrationRepository.countBySessionId(id));
+                    return session;
+                });
     }
-    
+
+    @Transactional(readOnly = true)
     public List<Session> getAllSessions() {
-        List<Session> allSessions = new ArrayList<>(sessions.values());
-        // Update registered counts from actual registrations
-        for (Session session : allSessions) {
-            List<RegisteredStudent> students = registeredStudents.getOrDefault(session.getId(), new ArrayList<>());
-            session.setRegisteredCount(students.size());
+        List<Session> allSessions = new ArrayList<>();
+        for (IssuerSessionEntity entity : sessionRepository.findAll()) {
+            Session session = toDomain(entity);
+            // Update registered counts from actual registrations
+            session.setRegisteredCount((int) registrationRepository.countBySessionId(entity.getId()));
+            allSessions.add(session);
         }
         return allSessions;
     }
-    
+
+    @Transactional
     public Session updateSession(String id, Session updatedSession) {
-        Session existing = sessions.get(id);
-        if (existing == null) {
-            throw new NoSuchElementException("Session not found: " + id);
-        }
+        IssuerSessionEntity existing = sessionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Session not found: " + id));
         updatedSession.setId(id);
         updatedSession.setCreatedAt(existing.getCreatedAt());
-        // Preserve registered count
-        updatedSession.setRegisteredCount(existing.getRegisteredCount());
-        sessions.put(id, updatedSession);
+        sessionRepository.save(toEntity(updatedSession));
+        // Preserve registered count (derived from actual registrations)
+        updatedSession.setRegisteredCount((int) registrationRepository.countBySessionId(id));
         log.info("Updated session: {} - {}", id, updatedSession.getTitle());
         return updatedSession;
     }
-    
+
+    @Transactional
     public void deleteSession(String id) {
-        sessions.remove(id);
-        registeredStudents.remove(id);
+        registrationRepository.deleteBySessionId(id);
+        sessionRepository.deleteById(id);
         log.info("Deleted session: {}", id);
     }
-    
+
+    @Transactional
     public void registerStudent(String sessionId, String studentId, String credentialId) {
-        Session session = sessions.get(sessionId);
-        if (session == null) {
+        if (!sessionRepository.existsById(sessionId)) {
             throw new NoSuchElementException("Session not found: " + sessionId);
         }
-        
-        List<RegisteredStudent> students = registeredStudents.computeIfAbsent(sessionId, k -> new ArrayList<>());
-        
+
         // Check if already registered
-        boolean alreadyRegistered = students.stream()
-            .anyMatch(s -> s.getStudentId().equals(studentId));
-        
+        boolean alreadyRegistered =
+                registrationRepository.existsBySessionIdAndStudentId(sessionId, studentId);
+
         if (!alreadyRegistered) {
-            RegisteredStudent registeredStudent = RegisteredStudent.builder()
-                .id(UUID.randomUUID().toString())
-                .sessionId(sessionId)
-                .studentId(studentId)
-                .email(studentId + "@students.example.edu")
-                .registeredAt(java.time.Instant.now())
-                .credentialId(credentialId)
-                .build();
-            
-            students.add(registeredStudent);
-            session.setRegisteredCount(students.size());
-            log.info("Registered student {} for session {} (total: {})", studentId, sessionId, students.size());
+            IssuerRegistrationEntity registration = IssuerRegistrationEntity.builder()
+                    .id(UUID.randomUUID().toString())
+                    .sessionId(sessionId)
+                    .studentId(studentId)
+                    .email(studentId + "@students.example.edu")
+                    .registeredAt(Instant.now())
+                    .credentialId(credentialId)
+                    .build();
+
+            registrationRepository.save(registration);
+            long total = registrationRepository.countBySessionId(sessionId);
+            log.info("Registered student {} for session {} (total: {})", studentId, sessionId, total);
         } else {
             log.debug("Student {} already registered for session {}", studentId, sessionId);
         }
     }
-    
+
+    @Transactional(readOnly = true)
     public List<RegisteredStudent> getRegisteredStudents(String sessionId) {
-        return new ArrayList<>(registeredStudents.getOrDefault(sessionId, new ArrayList<>()));
+        List<RegisteredStudent> students = new ArrayList<>();
+        for (IssuerRegistrationEntity entity : registrationRepository.findBySessionId(sessionId)) {
+            students.add(toDomain(entity));
+        }
+        return students;
     }
-    
+
     @Deprecated
     public void incrementRegisteredCount(String sessionId) {
-        // This method is kept for backward compatibility
-        // But now we track actual registered students
+        // This method is kept for backward compatibility.
+        // Registered counts are now derived from actual registrations, so this is a no-op.
         log.warn("Using deprecated incrementRegisteredCount - should use registerStudent instead");
-        Session session = sessions.get(sessionId);
-        if (session != null) {
-            session.setRegisteredCount(session.getRegisteredCount() + 1);
+    }
+
+    // ---------------------------------------------------------------------
+    // Entity <-> domain mapping
+    // ---------------------------------------------------------------------
+
+    private IssuerSessionEntity toEntity(Session session) {
+        return IssuerSessionEntity.builder()
+                .id(session.getId())
+                .title(session.getTitle())
+                .description(session.getDescription())
+                .conferenceName(session.getConferenceName())
+                .startTime(session.getStartTime() != null ? session.getStartTime().toString() : null)
+                .endTime(session.getEndTime() != null ? session.getEndTime().toString() : null)
+                .location(session.getLocation())
+                .qrCodeUrl(session.getQrCodeUrl())
+                .createdAt(session.getCreatedAt())
+                .active(session.isActive())
+                .build();
+    }
+
+    private Session toDomain(IssuerSessionEntity entity) {
+        return Session.builder()
+                .id(entity.getId())
+                .title(entity.getTitle())
+                .description(entity.getDescription())
+                .conferenceName(entity.getConferenceName())
+                .startTime(parseOffsetDateTime(entity.getStartTime()))
+                .endTime(parseOffsetDateTime(entity.getEndTime()))
+                .location(entity.getLocation())
+                .qrCodeUrl(entity.getQrCodeUrl())
+                .createdAt(entity.getCreatedAt())
+                .isActive(entity.isActive())
+                .build();
+    }
+
+    private RegisteredStudent toDomain(IssuerRegistrationEntity entity) {
+        return RegisteredStudent.builder()
+                .id(entity.getId())
+                .sessionId(entity.getSessionId())
+                .studentId(entity.getStudentId())
+                .studentName(entity.getStudentName())
+                .email(entity.getEmail())
+                .registeredAt(entity.getRegisteredAt())
+                .credentialId(entity.getCredentialId())
+                .build();
+    }
+
+    private OffsetDateTime parseOffsetDateTime(String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(value);
+        } catch (Exception e) {
+            log.warn("Failed to parse stored offset date-time: {}", value);
+            return null;
         }
     }
 }
-

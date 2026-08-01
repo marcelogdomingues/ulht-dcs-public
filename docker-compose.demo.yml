@@ -91,6 +91,10 @@ services:
       POSTGRES_DB: fulfilment
       POSTGRES_USER: ulht
       POSTGRES_PASSWORD: demo-pg
+    # Creates the extra `credential` database on first init (fulfilment is created
+    # by POSTGRES_DB above; credential-service uses its own DB on this container).
+    volumes:
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     # No host port published — services reach it via the `postgres` hostname on the
     # demo network. (Avoids clashing with any Postgres already on the host's 5432.)
     healthcheck:
@@ -198,6 +202,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8086:8086"
     environment:
@@ -205,6 +211,9 @@ services:
       SPRING_PROFILES_INCLUDE: demo
       SPRING_CLOUD_CONSUL_HOST: consul
       SPRING_CLOUD_CONSUL_PORT: 8500
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/credential
+      SPRING_DATASOURCE_USERNAME: ulht
+      SPRING_DATASOURCE_PASSWORD: demo-pg
       APP_API_KEY: demo-key
       APP_CORS_ALLOWED_ORIGINS: http://localhost:8000
       WALLET_PASSWORD_SECRET: demo-wallet-secret

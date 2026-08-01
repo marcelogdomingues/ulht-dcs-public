@@ -249,12 +249,17 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8086:8086"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_CLOUD_CONSUL_HOST: consul
       SPRING_CLOUD_CONSUL_PORT: 8500
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/credential
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-ulht}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
       APP_API_KEY: ${APP_API_KEY:-ulht-dev-local-CHANGE-ME}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:8000}
       WALLET_PASSWORD_SECRET: ${WALLET_PASSWORD_SECRET:?WALLET_PASSWORD_SECRET required}
@@ -465,6 +470,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Creates the extra `credential` database on first init (only runs when the
+      # data volume is empty). fulfilment is created via POSTGRES_DB above.
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ulht} -d fulfilment"]
       interval: 10s
