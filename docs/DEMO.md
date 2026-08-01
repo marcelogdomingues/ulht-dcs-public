@@ -86,6 +86,36 @@ curl -s -H "apikey: $KEY" \
 You should see a `COMPLETED` status and a `credentialOfferUrls` array of
 `openid-credential-offer://...` URLs.
 
+### Example output
+
+A real run against the demo stack (mock walt.id + SIS):
+
+```jsonc
+// POST /api/v1/student/issue  -> 200
+{
+  "correlationId": "58a4ab9c-7471-4a81-bd40-6ac6498f3c07",
+  "status": "PROCESSING",
+  "message": "Credential issuance initiated, processing...",
+  "monitorAt": "/student/status/58a4ab9c-...",
+  "credentialsAt": "/student/credentials/58a4ab9c-..."
+}
+
+// GET /api/v1/student/status/{correlationId}  (after ~1s)  -> 200
+{
+  "correlationId": "58a4ab9c-7471-4a81-bd40-6ac6498f3c07",
+  "status": "COMPLETED",
+  "progress": 100,
+  "message": "Workflow completed successfully",
+  "result": {
+    "summary": { "total": 4, "issued": 3, "skipped": 1, "failed": 0 },
+    "issuedCredentialTypes": ["EducationalID", "IdentityCredential", "EuropeanStudentCard"],
+    "userId": "demo-student"
+  }
+}
+```
+
+(`UniversityDegree` is skipped for a non-graduate — that's the conditional-issuance rule in action.)
+
 ### Verify (basic)
 
 ```bash
