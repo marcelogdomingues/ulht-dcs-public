@@ -2,6 +2,7 @@ package pt.ulusofona.digital.wallet.config;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,8 +12,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.serializer.DeserializationException;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
+import org.springframework.util.backoff.ExponentialBackOff;
 import pt.ulusofona.digital.wallet.domain.workflow.CredentialWorkflowRequest;
 
 import java.util.HashMap;
@@ -110,6 +115,37 @@ public class KafkaConfig {
         factory.setConsumerFactory(mapConsumerFactory());
         // Set reply template for @SendTo support (use the mapKafkaTemplate bean)
         factory.setReplyTemplate(mapKafkaTemplate());
+        // Wire in retry/backoff + dead-letter publishing for reliability
+        factory.setCommonErrorHandler(kafkaErrorHandler());
         return factory;
+    }
+
+    /**
+     * Reliability error handler for Kafka consumers.
+     *
+     * <p>Retries a failing record with exponential backoff (1s, 2s, 4s, 8s capped at 10s,
+     * ~4 attempts) and, once retries are exhausted, publishes the record to
+     * {@code <originalTopic>.DLT} via the {@link DeadLetterPublishingRecoverer}. DLT topics
+     * are auto-created (auto-create is enabled). Non-retryable failures such as bad payloads
+     * (deserialization / illegal arguments) skip the retries and go straight to the DLT.</p>
+     */
+    @Bean
+    public DefaultErrorHandler kafkaErrorHandler() {
+        // Publish the failed record to "<originalTopic>.DLT" on the same partition.
+        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
+            mapKafkaTemplate(),
+            (record, exception) -> new TopicPartition(record.topic() + ".DLT", record.partition()));
+
+        // initial 1s, multiplier 2.0, max interval 10s, ~4 attempts total (3 retries).
+        ExponentialBackOff backOff = new ExponentialBackOff(1000L, 2.0);
+        backOff.setMaxInterval(10_000L);
+        backOff.setMaxAttempts(3);
+
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, backOff);
+        // Bad payloads should not be retried - route straight to the DLT.
+        errorHandler.addNotRetryableExceptions(
+            DeserializationException.class,
+            IllegalArgumentException.class);
+        return errorHandler;
     }
 } 

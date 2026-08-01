@@ -33,6 +33,7 @@ public class WalletWorkflowConsumer {
     private final StudentWalletService studentWalletService;
     private final KafkaTemplate<String, Map<String, Object>> workflowKafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final pt.ulusofona.ulht.credential.service.ProcessedEventService processedEventService;
 
     /**
      * Consumes wallet workflow requests from Credential Service or other services
@@ -49,6 +50,11 @@ public class WalletWorkflowConsumer {
 
         log.info("📨 Received wallet workflow request from topic: {} (partition: {}, offset: {})",
                 topic, partition, offset);
+
+        // Idempotency guard: skip records that have already been processed (at-least-once safety).
+        if (processedEventService.isDuplicate(topic, partition, offset, "wallet-workflow")) {
+            return;
+        }
 
         String correlationId = (String) request.get("correlationId");
         String operationType = (String) request.get("operationType");

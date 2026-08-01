@@ -48,6 +48,7 @@ public class CredentialWorkflowConsumer {
     private final CredentialTemplateConfig credentialTemplateConfig;
     private final GenericCredentialBuilder genericCredentialBuilder;
     private final pt.ulusofona.ulht.credential.service.CredentialExpirationChecker credentialExpirationChecker;
+    private final pt.ulusofona.ulht.credential.service.ProcessedEventService processedEventService;
     
     // Map to store pending wallet requests (correlationId -> CompletableFuture)
     private final Map<String, CompletableFuture<StudentWalletService.StudentWalletInfo>> pendingWalletRequests = 
@@ -163,9 +164,14 @@ public class CredentialWorkflowConsumer {
                                               @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                               @Header(KafkaHeaders.OFFSET) long offset) {
         
-        log.info("Received credential workflow request from topic: {} (partition: {}, offset: {})", 
+        log.info("Received credential workflow request from topic: {} (partition: {}, offset: {})",
                 topic, partition, offset);
-        
+
+        // Idempotency guard: skip records that have already been processed (at-least-once safety).
+        if (processedEventService.isDuplicate(topic, partition, offset, "credential-workflow")) {
+            return;
+        }
+
         String correlationId = (String) request.get("correlationId");
         String userId = (String) request.get("userId");
         Object studentData = request.get("studentData");

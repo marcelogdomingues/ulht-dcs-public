@@ -2,8 +2,10 @@ package pt.ulusofona.ulht.credential.config;
 
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,8 +13,13 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.serializer.DeserializationException;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.util.backoff.ExponentialBackOff;
 import pt.ulusofona.ulht.credential.kafka.KafkaDataMaskingInterceptor;
 
 import java.util.ArrayList;
@@ -29,10 +36,43 @@ public class KafkaConsumerConfig {
     private KafkaDataMaskingInterceptor kafkaDataMaskingInterceptor;
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(KafkaProperties kafkaProperties) {
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
+            KafkaProperties kafkaProperties, DefaultErrorHandler kafkaErrorHandler) {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(defaultConsumerFactory(kafkaProperties));
+        factory.setCommonErrorHandler(kafkaErrorHandler);
         return factory;
+    }
+
+    /**
+     * Reliability error handler shared by all credential-service listener factories.
+     *
+     * <p>Retries a failing record with exponential backoff (1s, 2s, 4s capped at 10s,
+     * ~4 attempts) and, once retries are exhausted, publishes the record to
+     * {@code <originalTopic>.DLT} via the {@link DeadLetterPublishingRecoverer}. DLT topics
+     * are auto-created. Bad payloads (deserialization / illegal arguments) skip retries and
+     * are sent straight to the DLT.</p>
+     *
+     * <p>Uses the {@code workflowKafkaTemplate} (Map value serializer) for publishing; the
+     * failed record's raw bytes are re-published so the value type is irrelevant.</p>
+     */
+    @Bean
+    public DefaultErrorHandler kafkaErrorHandler(
+            @Qualifier("workflowKafkaTemplate")
+            KafkaTemplate<String, Map<String, Object>> workflowKafkaTemplate) {
+        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
+            workflowKafkaTemplate,
+            (record, exception) -> new TopicPartition(record.topic() + ".DLT", record.partition()));
+
+        ExponentialBackOff backOff = new ExponentialBackOff(1000L, 2.0);
+        backOff.setMaxInterval(10_000L);
+        backOff.setMaxAttempts(3);
+
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, backOff);
+        errorHandler.addNotRetryableExceptions(
+            DeserializationException.class,
+            IllegalArgumentException.class);
+        return errorHandler;
     }
 
     /**
@@ -43,12 +83,15 @@ public class KafkaConsumerConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Map<String, Object>> workflowKafkaListenerContainerFactory(
             KafkaProperties kafkaProperties,
-            @org.springframework.beans.factory.annotation.Qualifier("workflowKafkaTemplate") 
-            org.springframework.kafka.core.KafkaTemplate<String, Map<String, Object>> workflowKafkaTemplate) {
+            @Qualifier("workflowKafkaTemplate")
+            KafkaTemplate<String, Map<String, Object>> workflowKafkaTemplate,
+            DefaultErrorHandler kafkaErrorHandler) {
         ConcurrentKafkaListenerContainerFactory<String, Map<String, Object>> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(workflowConsumerFactory(kafkaProperties));
         // Set reply template for @SendTo support
         factory.setReplyTemplate(workflowKafkaTemplate);
+        // Wire in retry/backoff + dead-letter publishing for reliability
+        factory.setCommonErrorHandler(kafkaErrorHandler);
         return factory;
     }
 

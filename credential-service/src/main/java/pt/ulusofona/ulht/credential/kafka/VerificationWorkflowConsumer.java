@@ -33,6 +33,7 @@ public class VerificationWorkflowConsumer {
     
     private final VerifierService verifierService;
     private final KafkaTemplate<String, Map<String, Object>> workflowKafkaTemplate;
+    private final pt.ulusofona.ulht.credential.service.ProcessedEventService processedEventService;
     
     /**
      * Consumes verification workflow requests from Student Service
@@ -49,9 +50,20 @@ public class VerificationWorkflowConsumer {
                                               @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                               @Header(KafkaHeaders.OFFSET) long offset) {
         
-        log.info("📨 Received verification workflow request from topic: {} (partition: {}, offset: {})", 
+        log.info("📨 Received verification workflow request from topic: {} (partition: {}, offset: {})",
                 topic, partition, offset);
-        
+
+        // Idempotency guard: skip records that have already been processed (at-least-once safety).
+        if (processedEventService.isDuplicate(topic, partition, offset, "verification-workflow")) {
+            String dupCorrelationId = (String) request.get("correlationId");
+            Map<String, Object> dupReply = new HashMap<>();
+            dupReply.put("status", "ALREADY_PROCESSED");
+            dupReply.put("correlationId", dupCorrelationId);
+            dupReply.put("message", "Verification request already processed (duplicate delivery ignored)");
+            dupReply.put("timestamp", Instant.now().toString());
+            return dupReply;
+        }
+
         String correlationId = (String) request.get("correlationId");
         String credentialType = (String) request.get("credentialType");
         String format = (String) request.get("format");
