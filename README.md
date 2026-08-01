@@ -145,15 +145,23 @@ returns immediately with a correlation ID while issuance proceeds in the backgro
 
 ## Screenshots & demo
 
-> 📸 **Coming soon.** The planned visuals live in [`docs/screenshots/`](docs/screenshots/):
->
-> - **Mobile — issue & verify** — the student app receiving a credential and the verifier app checking it
-> - **Observability** — the Grafana dashboards and Prometheus targets
-> - **API** — the Swagger UI per service
-> - **Demo GIF** — the full *issue → hold → verify* flow
->
-> See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the expected filenames
-> and recommended sizes.
+The demo stack is verified end-to-end — a single `POST /student/issue` runs the
+full workflow to `COMPLETED`, issuing three credentials and skipping
+`UniversityDegree` for a non-graduate (the conditional-issuance rule). See
+[`docs/DEMO.md`](docs/DEMO.md) for the exact commands and a real response payload.
+
+**Capture your own visuals** (everything below is live once the demo is up):
+
+| Visual | Where |
+|---|---|
+| **Swagger UI** (per service) | `http://localhost:8084/api/v1/swagger-ui/index.html` (also `:8085`, `:8086`, `:8087`) |
+| **OpenAPI spec** | `http://localhost:8084/api/v1/api-docs` |
+| **Grafana dashboards** | start the monitoring overlay, then `http://localhost:3000` |
+| **Mobile — issue & verify** | run the Flutter apps in [`mobile-apps/`](mobile-apps/) against the stack |
+
+Contributions of screenshots/GIFs are welcome — drop them in
+[`docs/screenshots/`](docs/screenshots/) using the filenames in its
+[`README.md`](docs/screenshots/README.md).
 
 ---
 
