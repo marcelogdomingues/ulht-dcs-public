@@ -1,0 +1,84 @@
+# -----------------------------------------------------------------------------
+# Security Scan
+# -----------------------------------------------------------------------------
+# Supply-chain / dependency security scanning. Two independent, NON-BLOCKING jobs:
+#
+#   (a) Trivy filesystem scan  -> SARIF uploaded to GitHub code scanning
+#   (b) SBOM (SPDX JSON)        -> uploaded as a build artifact
+#
+# Both are advisory only (Trivy runs with exit-code: 0) so they never fail CI.
+#
+# Required repo-side setup (until then, results just won't surface):
+#   - GitHub "Code scanning" must be enabled (Settings -> Code security) for the
+#     upload-sarif step to publish alerts. No secrets are required for these jobs.
+# -----------------------------------------------------------------------------
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, Mondays 05:00 UTC.
+    - cron: "0 5 * * 1"
+
+concurrency:
+  group: security-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trivy-fs:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed to upload SARIF results to GitHub code scanning.
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          format: sarif
+          output: trivy.sarif
+          # Advisory only: never block the build on findings.
+          exit-code: "0"
+
+      - name: Upload Trivy SARIF
+        # Best-effort: don't fail the job if code scanning isn't enabled yet.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy-fs
+
+  sbom:
+    name: SBOM (SPDX JSON)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate SBOM (SPDX JSON)
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          artifact-name: sbom.spdx.json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-spdx-json
+          path: sbom.spdx.json
+          if-no-files-found: warn
+          retention-days: 30

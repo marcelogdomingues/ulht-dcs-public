@@ -318,6 +318,32 @@
                 </executions>
             </plugin>
 
+            <!--
+              JaCoCo test-coverage. Version is managed by the Spring Boot BOM
+              (spring-boot-starter-parent). prepare-agent wires the coverage agent
+              into the test JVM; report (bound to verify) emits target/site/jacoco/
+              (jacoco.xml + HTML). No coverage `check` gate so the build never fails
+              on coverage.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

@@ -74,7 +74,21 @@ jobs:
         working-directory: ${{ matrix.service }}
         # -B  : batch mode (non-interactive)
         # -ntp: no transfer progress (clean logs)
+        # `mvn verify` runs the JaCoCo report goal, emitting
+        # <service>/target/site/jacoco/jacoco.xml.
         run: mvn -B -ntp verify
+
+      # Upload JaCoCo coverage to Codecov. Requires a CODECOV_TOKEN repo secret
+      # (Settings -> Secrets and variables -> Actions). Kept non-fatal
+      # (fail_ci_if_error: false) so missing token / upload hiccups never break CI.
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: ${{ matrix.service }}/target/site/jacoco/jacoco.xml
+          flags: ${{ matrix.service }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
       - name: Upload built JAR
         # Only publish the artifact when the build actually produced a jar.

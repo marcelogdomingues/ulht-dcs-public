@@ -1,0 +1,57 @@
+# -----------------------------------------------------------------------------
+# OpenSSF Scorecard
+# -----------------------------------------------------------------------------
+# Runs the OpenSSF Scorecard supply-chain security checks and publishes the
+# results to GitHub code scanning as SARIF. Advisory only; it does not gate CI.
+#
+# Required repo-side setup (until then, results just won't surface):
+#   - GitHub "Code scanning" must be enabled (Settings -> Code security) so the
+#     upload-sarif step can publish results.
+#   - No secrets required: id-token write permission enables the keyless publish
+#     to the public Scorecard API used by the README badge.
+# -----------------------------------------------------------------------------
+name: OpenSSF Scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Weekly, Mondays 06:00 UTC.
+    - cron: "0 6 * * 1"
+
+permissions: read-all
+
+concurrency:
+  group: scorecard-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to upload SARIF results to GitHub code scanning.
+      security-events: write
+      # Needed for keyless publish to the public Scorecard API (badge).
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v2
+        with:
+          results_file: scorecard.sarif
+          results_format: sarif
+          # Publish results to the public Scorecard API so the README badge works.
+          publish_results: true
+
+      - name: Upload Scorecard SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scorecard.sarif
+          category: scorecard

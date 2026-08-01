@@ -4,7 +4,10 @@
 [![Mobile CI](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/mobile.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/mobile.yml)
 [![Docker Build](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docker.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docker.yml)
 [![CodeQL](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/codeql.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/codeql.yml)
+[![Security Scan](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/security-scan.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/security-scan.yml)
 [![Docs](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docs.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/docs.yml)
+[![codecov](https://codecov.io/gh/marcelogdomingues/ulht-dcs-public/branch/main/graph/badge.svg)](https://codecov.io/gh/marcelogdomingues/ulht-dcs-public)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/marcelogdomingues/ulht-dcs-public/badge)](https://scorecard.dev/viewer/?uri=github.com/marcelogdomingues/ulht-dcs-public)
 
 [![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-Codespaces-181717?logo=github)](https://codespaces.new/marcelogdomingues/ulht-dcs-public)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
