@@ -1,0 +1,94 @@
+# =============================================================================
+# ULHT DCS - OPTIONAL OAuth2 / OIDC overlay (Keycloak)
+# =============================================================================
+# ADDITIVE overlay that enables the SECOND, optional authentication leg:
+# a valid `Authorization: Bearer <jwt>` from Keycloak is accepted ALONGSIDE the
+# existing `apikey` header (dual auth). It is deliberately NOT part of the demo
+# or the base microservices stack — the api-key path keeps working with or
+# without this file.
+#
+# Run it layered on top of the microservices stack:
+#
+#     docker compose \
+#       -f docker-compose.microservices.yml \
+#       -f docker-compose.keycloak.yml \
+#       up -d --build
+#
+# This starts Keycloak (dev mode) importing docker/keycloak/realm-export.json
+# and sets SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI on every service,
+# which is what activates the JWT auth leg in ulht-commons. When this overlay is
+# absent, no issuer-uri is set, the JwtDecoder bean is not created, and the
+# services stay api-key only (byte-for-byte prior behaviour).
+#
+# See docs/SECURITY.md ("OAuth2 / OIDC (optional)") and docs/DEPLOYMENT.md for
+# how to obtain a token and call an endpoint with a Bearer token.
+#
+# PUBLIC repo: the realm ships PLACEHOLDER credentials only — rotate before any
+# non-local use.
+# =============================================================================
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: keycloak
+    hostname: keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      # Bootstrap admin (placeholders — dev only, override via .env)
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      # Dev-mode hostname handling: don't force a strict public hostname so the
+      # realm is reachable both in-network (keycloak:8080) and from the host.
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      # Keycloak 26 exposes health on the management port 9000.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Layer the OAuth2 issuer onto each service. Setting the issuer-uri is what
+  # makes ulht-commons wire the additional Bearer-JWT auth leg. The api-key env
+  # (APP_API_KEY) from the base file is unchanged, so BOTH auth methods work.
+  # The issuer here matches the in-network Keycloak host (keycloak:8080); tokens
+  # obtained from the host must carry the same `iss` (see docs).
+  # ---------------------------------------------------------------------------
+  ulht-credential-service:
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/ulht
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  ulht-student-service:
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/ulht
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  ulht-lusofona-service:
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/ulht
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  ulht-fulfilment-service:
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/ulht
+    depends_on:
+      keycloak:
+        condition: service_healthy

@@ -453,6 +453,82 @@ When issuing against the real walt.id, `credential-service` embeds a W3C `creden
 
 ---
 
+## Running with Keycloak (optional OAuth2)
+
+By default the services authenticate callers with the shared `apikey` header
+only. To **additionally** accept an OAuth2 / OIDC Bearer JWT (dual auth — a
+request is authenticated with **either** a valid `apikey` **or** a valid
+`Authorization: Bearer <jwt>`), layer the optional overlay
+`docker-compose.keycloak.yml` on top of the microservices stack. It starts
+**Keycloak** (`quay.io/keycloak/keycloak:26.0`, dev mode) importing the realm at
+[`docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json)
+and sets `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` on every service,
+which is what activates the JWT auth leg in `ulht-commons`.
+
+When this overlay is **absent**, no issuer-uri is set, no `JwtDecoder` is created,
+and the services stay api-key only (byte-for-byte prior behaviour). The api-key
+path keeps working with or without Keycloak.
+
+```bash
+# 1) Bring up the app stack WITH the Keycloak overlay.
+docker compose \
+  -f docker-compose.microservices.yml \
+  -f docker-compose.keycloak.yml \
+  up -d --build
+
+# 2) Confirm the realm is up (OIDC discovery -> 200).
+curl -s http://localhost:8080/realms/ulht/.well-known/openid-configuration | head -c 200
+
+# 3) Obtain an access token (direct-access grant; PLACEHOLDER creds — rotate!).
+AT=$(curl -s -X POST \
+  http://localhost:8080/realms/ulht/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d grant_type=password \
+  -d client_id=ulht-service \
+  -d client_secret=CHANGE-ME-ulht-client-secret \
+  -d username=demo-user \
+  -d password=CHANGE-ME-demo-user-password \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+
+# 4) Call a protected endpoint with the Bearer token (NO apikey needed).
+curl -s -X POST http://localhost:8084/api/v1/student/issue \
+  -H "Authorization: Bearer $AT" \
+  -H "Content-Type: application/json" \
+  -d '{"userName":"<student>","installKey":"<key>"}'
+
+# The apikey path still works too, unchanged:
+curl -s -X POST http://localhost:8084/api/v1/student/issue \
+  -H "apikey: $APP_API_KEY" -H "Content-Type: application/json" \
+  -d '{"userName":"<student>","installKey":"<key>"}'
+```
+
+!!! note "Issuer must match the token's `iss`"
+    The overlay sets the resource-server issuer-uri to `http://keycloak:8080/realms/ulht`
+    (the in-network Keycloak hostname). The `iss` claim in a token is derived from
+    the host used to reach the token endpoint. Obtaining a token from the host via
+    `http://localhost:8080` yields `iss: http://localhost:8080/realms/ulht`, which
+    will **not** match the in-network issuer-uri. For a working end-to-end host
+    call, either point the issuer-uri at the same host the token was minted from,
+    or fetch the token from inside the compose network
+    (`docker compose exec ulht-student-service ...` against `http://keycloak:8080`).
+    Keycloak runs with `KC_HOSTNAME_STRICT=false` in dev mode so both hostnames
+    resolve.
+
+Tear down:
+
+```bash
+docker compose -f docker-compose.microservices.yml -f docker-compose.keycloak.yml down
+```
+
+!!! danger "Placeholder credentials"
+    The bundled realm ships a confidential client (`ulht-service`), a public
+    client (`ulht-public`), and a `demo-user` — all with **placeholder**
+    `CHANGE-ME-*` secrets/passwords, plus a `KC_BOOTSTRAP_ADMIN_PASSWORD` default
+    of `admin`. **Rotate every one** before any non-local use. See
+    [Security → OAuth2 / OIDC (optional)](SECURITY.md#oauth2-oidc-optional).
+
+---
+
 ## Production hardening
 
 The defaults are tuned for **local development**. Before any real deployment, work through [Security](SECURITY.md) and the [Deployment Checklist](DEPLOYMENT_CHECKLIST.md), and at minimum:

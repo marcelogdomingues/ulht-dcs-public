@@ -2,7 +2,11 @@
 
 ## Status
 
-Proposed (roadmap — design only, not yet implemented)
+Partially implemented. **Item 1 (OAuth2 / OIDC) is implemented as an optional,
+dual-auth capability** — services accept **either** a valid `apikey` **or** a
+valid OIDC Bearer JWT, and the JWT leg is dormant unless an issuer is configured.
+Items 2–4 (KMS/Vault key management, SD-JWT default, mobile OIDC login) remain
+**proposed** (design only, not yet implemented).
 
 ## Context
 
@@ -22,7 +26,7 @@ plan of record, not an implemented decision — hence **Proposed**.
 
 ## Decision (target design)
 
-### 1. OAuth2 / OIDC per-user authentication
+### 1. OAuth2 / OIDC per-user authentication — IMPLEMENTED (optional, dual-auth)
 
 - **Design.** Introduce an OpenID Connect provider — **Keycloak** (batteries
   included: user federation, admin UI, token issuance) or the lighter **Spring
@@ -34,10 +38,23 @@ plan of record, not an implemented decision — hence **Proposed**.
   for machine-to-machine / internal traffic (defense-in-depth at the edge is
   unchanged); OIDC is added *alongside* it for human callers, so the two auth
   models coexist during and after migration.
-- **Why deferred.** Requires standing up and operating an IdP (realm, clients,
-  user store, key rotation), plus touching every service's security chain. High
-  operational surface for no demo benefit; migration risk to the working
-  api-key path.
+- **What shipped.** The shared `ulht-commons`
+  `ApiKeySecurityAutoConfiguration` now depends on
+  `spring-boot-starter-oauth2-resource-server` and its single
+  `SecurityFilterChain` runs the api-key filter first and **additionally** wires
+  `http.oauth2ResourceServer(oauth2 -> oauth2.jwt(...))` — but only when a
+  `JwtDecoder` bean exists, which Spring Boot creates only when
+  `spring.security.oauth2.resourceserver.jwt.issuer-uri` is configured. A request
+  authenticates with **either** a valid `apikey` **or** a valid Bearer JWT;
+  neither ⇒ `401` (unchanged). With no issuer-uri set (the demo and base stack),
+  the JWT leg is never wired and behaviour is byte-for-byte the api-key model of
+  ADR 0005. An optional overlay `docker-compose.keycloak.yml` +
+  `docker/keycloak/realm-export.json` stand up Keycloak and set the issuer-uri;
+  see [Security → OAuth2 / OIDC (optional)](../SECURITY.md#oauth2-oidc-optional)
+  and [Deployment → Running with Keycloak](../DEPLOYMENT.md#running-with-keycloak-optional-oauth2).
+- **Still optional.** OIDC is opt-in infrastructure: the IdP (realm, clients,
+  user store, key rotation) is only run when the overlay is used, so there is no
+  operational cost or migration risk to the default api-key path.
 
 ### 2. Issuer-key management via KMS / Vault / HSM
 
@@ -107,8 +124,10 @@ plan of record, not an implemented decision — hence **Proposed**.
   and monitor.
 - **Migration risk** — each step touches a working path (security chain, signing,
   credential format, mobile release); hence the additive, staged sequence.
-- **Not yet implemented** — this ADR is a plan; the api-key + in-memory-key +
-  `jwt_vc_json` model of ADR 0005 remains in force until each step lands.
+- **Partially implemented** — item 1 (OAuth2/OIDC) has landed as an optional
+  dual-auth capability; the in-memory-key + `jwt_vc_json` model of ADR 0005
+  otherwise remains in force until items 2–4 land. When no OIDC issuer is
+  configured, the runtime behaviour is unchanged from ADR 0005.
 
 ## Alternatives considered
 

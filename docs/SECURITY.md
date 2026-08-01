@@ -189,6 +189,52 @@ Kong forwards the credential rather than stripping it (`hide_credentials: false`
 
 ---
 
+## OAuth2 / OIDC (optional)
+
+Alongside the shared API key, every service can **also** accept an OAuth2 / OIDC
+Bearer JWT — a "dual auth" model: a request is authenticated if it carries
+**either** a valid `apikey` header **or** a valid `Authorization: Bearer <jwt>`.
+This is implemented once in `ulht-commons` so it applies to all four services,
+and it is **opt-in**: with no issuer configured the services behave byte-for-byte
+as the api-key-only model above.
+
+| Aspect | Detail |
+| --- | --- |
+| Standard | OpenID Connect / OAuth2 Resource Server (`spring-boot-starter-oauth2-resource-server`) |
+| IdP | Keycloak (optional overlay `docker-compose.keycloak.yml`, realm `ulht`) |
+| Header | `Authorization: Bearer <access-token>` |
+| Validation | JWT signature verified against the realm JWKS; issuer checked |
+| Activation | Set `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` on the service |
+| When unset | No `JwtDecoder` is created, the Bearer leg is **not** wired, chain is api-key only |
+
+### How the dual auth chain works
+
+The single shared `SecurityFilterChain` in
+[`ApiKeySecurityAutoConfiguration`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/ulht-commons/src/main/java/pt/ulusofona/commons/security/ApiKeySecurityAutoConfiguration.java):
+
+1. Keeps the public paths public (actuator health/info/prometheus, swagger, api-docs).
+2. Runs the `ApiKeyAuthFilter` first — a valid `apikey` authenticates the request exactly as before (constant-time compare, `ROLE_SERVICE`).
+3. **Additionally**, when (and only when) an issuer is configured, Spring Boot contributes a `JwtDecoder` bean and the chain wires `http.oauth2ResourceServer(oauth2 -> oauth2.jwt(...))`, so a valid Bearer JWT also authenticates.
+4. A request with **neither** a valid apikey **nor** a valid JWT still gets `401 Unauthorized` (unchanged).
+
+Because the Bearer leg is guarded on the presence of a `JwtDecoder` (created only
+when `spring.security.oauth2.resourceserver.jwt.issuer-uri` is set), the demo and
+the base microservices stack — which set no issuer-uri — never attempt to reach a
+Keycloak and stay api-key only. CSRF stays disabled, sessions stateless, and the
+existing 401 entry point is unchanged.
+
+!!! info "Placeholder credentials"
+    The bundled realm ([`docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json))
+    ships a confidential client (`ulht-service`), a public client (`ulht-public`),
+    and a `demo-user` — all with **placeholder** secrets/passwords
+    (`CHANGE-ME-*`). Rotate every one before any non-local use.
+
+See [Deployment → Running with Keycloak (optional OAuth2)](DEPLOYMENT.md#running-with-keycloak-optional-oauth2)
+for the step-by-step run, token, and Bearer-call commands, and
+[ADR 0008](adr/0008-auth-and-key-management-roadmap.md) for the roadmap context.
+
+---
+
 ## Secrets management
 
 - **All secrets are supplied through environment variables.** No secret is hard-coded in any service.

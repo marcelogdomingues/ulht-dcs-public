@@ -51,6 +51,20 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!--
+          OAuth2 Resource Server (JWT / JWKS validation). Version managed by the
+          Spring Boot BOM (spring-boot-starter-parent). This adds the CLASSES
+          needed to validate an `Authorization: Bearer <jwt>` token, but the JWT
+          auth leg is ONLY wired when an issuer-uri property is configured (see
+          OAuth2ResourceServerConfiguration). With no issuer-uri set — as in the
+          demo and existing runs — the security chain stays api-key only and
+          behaves exactly as before.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
         <!-- Auto-configuration support (@AutoConfiguration, conditions) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

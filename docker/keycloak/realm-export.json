@@ -1,0 +1,64 @@
+{
+  "realm": "ulht",
+  "enabled": true,
+  "displayName": "ULHT Digital Credential System",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      {
+        "name": "service",
+        "description": "Coarse machine/service role, mirrors ROLE_SERVICE of the api-key path"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ulht-service",
+      "name": "ULHT confidential service client (password / client-credentials)",
+      "description": "Confidential client used to obtain access tokens for calling the ULHT services. PLACEHOLDER secret — rotate before any non-local use.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "CHANGE-ME-ulht-client-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": ["profile", "email", "roles"]
+    },
+    {
+      "clientId": "ulht-public",
+      "name": "ULHT public client (Authorization Code + PKCE, for apps)",
+      "description": "Public client for mobile/web apps using Authorization Code + PKCE.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": ["profile", "email", "roles"]
+    }
+  ],
+  "users": [
+    {
+      "username": "demo-user",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "demo-user@ulusofona.pt",
+      "firstName": "Demo",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CHANGE-ME-demo-user-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["service"]
+    }
+  ]
+}
