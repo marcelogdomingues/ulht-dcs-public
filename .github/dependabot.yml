@@ -9,7 +9,13 @@
 # -----------------------------------------------------------------------------
 version: 2
 updates:
-  # --- Maven (backend microservices) -----------------------------------------
+  # --- Maven (backend microservices + shared module) -------------------------
+  - package-ecosystem: maven
+    directory: /dcs-commons
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
   - package-ecosystem: maven
     directory: /credential-service
     schedule:

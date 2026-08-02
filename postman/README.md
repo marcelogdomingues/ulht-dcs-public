@@ -6,8 +6,6 @@
 1. ✅ **Collection**: `DCS-Unified.postman_collection.json`
 2. ✅ **Environment**: `DCS-Unified.postman_environment.json`
 
-📖 **Full Guide**: See `README-UNIFIED.md`
-
 ---
 
 ## 🚀 Quick Start
