@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DCS SIS Service (Digital Wallet Service) provides comprehensive integration between DCS and WaltID digital wallet platform. It enables secure management of student academic data, digital credentials, and seamless integration with the university's information systems (SIGES).
+The DCS SIS Service is the integration layer to the university's Student Information System (SIGES). It fetches student academic data (enrolment, grades, credits, evaluations) on demand and feeds it into the credential-issuance pipeline over Kafka, so the rest of the platform never talks to the SIS directly.
 
 ## Key Features
 

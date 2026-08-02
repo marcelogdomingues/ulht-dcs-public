@@ -1,4 +1,4 @@
-# Student Service
+# DCS Student Service
 
 Entry point service for student requests - minimal and simple
 
