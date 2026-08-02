@@ -10,8 +10,8 @@
 # Run it layered on top of the microservices stack:
 #
 #     docker compose \
-#       -f docker-compose.microservices.yml \
-#       -f docker-compose.keycloak.yml \
+#       -f compose/microservices.yml \
+#       -f compose/keycloak.yml \
 #       up -d --build
 #
 # This starts Keycloak (dev mode) importing docker/keycloak/realm-export.json
@@ -43,7 +43,7 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
     volumes:
-      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ../docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:

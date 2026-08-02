@@ -45,7 +45,7 @@ apps, gateway config, observability config, and docs:
 | `api-gateway/` | Kong declarative config (`kong.yml`) |
 | `monitoring/` | Prometheus, Grafana, Loki, Promtail configuration |
 | `docs/` | Markdown documentation set (source of truth) and static HTML site |
-| `docker-compose.*.yml` | Compose files — see [Deployment](../docs/DEPLOYMENT.md) |
+| `compose/*.yml` | Compose files — see [Deployment](../docs/DEPLOYMENT.md) |
 | `.env.example` | Template for the git-ignored `.env` (secrets) |
 
 Each of the four services is a **self-contained Maven project** with its own `pom.xml`;
@@ -106,11 +106,11 @@ Build-time configuration is injected with `--dart-define`; see
 cp .env.example .env
 # edit .env — set the REQUIRED secrets (no defaults): WALLET_PASSWORD_SECRET,
 # WALLET_PASSWORD_SALT, GRAFANA_ADMIN_PASSWORD, KAFKA_UI_PASSWORD
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
+docker compose -f compose/microservices.yml -f compose/override.yml up -d --build
 ```
 
-Always include **both** files: `docker-compose.microservices.yml` is the primary
-stack and `docker-compose.override.yml` layers required local fixes (busybox `wget`
+Always include **both** files: `compose/microservices.yml` is the primary
+stack and `compose/override.yml` layers required local fixes (busybox `wget`
 healthchecks, the Kafka-UI port remap, and the SIS endpoint).
 
 Verify health (public endpoints, no `apikey` needed):

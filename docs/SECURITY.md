@@ -201,7 +201,7 @@ as the api-key-only model above.
 | Aspect | Detail |
 | --- | --- |
 | Standard | OpenID Connect / OAuth2 Resource Server (`spring-boot-starter-oauth2-resource-server`) |
-| IdP | Keycloak (optional overlay `docker-compose.keycloak.yml`, realm `dcs`) |
+| IdP | Keycloak (optional overlay `compose/keycloak.yml`, realm `dcs`) |
 | Header | `Authorization: Bearer <access-token>` |
 | Validation | JWT signature verified against the realm JWKS; issuer checked |
 | Activation | Set `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` on the service |

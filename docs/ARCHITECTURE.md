@@ -667,7 +667,7 @@ graph TB
 
 ## 12. Deployment view
 
-The stack is split across compose files: [`docker-compose.infrastructure.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker-compose.infrastructure.yml) (Kafka, Consul, Kong, monitoring), [`docker-compose.microservices.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker-compose.microservices.yml) (the four services), and a consolidated [`docker-compose.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker-compose.yml). walt.id runs from its own external compose on `waltid_network`.
+The stack is split across compose files: [`compose/infrastructure.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/compose/infrastructure.yml) (Kafka, Consul, Kong, monitoring), [`compose/microservices.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/compose/microservices.yml) (the four services), and a consolidated [`docker-compose.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker-compose.yml). walt.id runs from its own external compose on `waltid_network`.
 
 ```mermaid
 graph TB

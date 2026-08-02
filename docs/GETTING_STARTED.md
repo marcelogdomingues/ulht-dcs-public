@@ -86,8 +86,8 @@ The repository layout you will use most:
 | Path | What it is |
 | --- | --- |
 | [`.env.example`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/.env.example) | Template for the secrets/config file you must create |
-| [`docker-compose.microservices.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker-compose.microservices.yml) | The compose file that builds & runs the four services + infra |
-| `docker-compose.override.yml` | Local-only overrides (health checks, port remaps) — you create this; see below |
+| [`compose/microservices.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/compose/microservices.yml) | The compose file that builds & runs the four services + infra |
+| `compose/override.yml` | Local-only overrides (health checks, port remaps) — you create this; see below |
 | `credential-service/`, `student-service/`, `sis-service/`, `fulfilment-service/` | The four Spring Boot microservices |
 | `mobile-apps/` | The Flutter student & verifier apps |
 
@@ -139,18 +139,18 @@ The complete variable reference (defaults, consuming component, precedence) live
 Use the **microservices** compose file plus the **override** file.
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
+docker compose -f compose/microservices.yml -f compose/override.yml up -d --build
 ```
 
 What this does:
 
-- `-f docker-compose.microservices.yml` — the primary file: builds the four service images and starts Kafka, Consul, Kong, Kafka-UI, and (via included infra) the observability stack.
-- `-f docker-compose.override.yml` — local-only tweaks layered on top: it fixes the container health checks (the slim service images ship `wget` but not `curl`) and remaps the Kafka-UI host port to **8181** to avoid clashing with anything on **8081**.
+- `-f compose/microservices.yml` — the primary file: builds the four service images and starts Kafka, Consul, Kong, Kafka-UI, and (via included infra) the observability stack.
+- `-f compose/override.yml` — local-only tweaks layered on top: it fixes the container health checks (the slim service images ship `wget` but not `curl`) and remaps the Kafka-UI host port to **8181** to avoid clashing with anything on **8081**.
 - `up -d` — detached (background).
 - `--build` — (re)build the service images from source before starting.
 
 !!! tip "About the override file"
-    The public repo does not ship `docker-compose.override.yml`; you create it once. A minimal, working version looks like this — it repairs the health checks and remaps Kafka-UI:
+    The public repo does not ship `compose/override.yml`; you create it once. A minimal, working version looks like this — it repairs the health checks and remaps Kafka-UI:
 
     ```yaml
     services:
@@ -189,7 +189,7 @@ What this does:
 First confirm the containers are up and reporting healthy:
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml ps
+docker compose -f compose/microservices.yml -f compose/override.yml ps
 ```
 
 Look for `running (healthy)` on each `dcs-*` service. Startup takes a bit — services register with Consul and connect to Kafka before they report `UP`.

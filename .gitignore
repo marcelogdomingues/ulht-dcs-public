@@ -42,7 +42,7 @@ README.html
 # Secrets / local environment
 
 .env
-docker-compose.override.yml
+compose/override.yml
 !.env.example
 
 # MkDocs build output

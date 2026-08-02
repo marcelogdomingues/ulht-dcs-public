@@ -5,11 +5,11 @@
 # issue REAL Verifiable Credentials instead of the demo mocks.
 #
 # This is ADDITIVE. It does NOT touch the demo mock path
-# (docker-compose.demo.yml) or the app stack (docker-compose.microservices.yml).
+# (compose/demo.yml) or the app stack (compose/microservices.yml).
 #
 # HOW IT WIRES UP
 # ---------------
-# docker-compose.microservices.yml declares an EXTERNAL network:
+# compose/microservices.yml declares an EXTERNAL network:
 #     waltid_network:
 #       external: true
 #       name: docker-compose_default
@@ -22,14 +22,14 @@
 # services resolve them by DNS with no changes to the app compose or config.
 #
 # RUN (walt.id first, then the app stack joins the shared external network):
-#   1) docker compose -f docker-compose.waltid.yml -p docker-compose up -d
-#   2) docker compose -f docker-compose.microservices.yml up -d
+#   1) docker compose -f compose/waltid.yml -p docker-compose up -d
+#   2) docker compose -f compose/microservices.yml up -d
 # The `-p docker-compose` project name is what makes the default/declared network
 # resolve to `docker-compose_default`.
 #
 # TEAR DOWN:
-#   docker compose -f docker-compose.microservices.yml down
-#   docker compose -f docker-compose.waltid.yml -p docker-compose down
+#   docker compose -f compose/microservices.yml down
+#   docker compose -f compose/waltid.yml -p docker-compose down
 #
 # IMAGE PINNING / known cert time-bomb
 # ------------------------------------
@@ -52,7 +52,7 @@ services:
     ports:
       - "127.0.0.1:7002:7002"
     volumes:
-      - ./docker/waltid/issuer-api/config:/waltid-issuer-api/config:ro
+      - ../docker/waltid/issuer-api/config:/waltid-issuer-api/config:ro
     healthcheck:
       # busybox wget is present in the walt.id images (no curl).
       # issuer-api 0.22.0 serves OID4VCI metadata under the draft path.
@@ -84,7 +84,7 @@ services:
     ports:
       - "127.0.0.1:7003:7003"
     volumes:
-      - ./docker/waltid/verifier-api/config:/waltid-verifier-api/config:ro
+      - ../docker/waltid/verifier-api/config:/waltid-verifier-api/config:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7003/openid4vc/policy-list"]
       interval: 15s
@@ -124,7 +124,7 @@ services:
       # presentation. Kept in-network so everything resolves via compose DNS.
       WALLET_BACKEND_PORT: "7001"
     volumes:
-      - ./docker/waltid/wallet-api/config:/waltid-wallet-api/config:ro
+      - ../docker/waltid/wallet-api/config:/waltid-wallet-api/config:ro
       - waltid_wallet_data:/waltid-wallet-api/data
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7001/livez"]
@@ -148,7 +148,7 @@ volumes:
   waltid_wallet_data:
     driver: local
 
-# The app stack (docker-compose.microservices.yml) joins THIS network as an
+# The app stack (compose/microservices.yml) joins THIS network as an
 # `external` network named `docker-compose_default`. Naming it here (and running
 # this file under `-p docker-compose`) is what makes that reference resolve.
 networks:

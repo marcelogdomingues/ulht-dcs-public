@@ -10,7 +10,7 @@ A complete, hands-on guide to building and running the **Digital Credential Syst
 
 ```bash
 cp .env.example .env          # fill in the REQUIRED secrets first (see below)
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
+docker compose -f compose/microservices.yml -f compose/override.yml up -d --build
 ```
 
 That builds the four service images and starts the full application stack (Kafka, Consul, Kong, Kafka-UI, Kong-UI, and the four microservices) with the local override applied on top.
@@ -26,13 +26,12 @@ The repository ships several Compose files. Use the right combination for the jo
 
 | File | Role | Contains |
 | --- | --- | --- |
-| **`docker-compose.microservices.yml`** | **PRIMARY** — the full application stack | Kafka, Consul, Kafka-UI, Kong (api-gateway), Kong-UI, and the 4 microservices |
-| `docker-compose.override.yml` | Local fixes, layered on top of the primary | busybox-`wget` healthchecks, Kafka-UI port remap, SIS endpoint injection |
-| `docker-compose.infrastructure.yml` | **Observability + infra** stack | Kafka, Consul, Kafka-UI, Kong, Kong-UI **plus** Prometheus, Grafana, Loki, Promtail, kafka-exporter |
-| `docker-compose.dev.yml` | Development variant (run services from your IDE) | infra only, for local IDE workflows |
+| **`compose/microservices.yml`** | **PRIMARY** — the full application stack | Kafka, Consul, Kafka-UI, Kong (api-gateway), Kong-UI, and the 4 microservices |
+| `compose/override.yml` | Local fixes, layered on top of the primary | busybox-`wget` healthchecks, Kafka-UI port remap, SIS endpoint injection |
+| `compose/infrastructure.yml` | **Observability + infra** stack | Kafka, Consul, Kafka-UI, Kong, Kong-UI **plus** Prometheus, Grafana, Loki, Promtail, kafka-exporter |
 
 !!! note "Primary vs. infrastructure"
-    `docker-compose.microservices.yml` is what you run day-to-day. The **monitoring** components (Prometheus / Grafana / Loki / Promtail / kafka-exporter) live only in `docker-compose.infrastructure.yml`. Bring up observability separately (see [Observability](#observability)) or compose both files together if you want everything in one `up`.
+    `compose/microservices.yml` is what you run day-to-day. The **monitoring** components (Prometheus / Grafana / Loki / Promtail / kafka-exporter) live only in `compose/infrastructure.yml`. Bring up observability separately (see [Observability](#observability)) or compose both files together if you want everything in one `up`.
 
 ---
 
@@ -116,19 +115,19 @@ See [Configuration](CONFIGURATION.md) for the complete reference.
 ### 2. Start the full stack
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
+docker compose -f compose/microservices.yml -f compose/override.yml up -d --build
 ```
 
-- `-f docker-compose.microservices.yml` — the primary stack.
-- `-f docker-compose.override.yml` — local fixes (must be passed explicitly; it is git-ignored and not auto-loaded because the primary file is not named `docker-compose.yml`).
+- `-f compose/microservices.yml` — the primary stack.
+- `-f compose/override.yml` — local fixes (must be passed explicitly; it is git-ignored and not auto-loaded because the primary file is not named `docker-compose.yml`).
 - `-d` — detached.
 - `--build` — (re)build the four service images from their Dockerfiles.
 
 ### 3. Watch it come up
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml ps
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml logs -f dcs-student-service
+docker compose -f compose/microservices.yml -f compose/override.yml ps
+docker compose -f compose/microservices.yml -f compose/override.yml logs -f dcs-student-service
 ```
 
 Wait until every container reports `healthy`. First boot can take a minute or two while Kafka forms its KRaft quorum and the services register with Consul.
@@ -181,7 +180,7 @@ The public health/metrics endpoints (`/api/v1/actuator/health`, `/info`, `/prome
 
 ## Override file
 
-`docker-compose.override.yml` layers **local fixes** on top of the primary Compose file. It is passed explicitly with `-f`. Its three jobs:
+`compose/override.yml` layers **local fixes** on top of the primary Compose file. It is passed explicitly with `-f`. Its three jobs:
 
 ### 1. busybox-`wget` healthchecks
 
@@ -247,9 +246,9 @@ Kafka runs as **Confluent `cp-kafka:8.3.0` in KRaft mode** — there is **no Zoo
 !!! danger "`kafka_data` wipe caveat when migrating from ZooKeeper mode"
     A `kafka_data` volume that was previously written by a **ZooKeeper-mode** broker holds metadata that is **incompatible with KRaft**. The KRaft broker will refuse to start against it. Wipe the volume before the first KRaft start:
     ```bash
-    docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down
+    docker compose -f compose/microservices.yml -f compose/override.yml down
     docker volume rm dcs_kafka_data     # volume name = <project>_kafka_data
-    docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d
+    docker compose -f compose/microservices.yml -f compose/override.yml up -d
     ```
     Confirm the volume name first with `docker volume ls | grep kafka_data`. `down -v` also removes it.
 
@@ -367,7 +366,7 @@ Named volumes survive `down`; they are destroyed only by `down -v` or an explici
 
 ## Observability
 
-The monitoring stack is defined in **`docker-compose.infrastructure.yml`**: Prometheus, Grafana, Loki, Promtail, and kafka-exporter.
+The monitoring stack is defined in **`compose/infrastructure.yml`**: Prometheus, Grafana, Loki, Promtail, and kafka-exporter.
 
 - **Prometheus** (`:9090`) scrapes each service at `/api/v1/actuator/prometheus`, plus `kafka-exporter:9308` and `consul:8500`. Targets are declared in [`monitoring/prometheus.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/monitoring/prometheus.yml).
 - **Grafana** (`:3000`, admin/`GRAFANA_ADMIN_PASSWORD`) auto-provisions dashboards from [`monitoring/grafana`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/monitoring/grafana).
@@ -376,7 +375,7 @@ The monitoring stack is defined in **`docker-compose.infrastructure.yml`**: Prom
 Bring it up alongside (or instead of) the primary stack:
 
 ```bash
-docker compose -f docker-compose.infrastructure.yml up -d
+docker compose -f compose/infrastructure.yml up -d
 ```
 
 ---
@@ -386,13 +385,13 @@ docker compose -f docker-compose.infrastructure.yml up -d
 **Infrastructure only** (run the microservices from your IDE against containerised Kafka/Consul):
 
 ```bash
-docker compose -f docker-compose.infrastructure.yml up -d
+docker compose -f compose/infrastructure.yml up -d
 ```
 
 **Full application stack** (primary + override, build included):
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
+docker compose -f compose/microservices.yml -f compose/override.yml up -d --build
 ```
 
 ---
@@ -408,19 +407,19 @@ The [walt.id](ARCHITECTURE.md) components — issuer (`:7002`), verifier (`:7003
 
 ## Running with real walt.id (bundled)
 
-By default the full stack expects an **external** walt.id. To run a **real** walt.id backend from this repo (so `credential-service` in its normal `docker` profile — **not** `demo` — issues real Verifiable Credentials), use the bundled overlay `docker-compose.waltid.yml` + the config scaffold under `docker/waltid/`.
+By default the full stack expects an **external** walt.id. To run a **real** walt.id backend from this repo (so `credential-service` in its normal `docker` profile — **not** `demo` — issues real Verifiable Credentials), use the bundled overlay `compose/waltid.yml` + the config scaffold under `docker/waltid/`.
 
-It stands up walt.id's **issuer** (`:7002`), **verifier** (`:7003`) and **wallet** (`:7001`) APIs on a network **named `docker-compose_default`** — exactly the external network name `docker-compose.microservices.yml` already declares as `waltid_network` — so the app services resolve `issuer-api` / `verifier-api` / `wallet-api` by DNS with **no app-config changes**. The wallet-api uses an embedded SQLite DB (config in `docker/waltid/wallet-api/config/db.conf`), so no extra Postgres container is needed.
+It stands up walt.id's **issuer** (`:7002`), **verifier** (`:7003`) and **wallet** (`:7001`) APIs on a network **named `docker-compose_default`** — exactly the external network name `compose/microservices.yml` already declares as `waltid_network` — so the app services resolve `issuer-api` / `verifier-api` / `wallet-api` by DNS with **no app-config changes**. The wallet-api uses an embedded SQLite DB (config in `docker/waltid/wallet-api/config/db.conf`), so no extra Postgres container is needed.
 
 Images are **pinned**: `issuer-api:0.22.0` (confirmed to avoid the `notBefore` crash), `verifier-api:0.15.1`, `wallet-api:0.15.1`.
 
 ```bash
 # 1) Bring up the real walt.id backend FIRST (creates docker-compose_default).
 #    The -p docker-compose project name is what makes the network name resolve.
-docker compose -f docker-compose.waltid.yml -p docker-compose up -d
+docker compose -f compose/waltid.yml -p docker-compose up -d
 
 # 2) Bring up the app stack; it joins the shared external network.
-docker compose -f docker-compose.microservices.yml up -d
+docker compose -f compose/microservices.yml up -d
 
 # 3) Issue a REAL credential (docker profile — no `demo`):
 curl -X POST http://localhost:8084/api/v1/student/issue \
@@ -439,8 +438,8 @@ curl -s http://localhost:7001/livez                                          # w
 Tear down (walt.id last):
 
 ```bash
-docker compose -f docker-compose.microservices.yml down
-docker compose -f docker-compose.waltid.yml -p docker-compose down          # add -v to drop the wallet SQLite volume
+docker compose -f compose/microservices.yml down
+docker compose -f compose/waltid.yml -p docker-compose down          # add -v to drop the wallet SQLite volume
 ```
 
 !!! danger "Dev keys only"
@@ -458,7 +457,7 @@ By default the services authenticate callers with the shared `apikey` header
 only. To **additionally** accept an OAuth2 / OIDC Bearer JWT (dual auth — a
 request is authenticated with **either** a valid `apikey` **or** a valid
 `Authorization: Bearer <jwt>`), layer the optional overlay
-`docker-compose.keycloak.yml` on top of the microservices stack. It starts
+`compose/keycloak.yml` on top of the microservices stack. It starts
 **Keycloak** (`quay.io/keycloak/keycloak:26.0`, dev mode) importing the realm at
 [`docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json)
 and sets `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` on every service,
@@ -471,8 +470,8 @@ path keeps working with or without Keycloak.
 ```bash
 # 1) Bring up the app stack WITH the Keycloak overlay.
 docker compose \
-  -f docker-compose.microservices.yml \
-  -f docker-compose.keycloak.yml \
+  -f compose/microservices.yml \
+  -f compose/keycloak.yml \
   up -d --build
 
 # 2) Confirm the realm is up (OIDC discovery -> 200).
@@ -516,7 +515,7 @@ curl -s -X POST http://localhost:8084/api/v1/student/issue \
 Tear down:
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.keycloak.yml down
+docker compose -f compose/microservices.yml -f compose/keycloak.yml down
 ```
 
 !!! danger "Placeholder credentials"
@@ -549,13 +548,13 @@ See [Security](SECURITY.md) for the full authentication model and the endpoints 
 Stop and remove containers (volumes **retained**):
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down
+docker compose -f compose/microservices.yml -f compose/override.yml down
 ```
 
 Stop and remove containers **and volumes** (destroys `kafka_data`, `consul_data`, and — for the infra file — `prometheus_data`, `grafana_data`, `loki_data`):
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down -v
+docker compose -f compose/microservices.yml -f compose/override.yml down -v
 ```
 
 !!! tip

@@ -13,7 +13,7 @@ See also: [Getting Started](GETTING_STARTED.md) · [Configuration](CONFIGURATION
 Use the microservices compose file **plus** the local override:
 
 ```bash
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d
+docker compose -f compose/microservices.yml -f compose/override.yml up -d
 ```
 
 !!! warning "Before your first KRaft start"
@@ -75,7 +75,7 @@ cp .env.example .env
 ```bash
 docker volume rm dcs_kafka_data
 # or reset all volumes at once:
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down -v
+docker compose -f compose/microservices.yml -f compose/override.yml down -v
 ```
 
 ### Container name conflict — "/kafka already in use"
@@ -85,7 +85,7 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 
 ```bash
 docker rm -f kafka
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d
+docker compose -f compose/microservices.yml -f compose/override.yml up -d
 ```
 
 ## Health & discovery issues
@@ -184,13 +184,13 @@ Only `/api/v1/actuator/health`, `/api/v1/actuator/info`, `/api/v1/actuator/prome
 
 ```bash
 # Follow logs for all services
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml logs -f
+docker compose -f compose/microservices.yml -f compose/override.yml logs -f
 
 # Follow logs for one service
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml logs -f credential-service
+docker compose -f compose/microservices.yml -f compose/override.yml logs -f credential-service
 
 # List running containers (with health status)
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml ps
+docker compose -f compose/microservices.yml -f compose/override.yml ps
 
 # List Kafka topics (KRaft mode)
 docker exec kafka kafka-topics --bootstrap-server localhost:9092 --list
@@ -203,5 +203,5 @@ curl -H "apikey: $APP_API_KEY" \
   http://localhost:8086/api/v1/wallet/credentials?userName=<student-username>
 
 # Bring the stack down (add -v to also drop volumes)
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down
+docker compose -f compose/microservices.yml -f compose/override.yml down
 ```

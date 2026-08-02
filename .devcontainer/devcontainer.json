@@ -29,7 +29,7 @@
   },
 
   // Non-destructive welcome message; does not start containers.
-  "postCreateCommand": "echo '👋 Welcome to DCS! To start: 1) cp .env.example .env  2) edit .env and set APP_API_KEY, WALLET_PASSWORD_SECRET, WALLET_PASSWORD_SALT, GRAFANA_ADMIN_PASSWORD, KAFKA_UI_PASSWORD  3) docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build  |  Docs: https://marcelogdomingues.github.io/ulht-dcs-public/'",
+  "postCreateCommand": "echo '👋 Welcome to DCS! To start: 1) cp .env.example .env  2) edit .env and set APP_API_KEY, WALLET_PASSWORD_SECRET, WALLET_PASSWORD_SALT, GRAFANA_ADMIN_PASSWORD, KAFKA_UI_PASSWORD  3) docker compose -f compose/microservices.yml -f compose/override.yml up -d --build  |  Docs: https://marcelogdomingues.github.io/ulht-dcs-public/'",
 
   "customizations": {
     "vscode": {

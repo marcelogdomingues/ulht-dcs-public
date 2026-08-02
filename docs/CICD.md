@@ -141,7 +141,7 @@ env:
   KAFKA_UI_PASSWORD: dummy-kafka-pass
 ```
 
-Then it runs `docker compose -f docker-compose.microservices.yml config` and `docker compose -f docker-compose.infrastructure.yml config`.
+Then it runs `docker compose -f compose/microservices.yml config` and `docker compose -f compose/infrastructure.yml config`.
 
 ### `images`
 
@@ -157,7 +157,7 @@ ghcr.io/<owner>/dcs-<service>:latest
 
 The `images` job declares `permissions: packages: write` so `GITHUB_TOKEN` can push.
 
-**Triggers & path filters.** Push to `main`, `v*` tags, and PRs — scoped to the service directories, `**/Dockerfile`, `docker-compose.*.yml`, and `docker.yml`.
+**Triggers & path filters.** Push to `main`, `v*` tags, and PRs — scoped to the service directories, `**/Dockerfile`, `compose/*.yml`, and `docker.yml`.
 
 ---
 
@@ -256,7 +256,7 @@ cd mobile-apps/student-app && flutter pub get && flutter analyze && flutter test
 # Docker — validate compose config, then build images
 APP_API_KEY=dummy WALLET_PASSWORD_SECRET=dummy WALLET_PASSWORD_SALT=dummy \
 GRAFANA_ADMIN_PASSWORD=dummy KAFKA_UI_PASSWORD=dummy \
-  docker compose -f docker-compose.microservices.yml config >/dev/null
+  docker compose -f compose/microservices.yml config >/dev/null
 docker build ./credential-service    # repeat per service (matches the CI build context)
 
 # Docs — build the site strictly (fails on warnings/broken links)

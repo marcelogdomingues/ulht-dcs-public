@@ -101,15 +101,15 @@ cp .env.example .env
 
 - [ ] Validate the Compose config renders (catches YAML / `${VAR}` errors):
   ```bash
-  docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml config >/dev/null
+  docker compose -f compose/microservices.yml -f compose/override.yml config >/dev/null
   ```
 - [ ] Bring up the stack:
   ```bash
-  docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
+  docker compose -f compose/microservices.yml -f compose/override.yml up -d --build
   ```
 - [ ] All containers report **healthy**:
   ```bash
-  docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml ps
+  docker compose -f compose/microservices.yml -f compose/override.yml ps
   ```
 
 **Smoke tests:**
@@ -149,7 +149,7 @@ cp .env.example .env
 
 ## 6. Observability
 
-- [ ] Observability stack up (`docker-compose.infrastructure.yml`).
+- [ ] Observability stack up (`compose/infrastructure.yml`).
 - [ ] **Prometheus targets all UP** at `http://127.0.0.1:9090/targets` — the four services (`/api/v1/actuator/prometheus`), `kafka-exporter:9308`, `consul:8500`, and Prometheus itself.
 - [ ] **Grafana** reachable at `http://127.0.0.1:3000`, login works with `GRAFANA_ADMIN_PASSWORD`, provisioned dashboards render with data.
 - [ ] **Loki + Promtail** shipping logs — logs visible in Grafana Explore / the logs dashboards.

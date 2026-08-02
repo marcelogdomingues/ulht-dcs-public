@@ -79,7 +79,7 @@ The monitoring stack includes:
 ### 1. Start Infrastructure with Monitoring
 
 ```bash
-docker-compose -f docker-compose.infrastructure.yml up -d
+docker-compose -f compose/infrastructure.yml up -d
 ```
 
 This will start:
@@ -92,7 +92,7 @@ This will start:
 ### 2. Start Microservices
 
 ```bash
-docker-compose -f docker-compose.microservices.yml up -d
+docker-compose -f compose/microservices.yml up -d
 ```
 
 ### 3. Access Dashboards

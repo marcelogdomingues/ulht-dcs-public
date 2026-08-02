@@ -124,7 +124,7 @@ All ports are bound to `127.0.0.1` (loopback only) — nothing is exposed to the
 | Kafka Exporter | `9308` | 9308 | Kafka metrics for Prometheus |
 
 !!! note "Port remaps you will see"
-    - **Kafka-UI** publishes to `8081` in `docker-compose.microservices.yml`, but the local override re-publishes it to **`8181`** (a process commonly holds `8081`). Access it at `http://127.0.0.1:8181`.
+    - **Kafka-UI** publishes to `8081` in `compose/microservices.yml`, but the local override re-publishes it to **`8181`** (a process commonly holds `8081`). Access it at `http://127.0.0.1:8181`.
     - **Kong-UI** is nginx on host **`8082`** (container port `80`); it was moved off `8080` to avoid a conflict.
 
 !!! note "walt.id ports are external"
@@ -241,7 +241,7 @@ export SPRING_APPLICATION_JSON='{
 }'
 ```
 
-In `docker-compose.override.yml` the equivalent lives under the `dcs-sis-service` service's `environment.SPRING_APPLICATION_JSON`. Use the placeholder SIS URL in any shared copy.
+In `compose/override.yml` the equivalent lives under the `dcs-sis-service` service's `environment.SPRING_APPLICATION_JSON`. Use the placeholder SIS URL in any shared copy.
 
 For the compose commands and profile activation used by the running stack, see [Getting Started](GETTING_STARTED.md) and [Deployment](DEPLOYMENT.md).
 </content>

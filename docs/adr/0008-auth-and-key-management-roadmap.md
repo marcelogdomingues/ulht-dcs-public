@@ -48,7 +48,7 @@ plan of record, not an implemented decision — hence **Proposed**.
   authenticates with **either** a valid `apikey` **or** a valid Bearer JWT;
   neither ⇒ `401` (unchanged). With no issuer-uri set (the demo and base stack),
   the JWT leg is never wired and behaviour is byte-for-byte the api-key model of
-  ADR 0005. An optional overlay `docker-compose.keycloak.yml` +
+  ADR 0005. An optional overlay `compose/keycloak.yml` +
   `docker/keycloak/realm-export.json` stand up Keycloak and set the issuer-uri;
   see [Security → OAuth2 / OIDC (optional)](../SECURITY.md#oauth2-oidc-optional)
   and [Deployment → Running with Keycloak](../DEPLOYMENT.md#running-with-keycloak-optional-oauth2).

@@ -9,10 +9,10 @@
 
 # Primary application stack = microservices + (optional) local override.
 # The override is git-ignored; it is included automatically when present.
-OVERRIDE := $(wildcard docker-compose.override.yml)
-COMPOSE  := docker compose -f docker-compose.microservices.yml $(if $(OVERRIDE),-f docker-compose.override.yml,)
+OVERRIDE := $(wildcard compose/override.yml)
+COMPOSE  := docker compose -f compose/microservices.yml $(if $(OVERRIDE),-f compose/override.yml,)
 # Observability + infra stack (Prometheus / Grafana / Loki / Promtail / exporters).
-COMPOSE_OBS := docker compose -f docker-compose.infrastructure.yml
+COMPOSE_OBS := docker compose -f compose/infrastructure.yml
 
 help:
 	@echo "DCS — Make targets"
@@ -41,19 +41,19 @@ help:
 # --- Demo -------------------------------------------------------------------
 demo:
 	@echo "🎬 Starting self-contained DCS demo (mock walt.id + SIS)..."
-	docker compose -f docker-compose.demo.yml up -d --build
+	docker compose -f compose/demo.yml up -d --build
 	@echo "✅ Demo starting. Poll: make demo-status"
 	@echo "   Entry point: http://localhost:8084/api/v1/student/issue (apikey: demo-key)"
 	@echo "   See docs/DEMO.md for issue/poll/fetch/verify curl commands."
 
 demo-stop:
-	docker compose -f docker-compose.demo.yml down
+	docker compose -f compose/demo.yml down
 
 demo-logs:
-	docker compose -f docker-compose.demo.yml logs -f credential-service sis-service
+	docker compose -f compose/demo.yml logs -f credential-service sis-service
 
 demo-status:
-	docker compose -f docker-compose.demo.yml ps
+	docker compose -f compose/demo.yml ps
 
 # --- Full application stack --------------------------------------------------
 up:

@@ -1,7 +1,7 @@
 # Build Stage
 #
 # NOTE: the build context for this Dockerfile is the REPOSITORY ROOT (see
-# docker-compose.*.yml -> build.context: . / dockerfile: credential-service/Dockerfile),
+# compose/*.yml -> build.context: . / dockerfile: credential-service/Dockerfile),
 # because the service depends on the shared `dcs-commons` module which lives at
 # the repo root and must be installed into the local Maven repo before the
 # service is packaged.

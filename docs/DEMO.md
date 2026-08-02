@@ -15,7 +15,7 @@ obviously-fake data.
 ## One command
 
 ```bash
-docker compose -f docker-compose.demo.yml up -d --build
+docker compose -f compose/demo.yml up -d --build
 ```
 
 This builds and starts a lean, self-contained stack:
@@ -52,7 +52,7 @@ and a result whose `verificationResult == true` ("verified").
 Wait until all services report healthy:
 
 ```bash
-docker compose -f docker-compose.demo.yml ps
+docker compose -f compose/demo.yml ps
 ```
 
 Then run the flow (the API key is `demo-key`, sent in the `apikey` header):
@@ -131,14 +131,14 @@ The mock verifier returns a verification URL and a successful ("verified") resul
 ## Debugging
 
 ```bash
-docker compose -f docker-compose.demo.yml logs credential-service sis-service
-docker compose -f docker-compose.demo.yml ps
+docker compose -f compose/demo.yml logs credential-service sis-service
+docker compose -f compose/demo.yml ps
 ```
 
 ## Tear down
 
 ```bash
-docker compose -f docker-compose.demo.yml down
+docker compose -f compose/demo.yml down
 ```
 
 ## How the mocks are wired

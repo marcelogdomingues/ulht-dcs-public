@@ -53,7 +53,7 @@ Run the **full issue → verify pipeline with one command** — no walt.id, no u
 SIS, no `.env`:
 
 ```bash
-docker compose -f docker-compose.demo.yml up -d --build
+docker compose -f compose/demo.yml up -d --build
 ```
 
 A `demo` Spring profile swaps the two external dependencies (walt.id and the student
@@ -102,10 +102,10 @@ cp .env.example .env
 #   GRAFANA_ADMIN_PASSWORD, KAFKA_UI_PASSWORD
 
 # 3. Build images and start the full stack (KRaft Kafka, Consul, Kong, services, monitoring)
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build
+docker compose -f compose/microservices.yml -f compose/override.yml up -d --build
 
 # 4. Watch services become healthy
-docker compose -f docker-compose.microservices.yml ps
+docker compose -f compose/microservices.yml ps
 ```
 
 Every business endpoint now requires the `apikey` header. Issue your first credential
@@ -218,9 +218,7 @@ dcs/
 ├── scripts/                  # Helper scripts (Kafka debug / reset)
 ├── docs/                     # Documentation (MkDocs Material site)
 ├── .github/                  # CI workflows + community-health files
-├── docker-compose.microservices.yml   # Primary stack
-├── docker-compose.override.yml        # Local overrides (healthchecks, ports)
-├── docker-compose.infrastructure.yml  # Observability + infra
+├── compose/                  # Docker Compose stacks (microservices · demo · infrastructure · keycloak · walt.id)
 ├── .env.example              # Required environment variables (template)
 └── README.md
 ```
