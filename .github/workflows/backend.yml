@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 25 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "25"
@@ -83,7 +83,7 @@ jobs:
       # (fail_ci_if_error: false) so missing token / upload hiccups never break CI.
       - name: Upload coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: services/${{ matrix.service }}/target/site/jacoco/jacoco.xml
           flags: ${{ matrix.service }}
