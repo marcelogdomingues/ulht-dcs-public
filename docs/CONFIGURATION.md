@@ -62,7 +62,7 @@ Two profiles drive the backend. Locally (Maven/IDE) the **default** profile appl
 | Kafka bootstrap | `localhost:29092` | `kafka:9092` |
 | Consul host | `localhost:8500` | `consul:8500` |
 | walt.id issuer / wallet / verifier | `http://localhost:7002 / 7001 / 7003` | `http://issuer-api:7002 / wallet-api:7001 / verifier-api:7003` |
-| sis SIS client (`sisClient`) | `${SIS_API_URL:https://university-sis.example.edu/api}` | usually injected via `SPRING_APPLICATION_JSON` (see override) |
+| SIS client (`sisClient`) | `${SIS_API_URL:https://university-sis.example.edu/api}` | usually injected via `SPRING_APPLICATION_JSON` (see override) |
 | Actuator base-path | `/actuator` | `/actuator` |
 | Health path (with `/api/v1` context) | `/api/v1/actuator/health` | `/api/v1/actuator/health` |
 | `management.endpoint.health.show-details` | `when-authorized` | `when-authorized` |

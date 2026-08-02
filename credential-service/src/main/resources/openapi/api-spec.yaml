@@ -416,7 +416,7 @@ components:
           example: a12345678
         studentData:
           type: object
-          description: Student data from SIS Service (real DCS data)
+          description: Student data from SIS Service (real student data)
           properties:
             studentId:
               type: string

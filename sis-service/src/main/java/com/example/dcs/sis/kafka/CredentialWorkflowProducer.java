@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Kafka producer for sending credential workflow requests to the Credential Service.
- * This completes the missing integration between DCS Proxy and Credential Service.
+ * This completes the missing integration between SIS Service and Credential Service.
  */
 @Slf4j
 @Service

@@ -40,9 +40,9 @@ public class AuthenticationController implements AuthenticationApi {
             log.info("Generated correlationId: {} for user: {}", correlationId, studentServiceRequest.getUserName());
             
             // 2. Get student data from external DCS services (NO MOCK DATA FALLBACK!)
-            log.info("Calling DCS API for student data: {}", studentServiceRequest.getUserName());
+            log.info("Calling SIS API for student data: {}", studentServiceRequest.getUserName());
             Object studentData = sisService.login(requestMap);
-            log.info("✅ Got real student data from DCS API");
+            log.info("✅ Got real student data from SIS API");
             
             // 3. Start credential workflow (pass correlationId to maintain traceability)
             credentialWorkflowProducer.startCredentialWorkflow(
@@ -60,13 +60,13 @@ public class AuthenticationController implements AuthenticationApi {
             return ResponseEntity.status(HttpStatus.ACCEPTED).body(loginResponse);
             
         } catch (Exception e) {
-            // CRITICAL: DCS API failed - DO NOT issue credentials with fake data!
-            log.error("❌ DCS API failed for user {}: {} - Request will FAIL", 
+            // CRITICAL: SIS API failed - DO NOT issue credentials with fake data!
+            log.error("❌ SIS API failed for user {}: {} - Request will FAIL", 
                      studentServiceRequest.getUserName(), e.getMessage(), e);
             
             // Throw specific exception (handled by GlobalExceptionHandler)
             throw new ExternalServiceException(
-                "Failed to retrieve student data from DCS API: " + e.getMessage(), e);
+                "Failed to retrieve student data from SIS API: " + e.getMessage(), e);
         }
     }
 

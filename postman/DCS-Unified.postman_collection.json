@@ -1351,7 +1351,7 @@
 									"",
 									"console.log(\"🎯 Student Service received login request\");",
 									"console.log(\"📡 Published to Kafka: student.login.requested\");",
-									"console.log(\"⚙️  SIS Service will fetch DCS data automatically\");",
+									"console.log(\"⚙️  SIS Service will fetch student data automatically\");",
 									"console.log(\"🎓 Credential Service will issue credentials\");",
 									"console.log(\"📬 Fulfilment Service will track & notify\");"
 								],
@@ -1381,7 +1381,7 @@
 								"login"
 							]
 						},
-						"description": "**THE ENTRY POINT** for credential issuance!\n\n**New Architecture:**\n1. Student Service (NEW!) → receives minimal data, publishes to Kafka\n2. SIS Service → gets REAL student data from DCS API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks progress & notifies\n\n**You provide:** username + installKey (MINIMAL!)\n**You get:** correlationId for tracking\n**Everything else is automatic via Kafka!**"
+						"description": "**THE ENTRY POINT** for credential issuance!\n\n**New Architecture:**\n1. Student Service (NEW!) → receives minimal data, publishes to Kafka\n2. SIS Service → gets REAL student data from SIS API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks progress & notifies\n\n**You provide:** username + installKey (MINIMAL!)\n**You get:** correlationId for tracking\n**Everything else is automatic via Kafka!**"
 					},
 					"response": []
 				},
@@ -1671,7 +1671,7 @@
 					"response": []
 				}
 			],
-			"description": "**THE CORRECT FLOW** - 4 Microservices Architecture!\n\n**Test Flow:**\n1. Student Login → Student Service (minimal: username + installKey)\n2. Monitor Progress → Fulfilment Service (real-time updates)\n3. Get Credentials → Fulfilment Service (final URLs)\n\n**What happens automatically:**\n1. Student Service → publishes to Kafka: student.login.requested\n2. SIS Service → gets ALL student data from DCS API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks & stores results\n\n**You provide:** username + installKey (2 fields!)\n**You get:** Verifiable Credentials!\n**4 services, fully automated, event-driven!**"
+			"description": "**THE CORRECT FLOW** - 4 Microservices Architecture!\n\n**Test Flow:**\n1. Student Login → Student Service (minimal: username + installKey)\n2. Monitor Progress → Fulfilment Service (real-time updates)\n3. Get Credentials → Fulfilment Service (final URLs)\n\n**What happens automatically:**\n1. Student Service → publishes to Kafka: student.login.requested\n2. SIS Service → gets ALL student data from SIS API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks & stores results\n\n**You provide:** username + installKey (2 fields!)\n**You get:** Verifiable Credentials!\n**4 services, fully automated, event-driven!**"
 		},
 		{
 			"name": "Flow Utilities",

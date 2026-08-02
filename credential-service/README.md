@@ -6,7 +6,7 @@ The DCS Credential Service is a microservice that issues W3C Verifiable Credenti
 - **WaltID Wallet** (external service) - Wallet API for user authentication and credential storage
 - **WaltID Issuer** (external service) - Credential issuance via OID4VCI
 - **WaltID Verifier** (external service) - Credential verification
-- **SIS Service** - Receives real student data from DCS systems
+- **SIS Service** - Receives real student data from the university SIS
 - **Fulfilment Service** - Tracks progress and notifies students
 
 **Note:** This service uses **WaltID Wallet as an external service** (similar to Issuer and Verifier). We do NOT build a custom wallet application. The `/wallet` endpoints are a wrapper/proxy around the WaltID Wallet API.
@@ -15,7 +15,7 @@ The DCS Credential Service is a microservice that issues W3C Verifiable Credenti
 
 - ✅ **W3C Verifiable Credentials** - JWT & SD-JWT formats
 - ✅ **European Educational Credentials** - SCHAC Educational ID & European Student Card
-- ✅ **Automatic Issuance** - Triggered on student login with real DCS data
+- ✅ **Automatic Issuance** - Triggered on student login with real student data
 - ✅ **Kafka Integration** - Event-driven processing
 - ✅ **Progress Tracking** - Real-time updates via Fulfilment Service
 - ✅ **OpenAPI First** - API spec drives code generation
@@ -202,7 +202,7 @@ grep "credential.progress" fulfilment-service/src/main/java/pt/usis/dcs/fulfilme
 - 6 Kafka topics, all used, all standardized
 - Complete integration: Sis → Credential → Fulfilment
 - OpenAPI Generator configured
-- Real data from DCS systems
+- Real data from the university SIS
 
 **Test the complete flow using COMPLETE_INTEGRATION.md!**
 

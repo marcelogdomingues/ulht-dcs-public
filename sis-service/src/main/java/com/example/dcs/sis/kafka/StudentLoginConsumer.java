@@ -17,7 +17,7 @@ import java.util.Map;
 
 /**
  * Consumes student login requests from Student Service
- * Gets student data from DCS API and publishes to credential service
+ * Gets student data from SIS API and publishes to credential service
  */
 @Slf4j
 @Service
@@ -33,7 +33,7 @@ public class StudentLoginConsumer {
      * 
      * Flow:
      * 1. Receives minimal student data (username + installKey)
-     * 2. Calls DCS API to get FULL student data
+     * 2. Calls SIS API to get FULL student data
      * 3. Publishes to student.data.retrieved for Credential Service
      * 4. Sends REPLY message to confirm workflow started
      * 
@@ -63,7 +63,7 @@ public class StudentLoginConsumer {
                  correlationId, userName);
 
         try {
-            // Build request map for DCS API
+            // Build request map for SIS API
             Map<String, Object> requestMap = new HashMap<>();
             requestMap.put("userName", userName);
             requestMap.put("installKey", installKey);
@@ -72,10 +72,10 @@ public class StudentLoginConsumer {
             requestMap.put("application", payload.getOrDefault("application", "com.example.dcs.mobile"));
             requestMap.put("versionCode", payload.getOrDefault("versionCode", "1601206"));
 
-            // 1. Get FULL student data from DCS API (NO FALLBACK TO MOCK DATA!)
-            log.info("🔍 Calling DCS API for student data: {}", userName);
+            // 1. Get FULL student data from SIS API (NO FALLBACK TO MOCK DATA!)
+            log.info("🔍 Calling SIS API for student data: {}", userName);
             Object studentData = sisService.login(requestMap);
-            log.info("✅ Got real student data from DCS API for user: {}", userName);
+            log.info("✅ Got real student data from SIS API for user: {}", userName);
 
             // 2. Publish to Kafka for Credential Service
             // IMPORTANT: Pass the SAME correlationId from Student Service (not a new one!)
@@ -103,7 +103,7 @@ public class StudentLoginConsumer {
             log.error("❌ Authentication failed for user {}: {} - Workflow will FAIL", 
                      userName, e.getMessage());
             publishError(correlationId, userName, 
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 ErrorCodes.UNAUTHORIZED);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.UNAUTHORIZED);
             
@@ -111,7 +111,7 @@ public class StudentLoginConsumer {
             log.error("❌ Access forbidden for user {}: {} - Workflow will FAIL", 
                      userName, e.getMessage());
             publishError(correlationId, userName, 
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 ErrorCodes.FORBIDDEN);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.FORBIDDEN);
             
@@ -119,7 +119,7 @@ public class StudentLoginConsumer {
             log.error("❌ Data not found for user {}: {} - Workflow will FAIL", 
                      userName, e.getMessage());
             publishError(correlationId, userName, 
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 ErrorCodes.NOT_FOUND);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.NOT_FOUND);
             
@@ -127,7 +127,7 @@ public class StudentLoginConsumer {
             log.error("❌ Bad request for user {}: {} - Workflow will FAIL", 
                      userName, e.getMessage());
             publishError(correlationId, userName, 
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 ErrorCodes.BAD_REQUEST);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.BAD_REQUEST);
             
@@ -135,7 +135,7 @@ public class StudentLoginConsumer {
             log.error("❌ Validation error for user {}: {} - Workflow will FAIL", 
                      userName, e.getMessage());
             publishError(correlationId, userName, 
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 ErrorCodes.VALIDATION_ERROR);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.VALIDATION_ERROR);
             
@@ -145,15 +145,15 @@ public class StudentLoginConsumer {
             // Map Sis API error codes to our ErrorCodes
             ErrorCodes errorCode = mapSisErrorCode(e.getErrorCode());
             publishError(correlationId, userName, 
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 errorCode);
             return buildErrorReply(correlationId, userName, e.getMessage(), errorCode);
             
         } catch (TimeoutException e) {
-            log.error("❌ Timeout calling DCS API for user {}: {} - Workflow will FAIL", 
+            log.error("❌ Timeout calling SIS API for user {}: {} - Workflow will FAIL", 
                      userName, e.getMessage());
             publishError(correlationId, userName, 
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 ErrorCodes.TIMEOUT);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.TIMEOUT);
             
@@ -161,7 +161,7 @@ public class StudentLoginConsumer {
             log.error("❌ External service error for user {}: {} - Workflow will FAIL", 
                      userName, e.getMessage());
             publishError(correlationId, userName, 
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 ErrorCodes.EXTERNAL_SERVICE_ERROR);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.EXTERNAL_SERVICE_ERROR);
             
@@ -170,7 +170,7 @@ public class StudentLoginConsumer {
             log.error("❌ Unexpected error for user {}: {} - Workflow will FAIL (no credentials issued)", 
                      userName, e.getMessage(), e);
             publishError(correlationId, userName,
-                "Failed to retrieve student data from DCS API: " + e.getMessage(),
+                "Failed to retrieve student data from SIS API: " + e.getMessage(),
                 ErrorCodes.INTERNAL_SERVER_ERROR);
             return buildErrorReply(correlationId, userName, e.getMessage(), ErrorCodes.INTERNAL_SERVER_ERROR);
         } finally {

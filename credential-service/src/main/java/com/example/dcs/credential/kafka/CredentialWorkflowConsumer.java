@@ -183,7 +183,7 @@ public class CredentialWorkflowConsumer {
     }
     
     /**
-     * Consumes credential workflow requests from DCS Proxy
+     * Consumes credential workflow requests from SIS Service
      */
     @KafkaListener(
         topics = "credential.requests",

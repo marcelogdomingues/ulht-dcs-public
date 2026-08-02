@@ -45,7 +45,7 @@ public class StudentController implements StudentApi {
      *
      * Flow:
      * 1. Student Service publishes to Kafka: student.login.requested
-     * 2. SIS Service gets student data from DCS API
+     * 2. SIS Service gets student data from SIS API
      * 3. Credential Service issues W3C credentials (Educational ID, Identity Credential, etc.)
      * 4. Fulfilment Service tracks and notifies
      *

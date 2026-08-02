@@ -18,7 +18,7 @@ info:
     ## Workflow
     1. Student submits credential issuance request with username and installKey
     2. Service generates correlationId and publishes to `student.login.requested` topic
-    3. SIS Service retrieves real student data from DCS API
+    3. SIS Service retrieves real student data from SIS API
     4. Credential Service issues W3C Verifiable Credentials (EducationalID, IdentityCredential, etc.)
     5. Fulfilment Service tracks progress and stores results
     6. Student can query status and retrieve credentials via this service

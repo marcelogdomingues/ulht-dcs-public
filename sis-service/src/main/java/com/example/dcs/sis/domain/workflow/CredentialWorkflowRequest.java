@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Request object for starting credential workflows.
- * Sent from DCS Proxy to Credential Service via Kafka.
+ * Sent from SIS Service to Credential Service via Kafka.
  */
 @Data
 @Builder
