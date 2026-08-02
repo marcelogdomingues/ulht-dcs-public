@@ -153,7 +153,7 @@ cp .env.example .env
 - [ ] **Prometheus targets all UP** at `http://127.0.0.1:9090/targets` — the four services (`/api/v1/actuator/prometheus`), `kafka-exporter:9308`, `consul:8500`, and Prometheus itself.
 - [ ] **Grafana** reachable at `http://127.0.0.1:3000`, login works with `GRAFANA_ADMIN_PASSWORD`, provisioned dashboards render with data.
 - [ ] **Loki + Promtail** shipping logs — logs visible in Grafana Explore / the logs dashboards.
-- [ ] Alerting path decided (Alertmanager is commented out in `monitoring/prometheus.yml` — wire it up if alerts are required).
+- [ ] Alerting path decided (Alertmanager is commented out in `infra/monitoring/prometheus.yml` — wire it up if alerts are required).
 
 ---
 

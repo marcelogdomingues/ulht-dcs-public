@@ -94,7 +94,7 @@ services:
     # Creates the extra `credential` database on first init (fulfilment is created
     # by POSTGRES_DB above; credential-service uses its own DB on this container).
     volumes:
-      - ../docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ../infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     # No host port published — services reach it via the `postgres` hostname on the
     # demo network. (Avoids clashing with any Postgres already on the host's 5432.)
     healthcheck:
@@ -113,7 +113,7 @@ services:
   fulfilment-service:
     build:
       context: ..
-      dockerfile: fulfilment-service/Dockerfile
+      dockerfile: services/fulfilment-service/Dockerfile
     container_name: demo-fulfilment-service
     hostname: dcs-fulfilment-service
     depends_on:
@@ -156,7 +156,7 @@ services:
   sis-service:
     build:
       context: ..
-      dockerfile: sis-service/Dockerfile
+      dockerfile: services/sis-service/Dockerfile
     container_name: demo-sis-service
     hostname: dcs-sis-service
     depends_on:
@@ -194,7 +194,7 @@ services:
   credential-service:
     build:
       context: ..
-      dockerfile: credential-service/Dockerfile
+      dockerfile: services/credential-service/Dockerfile
     container_name: demo-credential-service
     hostname: dcs-credential-service
     depends_on:
@@ -239,7 +239,7 @@ services:
   student-service:
     build:
       context: ..
-      dockerfile: student-service/Dockerfile
+      dockerfile: services/student-service/Dockerfile
     container_name: demo-student-service
     hostname: dcs-student-service
     depends_on:

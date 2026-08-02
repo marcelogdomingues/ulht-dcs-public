@@ -588,7 +588,7 @@ Field mappings support **fallback chains** (`studentId: [studentId, studentCode,
 
 ## 9. API gateway (Kong)
 
-The gateway is **Kong 3.9**, configured declaratively in [`api-gateway/kong.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/api-gateway/kong.yml). It defines a `key-auth` consumer (`apikey` header, `hide_credentials: false` so the same key reaches the backend), a **CORS allow-list**, `rate-limiting` (100/min, 1000/hour), and request/response header transformers.
+The gateway is **Kong 3.9**, configured declaratively in [`infra/api-gateway/kong.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/api-gateway/kong.yml). It defines a `key-auth` consumer (`apikey` header, `hide_credentials: false` so the same key reaches the backend), a **CORS allow-list**, `rate-limiting` (100/min, 1000/hour), and request/response header transformers.
 
 !!! warning "Honest note — the gateway is partial / aspirational"
     Kong's routes are incomplete: some routes currently return **HTTP 503**, and route paths (`/api/v1/credentials`, `/api/v1/students`, …) do not yet line up with every service. As a result, **clients and the mobile apps call the microservices directly by their loopback ports** (`:8084`–`:8087`). Treat Kong as a work in progress intended to become the single front door.

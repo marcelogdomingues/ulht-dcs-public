@@ -43,7 +43,7 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
     volumes:
-      - ../docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ../infra/docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:

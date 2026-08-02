@@ -6,8 +6,8 @@ an event to Kafka, and hands back a `correlationId` clients use to track progres
 It holds no business logic of its own — status and results are proxied from the
 Fulfilment Service.
 
-Part of the [Digital Credential System](../README.md); see
-[Architecture](../docs/ARCHITECTURE.md) for the end-to-end event flow.
+Part of the [Digital Credential System](../../README.md); see
+[Architecture](../../docs/ARCHITECTURE.md) for the end-to-end event flow.
 
 - **Port:** `8084` · **Context path:** `/api/v1`
 - **Stack:** Java 25 · Spring Boot 4.1 · Spring Cloud 2025.1 · Apache Kafka (KRaft) · Consul
@@ -40,7 +40,7 @@ and the Swagger UI (`/api/v1/swagger-ui/index.html`) are public.
 
 ## Configuration
 
-Full reference in [Configuration](../docs/CONFIGURATION.md). Key variables:
+Full reference in [Configuration](../../docs/CONFIGURATION.md). Key variables:
 
 - `APP_API_KEY` — required; the `apikey` accepted on business endpoints.
 - `SERVER_PORT` — defaults to `8084`.
@@ -56,4 +56,4 @@ mvn -f pom.xml verify
 ```
 
 Normally you run it as part of the stack — see the one-command
-[demo](../docs/DEMO.md) (`make demo`) or [Getting Started](../docs/GETTING_STARTED.md).
+[demo](../../docs/DEMO.md) (`make demo`) or [Getting Started](../../docs/GETTING_STARTED.md).

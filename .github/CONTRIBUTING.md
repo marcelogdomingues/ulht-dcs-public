@@ -37,13 +37,13 @@ apps, gateway config, observability config, and docs:
 
 | Path | What it is |
 | --- | --- |
-| `student-service/` | Orchestrates issuance & verification (Maven service, port `8084`) |
-| `sis-service/` | University SIS academic data, proxies the external university SIS API (Maven service, port `8085`) |
-| `credential-service/` | W3C issuance, wallet & verifier via walt.id (Maven service, port `8086`) |
-| `fulfilment-service/` | Workflow / fulfilment tracking (Maven service, port `8087`) |
+| `services/student-service/` | Orchestrates issuance & verification (Maven service, port `8084`) |
+| `services/sis-service/` | University SIS academic data, proxies the external university SIS API (Maven service, port `8085`) |
+| `services/credential-service/` | W3C issuance, wallet & verifier via walt.id (Maven service, port `8086`) |
+| `services/fulfilment-service/` | Workflow / fulfilment tracking (Maven service, port `8087`) |
 | `mobile-apps/` | Three Flutter apps: `student-app/`, `verifier-app/`, `issuer-app/` |
-| `api-gateway/` | Kong declarative config (`kong.yml`) |
-| `monitoring/` | Prometheus, Grafana, Loki, Promtail configuration |
+| `infra/api-gateway/` | Kong declarative config (`kong.yml`) |
+| `infra/monitoring/` | Prometheus, Grafana, Loki, Promtail configuration |
 | `docs/` | Markdown documentation set (source of truth) and static HTML site |
 | `compose/*.yml` | Compose files — see [Deployment](../docs/DEPLOYMENT.md) |
 | `.env.example` | Template for the git-ignored `.env` (secrets) |

@@ -12,17 +12,15 @@
 # Maven build output (rebuilt inside the image)
 **/target
 
-# Node / mobile / docs / monitoring — not needed for the Java service images
+# Node / mobile / docs / infra configs — not needed for the Java service images
 mobile-apps
-kong-ui
 docs
-monitoring
 postman
-docker
+infra
 node_modules
 
-# Compose / infra files & local overrides
-docker-compose*.yml
+# Compose files & local overrides
+compose
 *.override.yml
 .env
 .env.*

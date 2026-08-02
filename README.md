@@ -204,21 +204,23 @@ Full details in [Configuration](docs/CONFIGURATION.md) and [Deployment](docs/DEP
 
 ```
 dcs/
-├── student-service/          # Entry point (8084)
-├── sis-service/              # University SIS integration (8085)
-├── credential-service/       # W3C issuance + walt.id (8086)
-├── fulfilment-service/       # Workflow tracking (8087)
-├── dcs-commons/              # Shared auto-configured security module
+├── services/                 # Backend Maven modules
+│   ├── student-service/         # Entry point (8084)
+│   ├── sis-service/             # University SIS integration (8085)
+│   ├── credential-service/      # W3C issuance + walt.id (8086)
+│   ├── fulfilment-service/      # Workflow tracking (8087)
+│   └── dcs-commons/             # Shared auto-configured security module
 ├── mobile-apps/              # Flutter apps: student / verifier / issuer
-├── api-gateway/              # Kong declarative config (kong.yml)
-├── kong-ui/                  # Static Kong admin console
-├── monitoring/               # Prometheus, Grafana, Loki, Promtail configs
-├── docker/                   # keycloak / postgres / walt.id service configs
+├── infra/                    # Infrastructure configs
+│   ├── api-gateway/             # Kong declarative config (kong.yml)
+│   ├── kong-ui/                 # Static Kong admin console
+│   ├── monitoring/             # Prometheus, Grafana, Loki, Promtail configs
+│   └── docker/                  # keycloak / postgres / walt.id service configs
+├── compose/                  # Docker Compose stacks (microservices · demo · infrastructure · keycloak · walt.id)
 ├── postman/                  # API collection + environment
 ├── scripts/                  # Helper scripts (Kafka debug / reset)
 ├── docs/                     # Documentation (MkDocs Material site)
 ├── .github/                  # CI workflows + community-health files
-├── compose/                  # Docker Compose stacks (microservices · demo · infrastructure · keycloak · walt.id)
 ├── .env.example              # Required environment variables (template)
 └── README.md
 ```

@@ -11,31 +11,31 @@ version: 2
 updates:
   # --- Maven (backend microservices + shared module) -------------------------
   - package-ecosystem: maven
-    directory: /dcs-commons
+    directory: /services/dcs-commons
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: maven
-    directory: /credential-service
+    directory: /services/credential-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: maven
-    directory: /student-service
+    directory: /services/student-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: maven
-    directory: /sis-service
+    directory: /services/sis-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: maven
-    directory: /fulfilment-service
+    directory: /services/fulfilment-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -61,25 +61,25 @@ updates:
 
   # --- Docker (service Dockerfile base images) -------------------------------
   - package-ecosystem: docker
-    directory: /credential-service
+    directory: /services/credential-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: docker
-    directory: /student-service
+    directory: /services/student-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: docker
-    directory: /sis-service
+    directory: /services/sis-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
 
   - package-ecosystem: docker
-    directory: /fulfilment-service
+    directory: /services/fulfilment-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

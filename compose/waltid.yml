@@ -52,7 +52,7 @@ services:
     ports:
       - "127.0.0.1:7002:7002"
     volumes:
-      - ../docker/waltid/issuer-api/config:/waltid-issuer-api/config:ro
+      - ../infra/docker/waltid/issuer-api/config:/waltid-issuer-api/config:ro
     healthcheck:
       # busybox wget is present in the walt.id images (no curl).
       # issuer-api 0.22.0 serves OID4VCI metadata under the draft path.
@@ -84,7 +84,7 @@ services:
     ports:
       - "127.0.0.1:7003:7003"
     volumes:
-      - ../docker/waltid/verifier-api/config:/waltid-verifier-api/config:ro
+      - ../infra/docker/waltid/verifier-api/config:/waltid-verifier-api/config:ro
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7003/openid4vc/policy-list"]
       interval: 15s
@@ -124,7 +124,7 @@ services:
       # presentation. Kept in-network so everything resolves via compose DNS.
       WALLET_BACKEND_PORT: "7001"
     volumes:
-      - ../docker/waltid/wallet-api/config:/waltid-wallet-api/config:ro
+      - ../infra/docker/waltid/wallet-api/config:/waltid-wallet-api/config:ro
       - waltid_wallet_data:/waltid-wallet-api/data
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:7001/livez"]

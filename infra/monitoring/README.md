@@ -154,7 +154,7 @@ Dashboards are automatically loaded on Grafana startup via provisioning:
 6. **API Performance** - API-level performance metrics (endpoints, response times, error rates)
 7. **Logs Explorer** - Centralized log viewing (all microservices and infrastructure logs)
 
-All dashboards are located in `monitoring/grafana/dashboards/` and are automatically provisioned when Grafana starts.
+All dashboards are located in `infra/monitoring/grafana/dashboards/` and are automatically provisioned when Grafana starts.
 
 ### Importing Additional Dashboards
 
@@ -263,7 +263,7 @@ Logs are automatically collected from:
 ### Log Retention
 
 - Logs are retained for **30 days** (720 hours)
-- Configurable in `monitoring/loki/loki-config.yml`
+- Configurable in `infra/monitoring/loki/loki-config.yml`
 
 ### LogQL Examples
 

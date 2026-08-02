@@ -368,8 +368,8 @@ Named volumes survive `down`; they are destroyed only by `down -v` or an explici
 
 The monitoring stack is defined in **`compose/infrastructure.yml`**: Prometheus, Grafana, Loki, Promtail, and kafka-exporter.
 
-- **Prometheus** (`:9090`) scrapes each service at `/api/v1/actuator/prometheus`, plus `kafka-exporter:9308` and `consul:8500`. Targets are declared in [`monitoring/prometheus.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/monitoring/prometheus.yml).
-- **Grafana** (`:3000`, admin/`GRAFANA_ADMIN_PASSWORD`) auto-provisions dashboards from [`monitoring/grafana`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/monitoring/grafana).
+- **Prometheus** (`:9090`) scrapes each service at `/api/v1/actuator/prometheus`, plus `kafka-exporter:9308` and `consul:8500`. Targets are declared in [`infra/monitoring/prometheus.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/monitoring/prometheus.yml).
+- **Grafana** (`:3000`, admin/`GRAFANA_ADMIN_PASSWORD`) auto-provisions dashboards from [`infra/monitoring/grafana`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/monitoring/grafana).
 - **Loki** (`:3100`) + **Promtail** ship container logs (Promtail reads `/var/lib/docker/containers`).
 
 Bring it up alongside (or instead of) the primary stack:
@@ -407,9 +407,9 @@ The [walt.id](ARCHITECTURE.md) components — issuer (`:7002`), verifier (`:7003
 
 ## Running with real walt.id (bundled)
 
-By default the full stack expects an **external** walt.id. To run a **real** walt.id backend from this repo (so `credential-service` in its normal `docker` profile — **not** `demo` — issues real Verifiable Credentials), use the bundled overlay `compose/waltid.yml` + the config scaffold under `docker/waltid/`.
+By default the full stack expects an **external** walt.id. To run a **real** walt.id backend from this repo (so `credential-service` in its normal `docker` profile — **not** `demo` — issues real Verifiable Credentials), use the bundled overlay `compose/waltid.yml` + the config scaffold under `infra/docker/waltid/`.
 
-It stands up walt.id's **issuer** (`:7002`), **verifier** (`:7003`) and **wallet** (`:7001`) APIs on a network **named `docker-compose_default`** — exactly the external network name `compose/microservices.yml` already declares as `waltid_network` — so the app services resolve `issuer-api` / `verifier-api` / `wallet-api` by DNS with **no app-config changes**. The wallet-api uses an embedded SQLite DB (config in `docker/waltid/wallet-api/config/db.conf`), so no extra Postgres container is needed.
+It stands up walt.id's **issuer** (`:7002`), **verifier** (`:7003`) and **wallet** (`:7001`) APIs on a network **named `docker-compose_default`** — exactly the external network name `compose/microservices.yml` already declares as `waltid_network` — so the app services resolve `issuer-api` / `verifier-api` / `wallet-api` by DNS with **no app-config changes**. The wallet-api uses an embedded SQLite DB (config in `infra/docker/waltid/wallet-api/config/db.conf`), so no extra Postgres container is needed.
 
 Images are **pinned**: `issuer-api:0.22.0` (confirmed to avoid the `notBefore` crash), `verifier-api:0.15.1`, `wallet-api:0.15.1`.
 
@@ -443,7 +443,7 @@ docker compose -f compose/waltid.yml -p docker-compose down          # add -v to
 ```
 
 !!! danger "Dev keys only"
-    `docker/waltid/wallet-api/config/auth.conf` ships **non-production placeholder** keys (`encryptionKey`, `signKey`, `tokenKey`) purely so the stack boots out-of-the-box. **Rotate all of them** before any real deployment.
+    `infra/docker/waltid/wallet-api/config/auth.conf` ships **non-production placeholder** keys (`encryptionKey`, `signKey`, `tokenKey`) purely so the stack boots out-of-the-box. **Rotate all of them** before any real deployment.
 
 ### Revocation-aware issued VCs (ADR 0007)
 
@@ -459,7 +459,7 @@ request is authenticated with **either** a valid `apikey` **or** a valid
 `Authorization: Bearer <jwt>`), layer the optional overlay
 `compose/keycloak.yml` on top of the microservices stack. It starts
 **Keycloak** (`quay.io/keycloak/keycloak:26.0`, dev mode) importing the realm at
-[`docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json)
+[`infra/docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json)
 and sets `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` on every service,
 which is what activates the JWT auth leg in `dcs-commons`.
 

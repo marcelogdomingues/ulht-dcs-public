@@ -7,7 +7,7 @@
 #
 # Each service depends on the standalone `dcs-commons` module (shared security),
 # which is NOT on Maven Central. It is therefore installed into the local Maven
-# repository first (`mvn -f dcs-commons/pom.xml install`) before each service is
+# repository first (`mvn -f services/dcs-commons/pom.xml install`) before each service is
 # built.
 #
 # The tests are plain unit / Spring context tests (no Testcontainers), so this
@@ -20,19 +20,19 @@ on:
   push:
     # Only run when backend code or this workflow changes.
     paths:
-      - "dcs-commons/**"
-      - "credential-service/**"
-      - "student-service/**"
-      - "sis-service/**"
-      - "fulfilment-service/**"
+      - "services/dcs-commons/**"
+      - "services/credential-service/**"
+      - "services/student-service/**"
+      - "services/sis-service/**"
+      - "services/fulfilment-service/**"
       - ".github/workflows/backend.yml"
   pull_request:
     paths:
-      - "dcs-commons/**"
-      - "credential-service/**"
-      - "student-service/**"
-      - "sis-service/**"
-      - "fulfilment-service/**"
+      - "services/dcs-commons/**"
+      - "services/credential-service/**"
+      - "services/student-service/**"
+      - "services/sis-service/**"
+      - "services/fulfilment-service/**"
       - ".github/workflows/backend.yml"
 
 # Cancel superseded runs on the same ref (e.g. rapid pushes to a PR) to save CI minutes.
@@ -68,10 +68,10 @@ jobs:
       # Install the shared commons module into the local Maven repository so the
       # service build can resolve com.example.dcs:dcs-commons.
       - name: Install dcs-commons
-        run: mvn -B -ntp -f dcs-commons/pom.xml -DskipTests install
+        run: mvn -B -ntp -f services/dcs-commons/pom.xml -DskipTests install
 
       - name: Build & test (mvn verify)
-        working-directory: ${{ matrix.service }}
+        working-directory: services/${{ matrix.service }}
         # -B  : batch mode (non-interactive)
         # -ntp: no transfer progress (clean logs)
         # `mvn verify` runs the JaCoCo report goal, emitting
@@ -85,7 +85,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@v4
         with:
-          files: ${{ matrix.service }}/target/site/jacoco/jacoco.xml
+          files: services/${{ matrix.service }}/target/site/jacoco/jacoco.xml
           flags: ${{ matrix.service }}
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
@@ -96,6 +96,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.service }}-jar
-          path: ${{ matrix.service }}/target/*.jar
+          path: services/${{ matrix.service }}/target/*.jar
           if-no-files-found: warn
           retention-days: 7

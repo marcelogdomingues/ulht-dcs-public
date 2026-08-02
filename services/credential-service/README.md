@@ -8,10 +8,10 @@ List** used for credential revocation.
 
 > walt.id Wallet/Issuer/Verifier are treated as **external services** — this service
 > is a thin, resilient proxy around their APIs, not a custom wallet. In the
-> [demo profile](../docs/DEMO.md) those clients are mocked.
+> [demo profile](../../docs/DEMO.md) those clients are mocked.
 
-Part of the [Digital Credential System](../README.md); see
-[Architecture](../docs/ARCHITECTURE.md) and [Standards](../docs/STANDARDS.md) for the
+Part of the [Digital Credential System](../../README.md); see
+[Architecture](../../docs/ARCHITECTURE.md) and [Standards](../../docs/STANDARDS.md) for the
 VC/OID4VCI/OID4VP details.
 
 - **Port:** `8086` · **Context path:** `/api/v1`
@@ -40,7 +40,7 @@ and the Swagger UI (`/api/v1/swagger-ui/index.html`) are public. Highlights:
 | `GET`  | `/status-list/{listId}` | W3C Bitstring Status List credential |
 | `POST` | `/credentials/{id}/revoke` · `GET` `/credentials/{id}/status` | Revocation |
 
-Full surface is in the [API Reference](../docs/API.md) and the live Swagger UI.
+Full surface is in the [API Reference](../../docs/API.md) and the live Swagger UI.
 
 ## Kafka
 
@@ -55,7 +55,7 @@ Idempotency is enforced via a `processed_event` table; failures are routed to
 
 ## Configuration
 
-Full reference in [Configuration](../docs/CONFIGURATION.md). Key variables:
+Full reference in [Configuration](../../docs/CONFIGURATION.md). Key variables:
 
 - `APP_API_KEY` — required; the `apikey` accepted on business endpoints.
 - `WALLET_PASSWORD_SECRET` / `WALLET_PASSWORD_SALT` — required; wallet credential derivation.
@@ -72,5 +72,5 @@ mvn -f pom.xml verify
 ```
 
 Full issuance needs the external **walt.id** stack — see
-[Getting Started → walt.id backend](../docs/GETTING_STARTED.md#walt-id-backend). For a
-zero-dependency run, use the [demo](../docs/DEMO.md) (`make demo`).
+[Getting Started → walt.id backend](../../docs/GETTING_STARTED.md#walt-id-backend). For a
+zero-dependency run, use the [demo](../../docs/DEMO.md) (`make demo`).

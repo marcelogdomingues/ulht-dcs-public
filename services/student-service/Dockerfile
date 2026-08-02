@@ -10,11 +10,11 @@ FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /build
 
 # 1. Build & install the shared commons module into the local Maven repository.
-COPY dcs-commons ./dcs-commons
+COPY services/dcs-commons ./dcs-commons
 RUN mvn -q -f dcs-commons/pom.xml -DskipTests install
 
 # 2. Build the service (now that com.example.dcs:dcs-commons is available).
-COPY student-service ./student-service
+COPY services/student-service ./student-service
 RUN mvn -q -f student-service/pom.xml clean package -DskipTests -Dmaven.test.skip=true
 
 # Runtime Stage

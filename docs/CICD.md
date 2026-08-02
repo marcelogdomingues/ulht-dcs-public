@@ -91,10 +91,10 @@ Because the four services are **independent** Maven projects (no parent/aggregat
 
 ```yaml
 paths:
-  - "credential-service/**"
-  - "student-service/**"
-  - "sis-service/**"
-  - "fulfilment-service/**"
+  - "services/credential-service/**"
+  - "services/student-service/**"
+  - "services/sis-service/**"
+  - "services/fulfilment-service/**"
   - ".github/workflows/backend.yml"
 ```
 

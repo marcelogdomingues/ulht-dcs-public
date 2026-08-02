@@ -125,7 +125,7 @@ sequenceDiagram
 ## student-service
 
 Base URL: `http://localhost:8084/api/v1` · All endpoints require the `apikey` header. This service is the single entry point for issuance/verification; it publishes to Kafka and proxies status/results from `fulfilment-service`.
-Source: [`StudentController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/usis/student/controller/StudentController.java)
+Source: [`StudentController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/student-service/src/main/java/pt/usis/student/controller/StudentController.java)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -142,7 +142,7 @@ Source: [`StudentController.java`](https://github.com/marcelogdomingues/ulht-dcs
 ## sis-service
 
 Base URL: `http://localhost:8085/api/v1` · All endpoints require the `apikey` header. These endpoints proxy the external university SIS / SIGES; each expects a body with the student's `userName` and `installKey` (plus optional `language`, `platform`, `application`, `versionCode`).
-Source: [`AuthenticationController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/sis-service/src/main/java/pt/usis/digital/wallet/controller/AuthenticationController.java) · [`StudentServicesController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/sis-service/src/main/java/pt/usis/digital/wallet/controller/StudentServicesController.java)
+Source: [`AuthenticationController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/sis-service/src/main/java/pt/usis/digital/wallet/controller/AuthenticationController.java) · [`StudentServicesController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/sis-service/src/main/java/pt/usis/digital/wallet/controller/StudentServicesController.java)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -165,7 +165,7 @@ Base URL: `http://localhost:8086/api/v1` · All endpoints require the `apikey` h
 
 ### Wallet
 
-Source: [`WaltidController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/WaltidController.java) (`@RequestMapping("/wallet")`)
+Source: [`WaltidController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/credential-service/src/main/java/pt/usis/dcs/credential/controller/WaltidController.java) (`@RequestMapping("/wallet")`)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -191,7 +191,7 @@ Source: [`WaltidController.java`](https://github.com/marcelogdomingues/ulht-dcs-
 
 ### Verifier
 
-Source: [`VerifierController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/VerifierController.java) (`@RequestMapping("/verifier")`)
+Source: [`VerifierController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/credential-service/src/main/java/pt/usis/dcs/credential/controller/VerifierController.java) (`@RequestMapping("/verifier")`)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -203,7 +203,7 @@ Source: [`VerifierController.java`](https://github.com/marcelogdomingues/ulht-dc
 
 ### Issuer (session management)
 
-Source: [`IssuerController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/IssuerController.java) (`@RequestMapping("/issuer")`)
+Source: [`IssuerController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/credential-service/src/main/java/pt/usis/dcs/credential/controller/IssuerController.java) (`@RequestMapping("/issuer")`)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -220,7 +220,7 @@ Source: [`IssuerController.java`](https://github.com/marcelogdomingues/ulht-dcs-
 
 ### Presentation & health
 
-Source: [`PresentationController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/PresentationController.java) · [`HealthController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/HealthController.java)
+Source: [`PresentationController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/credential-service/src/main/java/pt/usis/dcs/credential/controller/PresentationController.java) · [`HealthController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/credential-service/src/main/java/pt/usis/dcs/credential/controller/HealthController.java)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -238,7 +238,7 @@ Source: [`PresentationController.java`](https://github.com/marcelogdomingues/ulh
 ## fulfilment-service
 
 Base URL: `http://localhost:8087/api/v1` · All endpoints require the `apikey` header. Tracks workflow fulfilment and exposes real-time progress.
-Source: [`FulfilmentController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/fulfilment-service/src/main/java/pt/usis/dcs/fulfilment/controller/FulfilmentController.java) (`@RequestMapping("/fulfilment")`)
+Source: [`FulfilmentController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/fulfilment-service/src/main/java/pt/usis/dcs/fulfilment/controller/FulfilmentController.java) (`@RequestMapping("/fulfilment")`)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -345,7 +345,7 @@ Protected endpoints return `401` on a missing/invalid `apikey`. Service errors c
 
 ### credential-service error codes (selected)
 
-From [`ErrorCodes.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/exception/ErrorCodes.java):
+From [`ErrorCodes.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/credential-service/src/main/java/pt/usis/dcs/credential/exception/ErrorCodes.java):
 
 | Code | Meaning |
 | --- | --- |

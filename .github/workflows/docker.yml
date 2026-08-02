@@ -21,21 +21,21 @@ on:
     tags:
       - "v*"
     paths:
-      - "dcs-commons/**"
-      - "credential-service/**"
-      - "student-service/**"
-      - "sis-service/**"
-      - "fulfilment-service/**"
+      - "services/dcs-commons/**"
+      - "services/credential-service/**"
+      - "services/student-service/**"
+      - "services/sis-service/**"
+      - "services/fulfilment-service/**"
       - "**/Dockerfile"
       - "compose/*.yml"
       - ".github/workflows/docker.yml"
   pull_request:
     paths:
-      - "dcs-commons/**"
-      - "credential-service/**"
-      - "student-service/**"
-      - "sis-service/**"
-      - "fulfilment-service/**"
+      - "services/dcs-commons/**"
+      - "services/credential-service/**"
+      - "services/student-service/**"
+      - "services/sis-service/**"
+      - "services/fulfilment-service/**"
       - "**/Dockerfile"
       - "compose/*.yml"
       - ".github/workflows/docker.yml"
@@ -99,7 +99,7 @@ jobs:
       # Log in to GHCR only on non-PR events (push/tag). PRs never push.
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -111,7 +111,7 @@ jobs:
           # Build context is the REPOSITORY ROOT so the shared dcs-commons module
           # is available to the service Dockerfile (which installs it first).
           context: .
-          file: ${{ matrix.service }}/Dockerfile
+          file: services/${{ matrix.service }}/Dockerfile
           # Build-only in CI: this verifies every service image builds on each
           # push/PR. Publishing to GHCR is done from the release workflow (or
           # manually) because GHCR package writes require the package to exist

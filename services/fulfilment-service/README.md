@@ -5,8 +5,8 @@ across the pipeline, persists the current state of each workflow, and exposes it
 polling (REST) or live updates (Server-Sent Events). The Student Service proxies its
 status/result endpoints, so clients get a single place to follow a request.
 
-Part of the [Digital Credential System](../README.md); see
-[Architecture](../docs/ARCHITECTURE.md) for the end-to-end event flow.
+Part of the [Digital Credential System](../../README.md); see
+[Architecture](../../docs/ARCHITECTURE.md) for the end-to-end event flow.
 
 - **Port:** `8087` · **Context path:** `/api/v1`
 - **Stack:** Java 25 · Spring Boot 4.1 · Spring Cloud 2025.1 · Apache Kafka (KRaft) · PostgreSQL + JPA + Flyway · Server-Sent Events · Consul
@@ -40,7 +40,7 @@ and the Swagger UI (`/api/v1/swagger-ui/index.html`) are public.
 
 ## Configuration
 
-Full reference in [Configuration](../docs/CONFIGURATION.md). Key variables:
+Full reference in [Configuration](../../docs/CONFIGURATION.md). Key variables:
 
 - `APP_API_KEY` — required; the `apikey` accepted on business endpoints.
 - `SPRING_DATASOURCE_*` — PostgreSQL connection (workflow state).
@@ -56,4 +56,4 @@ mvn -f pom.xml verify
 ```
 
 Normally you run it as part of the stack — see the one-command
-[demo](../docs/DEMO.md) (`make demo`) or [Getting Started](../docs/GETTING_STARTED.md).
+[demo](../../docs/DEMO.md) (`make demo`) or [Getting Started](../../docs/GETTING_STARTED.md).

@@ -126,7 +126,7 @@ Each service ships an identical `ApiKeyAuthFilter extends OncePerRequestFilter`,
 3. On a match, populates the `SecurityContext` with a `UsernamePasswordAuthenticationToken` for principal `"service"` holding `ROLE_SERVICE`.
 4. On no/invalid key, it does **not** set authentication and simply continues the chain — Spring Security's `authorizeHttpRequests` then rejects the (now anonymous) request on any protected path via the configured `AuthenticationEntryPoint`, which sends `401 Unauthorized`.
 
-Source: [`ApiKeyAuthFilter.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/usis/student/config/ApiKeyAuthFilter.java) · [`SecurityConfig.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/usis/student/config/SecurityConfig.java) (identical filter/config in `sis-service`, `credential-service`, and `fulfilment-service`).
+Source: [`ApiKeyAuthFilter.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/student-service/src/main/java/pt/usis/student/config/ApiKeyAuthFilter.java) · [`SecurityConfig.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/student-service/src/main/java/pt/usis/student/config/SecurityConfig.java) (identical filter/config in `sis-service`, `credential-service`, and `fulfilment-service`).
 
 ### Request flow through the filter
 
@@ -210,7 +210,7 @@ as the api-key-only model above.
 ### How the dual auth chain works
 
 The single shared `SecurityFilterChain` in
-[`ApiKeySecurityAutoConfiguration`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/dcs-commons/src/main/java/pt/usis/commons/security/ApiKeySecurityAutoConfiguration.java):
+[`ApiKeySecurityAutoConfiguration`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/dcs-commons/src/main/java/pt/usis/commons/security/ApiKeySecurityAutoConfiguration.java):
 
 1. Keeps the public paths public (actuator health/info/prometheus, swagger, api-docs).
 2. Runs the `ApiKeyAuthFilter` first — a valid `apikey` authenticates the request exactly as before (constant-time compare, `ROLE_SERVICE`).
@@ -224,7 +224,7 @@ Keycloak and stay api-key only. CSRF stays disabled, sessions stateless, and the
 existing 401 entry point is unchanged.
 
 !!! info "Placeholder credentials"
-    The bundled realm ([`docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json))
+    The bundled realm ([`infra/docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json))
     ships a confidential client (`dcs-service`), a public client (`dcs-public`),
     and a `demo-user` — all with **placeholder** secrets/passwords
     (`CHANGE-ME-*`). Rotate every one before any non-local use.
@@ -258,7 +258,7 @@ for the step-by-step run, token, and Bearer-call commands, and
 1. It builds a per-student input string combining the student identifier, the student email, the `WALLET_PASSWORD_SECRET`, and the `WALLET_PASSWORD_SALT`.
 2. It hashes that input with **SHA-256** and encodes a fixed-length slice of the digest as the wallet password.
 
-Because both `WALLET_PASSWORD_SECRET` and `WALLET_PASSWORD_SALT` are **required with no defaults**, the stack refuses to derive wallet passwords unless an operator has explicitly set strong values. Each student therefore gets a distinct, deterministic-yet-non-guessable password that is **never stored in plaintext, never logged, and never committed**. The derivation lives in [`StudentWalletService.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/service/StudentWalletService.java).
+Because both `WALLET_PASSWORD_SECRET` and `WALLET_PASSWORD_SALT` are **required with no defaults**, the stack refuses to derive wallet passwords unless an operator has explicitly set strong values. Each student therefore gets a distinct, deterministic-yet-non-guessable password that is **never stored in plaintext, never logged, and never committed**. The derivation lives in [`StudentWalletService.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/credential-service/src/main/java/pt/usis/dcs/credential/service/StudentWalletService.java).
 
 !!! note "Rotating the wallet secret"
     Because derivation is deterministic, changing `WALLET_PASSWORD_SECRET`/`WALLET_PASSWORD_SALT` changes every derived password. Plan rotation together with wallet re-provisioning.
@@ -301,7 +301,7 @@ CORS is enforced in two places kept in sync: Spring Security's `CorsConfiguratio
 - **Selective disclosure.** Credentials can be issued as **SD-JWT** (Selective-Disclosure JWT) so holders reveal only the specific claims a verifier needs, rather than the whole credential. The wallet `match-presentation` flow surfaces disclosure information for a selective-disclosure UI.
 - **Mobile secure storage.** The mobile apps keep wallet material in the platform secure store rather than plain app storage. See [Mobile Apps](MOBILE_APPS.md) for details.
 - **Masking in this public repo.** Sample values throughout the code and docs are masked/placeholder (e.g. `a12345678`, `00000_0000000000000`, `student@usis.pt`, `did:jwk:student123`). No real student identifiers, install keys, or SIS URLs are committed.
-- **PII-aware logging.** Emails are masked before logging; wallet passwords are never logged (not even a prefix); upstream/walt.id error detail is logged **server-side only**, and clients receive a generic, non-leaking message (see [`GlobalExceptionHandler.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/exception/GlobalExceptionHandler.java)).
+- **PII-aware logging.** Emails are masked before logging; wallet passwords are never logged (not even a prefix); upstream/walt.id error detail is logged **server-side only**, and clients receive a generic, non-leaking message (see [`GlobalExceptionHandler.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/services/credential-service/src/main/java/pt/usis/dcs/credential/exception/GlobalExceptionHandler.java)).
 - **No mock fallback for identity data.** If the SIS call fails, `sis-service` fails the request rather than issuing credentials from fabricated data — real credentials are only ever backed by real SIS data.
 
 ---

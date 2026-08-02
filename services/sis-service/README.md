@@ -6,11 +6,11 @@ credits, evaluations) from the upstream SIS over HTTP, and publishes a
 credential-issuance request onto Kafka — so the rest of the platform never talks to
 the SIS directly.
 
-> In the [demo profile](../docs/DEMO.md) the SIS client is replaced by an in-memory
+> In the [demo profile](../../docs/DEMO.md) the SIS client is replaced by an in-memory
 > mock, so the whole flow runs with no external SIS.
 
-Part of the [Digital Credential System](../README.md); see
-[Architecture](../docs/ARCHITECTURE.md) for the end-to-end event flow.
+Part of the [Digital Credential System](../../README.md); see
+[Architecture](../../docs/ARCHITECTURE.md) for the end-to-end event flow.
 
 - **Port:** `8085` · **Context path:** `/api/v1`
 - **Stack:** Java 25 · Spring Boot 4.1 · Spring Cloud 2025.1 · Apache Kafka (KRaft) · OpenFeign · Apache Avro · Resilience4j · Consul
@@ -41,7 +41,7 @@ and the Swagger UI (`/api/v1/swagger-ui/index.html`) are public.
 
 ## Configuration
 
-Full reference in [Configuration](../docs/CONFIGURATION.md). Key variables:
+Full reference in [Configuration](../../docs/CONFIGURATION.md). Key variables:
 
 - `APP_API_KEY` — required; the `apikey` accepted on business endpoints.
 - `SIS_API_URL` — base URL of the upstream SIS (defaults to a placeholder
@@ -58,4 +58,4 @@ mvn -f pom.xml verify
 ```
 
 Normally you run it as part of the stack — see the one-command
-[demo](../docs/DEMO.md) (`make demo`) or [Getting Started](../docs/GETTING_STARTED.md).
+[demo](../../docs/DEMO.md) (`make demo`) or [Getting Started](../../docs/GETTING_STARTED.md).

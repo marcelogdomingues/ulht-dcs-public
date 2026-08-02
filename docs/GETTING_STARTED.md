@@ -88,7 +88,7 @@ The repository layout you will use most:
 | [`.env.example`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/.env.example) | Template for the secrets/config file you must create |
 | [`compose/microservices.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/compose/microservices.yml) | The compose file that builds & runs the four services + infra |
 | `compose/override.yml` | Local-only overrides (health checks, port remaps) — you create this; see below |
-| `credential-service/`, `student-service/`, `sis-service/`, `fulfilment-service/` | The four Spring Boot microservices |
+| `services/credential-service/`, `services/student-service/`, `services/sis-service/`, `services/fulfilment-service/` | The four Spring Boot microservices |
 | `mobile-apps/` | The Flutter student & verifier apps |
 
 ---

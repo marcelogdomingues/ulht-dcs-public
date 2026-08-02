@@ -22,7 +22,7 @@ repository before building any service (the service Dockerfiles do this
 automatically):
 
 ```bash
-mvn -q -f dcs-commons/pom.xml -DskipTests install
+mvn -q -f services/dcs-commons/pom.xml -DskipTests install
 ```
 
 Then depend on it:
