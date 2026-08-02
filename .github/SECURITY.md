@@ -6,7 +6,7 @@ This document describes how to report security vulnerabilities in this
 repository. It is the coordinated-disclosure policy for the project. A more
 detailed description of the system's security model, threat considerations and
 cryptographic design lives in the documentation site under
-[`docs/SECURITY.md`](docs/SECURITY.md).
+[`docs/SECURITY.md`](../docs/SECURITY.md).
 
 ## Supported Versions
 

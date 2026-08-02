@@ -4,8 +4,8 @@ Thanks for working on the **Digital Credential System (DCS)**. This guide is
 the practical starting point for anyone building, testing, or extending the system.
 It is written for the university team taking over maintenance of this thesis project.
 
-> Documentation index: [`docs/README.md`](docs/README.md). Most links below point into
-> `docs/`. Start with [Getting Started](docs/GETTING_STARTED.md) if you just want to
+> Documentation index: [`docs/index.md`](../docs/index.md). Most links below point into
+> `docs/`. Start with [Getting Started](../docs/GETTING_STARTED.md) if you just want to
 > run the stack; read on here if you intend to change code.
 
 ---
@@ -25,7 +25,7 @@ service images are built inside the Compose build. You need the JDK/Maven toolch
 only when you build or test a service outside Docker, and Flutter only for the apps.
 
 The backend targets **Java 25**, **Spring Boot 4.1.0**, and **Spring Cloud 2025.1.2**.
-See [Getting Started](docs/GETTING_STARTED.md) and [Configuration](docs/CONFIGURATION.md)
+See [Getting Started](../docs/GETTING_STARTED.md) and [Configuration](../docs/CONFIGURATION.md)
 for the full version matrix.
 
 ---
@@ -45,14 +45,14 @@ apps, gateway config, observability config, and docs:
 | `api-gateway/` | Kong declarative config (`kong.yml`) |
 | `monitoring/` | Prometheus, Grafana, Loki, Promtail configuration |
 | `docs/` | Markdown documentation set (source of truth) and static HTML site |
-| `docker-compose.*.yml` | Compose files — see [Deployment](docs/DEPLOYMENT.md) |
+| `docker-compose.*.yml` | Compose files — see [Deployment](../docs/DEPLOYMENT.md) |
 | `.env.example` | Template for the git-ignored `.env` (secrets) |
 
 Each of the four services is a **self-contained Maven project** with its own `pom.xml`;
 there is no aggregator/parent POM. Build and test them one at a time.
 
 For the design behind the layout — event-driven Kafka flow, topics, and the
-walt.id integration — read [Architecture](docs/ARCHITECTURE.md).
+walt.id integration — read [Architecture](../docs/ARCHITECTURE.md).
 
 ---
 
@@ -65,7 +65,7 @@ cd student-service        # or credential-service, sis-service, fulfilment-servi
 mvn -B verify             # compile, run unit tests, and package
 ```
 
-`mvn -B verify` is exactly what CI runs (see [CI/CD](docs/CICD.md)). `-B` selects
+`mvn -B verify` is exactly what CI runs (see [CI/CD](../docs/CICD.md)). `-B` selects
 batch/non-interactive mode so output is CI-friendly. To run only the tests:
 
 ```bash
@@ -96,7 +96,7 @@ flutter test                 # if the app has tests
 ```
 
 Build-time configuration is injected with `--dart-define`; see
-[Mobile Apps](docs/MOBILE_APPS.md) for the required defines and run commands.
+[Mobile Apps](../docs/MOBILE_APPS.md) for the required defines and run commands.
 
 ---
 
@@ -111,8 +111,7 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 
 Always include **both** files: `docker-compose.microservices.yml` is the primary
 stack and `docker-compose.override.yml` layers required local fixes (busybox `wget`
-healthchecks, the Kafka-UI port remap, and the sis endpoint). Do **not** run the
-bare root `docker-compose.yml` — it is stale and points at removed directories.
+healthchecks, the Kafka-UI port remap, and the SIS endpoint).
 
 Verify health (public endpoints, no `apikey` needed):
 
@@ -121,8 +120,8 @@ curl http://127.0.0.1:8084/api/v1/actuator/health   # student-service
 ```
 
 Full run/verify instructions, the walt.id dependency, and the KRaft
-`kafka_data` caveat are in [Getting Started](docs/GETTING_STARTED.md) and
-[Deployment](docs/DEPLOYMENT.md).
+`kafka_data` caveat are in [Getting Started](../docs/GETTING_STARTED.md) and
+[Deployment](../docs/DEPLOYMENT.md).
 
 ---
 
@@ -140,8 +139,8 @@ curl -X POST http://127.0.0.1:8084/api/v1/student/issue \
 ```
 
 The dev default is `APP_API_KEY=dcs-dev-local-CHANGE-ME` — fine for a local machine,
-never for anything shared. See the [Security](docs/SECURITY.md) auth model and the
-full [API Reference](docs/API.md).
+never for anything shared. See the [Security](../docs/SECURITY.md) auth model and the
+full [API Reference](../docs/API.md).
 
 ---
 
@@ -157,8 +156,8 @@ full [API Reference](docs/API.md).
   `WALLET_PASSWORD_SECRET`, `WALLET_PASSWORD_SALT`, `GRAFANA_ADMIN_PASSWORD`,
   `KAFKA_UI_PASSWORD`.
 
-See [Configuration](docs/CONFIGURATION.md) for the complete variable reference and
-[Security](docs/SECURITY.md) for how secrets are handled.
+See [Configuration](../docs/CONFIGURATION.md) for the complete variable reference and
+[Security](../docs/SECURITY.md) for how secrets are handled.
 
 ---
 
@@ -196,7 +195,7 @@ See [Configuration](docs/CONFIGURATION.md) for the complete variable reference a
   - `docs: expand deployment checklist`
   - `chore(ci): bump actions/setup-java`
 - Open a **pull request** into `main`. **PRs must pass CI** before they can be merged —
-  branch protection requires the CI checks to be green (see [CI/CD](docs/CICD.md)).
+  branch protection requires the CI checks to be green (see [CI/CD](../docs/CICD.md)).
 - Keep PRs focused and reasonably small; describe what changed and why, and note any
   new environment variables or manual steps.
 
@@ -213,16 +212,16 @@ Every push and pull request runs GitHub Actions:
 
 Run the same checks locally before pushing (`mvn -B verify`, `flutter analyze`,
 `docker compose ... config`). The full pipeline reference — triggers, how to read a
-failure, and required repo settings — is in [CI/CD](docs/CICD.md).
+failure, and required repo settings — is in [CI/CD](../docs/CICD.md).
 
 ---
 
 ## Where to go next
 
-- [Getting Started](docs/GETTING_STARTED.md) — run the stack, issue your first credential
-- [Architecture](docs/ARCHITECTURE.md) — how the services fit together
-- [Configuration](docs/CONFIGURATION.md) — every environment variable
-- [CI/CD](docs/CICD.md) — the pipelines in detail
-- [Deployment](docs/DEPLOYMENT.md) & [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md)
-- [Security](docs/SECURITY.md) — auth model and hardening
-- [API Reference](docs/API.md) · [Mobile Apps](docs/MOBILE_APPS.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Getting Started](../docs/GETTING_STARTED.md) — run the stack, issue your first credential
+- [Architecture](../docs/ARCHITECTURE.md) — how the services fit together
+- [Configuration](../docs/CONFIGURATION.md) — every environment variable
+- [CI/CD](../docs/CICD.md) — the pipelines in detail
+- [Deployment](../docs/DEPLOYMENT.md) & [Deployment Checklist](../docs/DEPLOYMENT_CHECKLIST.md)
+- [Security](../docs/SECURITY.md) — auth model and hardening
+- [API Reference](../docs/API.md) · [Mobile Apps](../docs/MOBILE_APPS.md) · [Troubleshooting](../docs/TROUBLESHOOTING.md)

@@ -31,7 +31,7 @@
 
 ## Checklist
 
-- [ ] My code follows the project's style and `CONTRIBUTING.md` guidelines
+- [ ] My code follows the project's style and `.github/CONTRIBUTING.md` guidelines
 - [ ] CI passes (build, tests, and linters are green)
 - [ ] I have added or updated tests that prove my fix/feature works
 - [ ] I have updated the documentation (MkDocs site / README) where needed

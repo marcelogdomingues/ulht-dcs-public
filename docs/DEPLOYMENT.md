@@ -30,7 +30,6 @@ The repository ships several Compose files. Use the right combination for the jo
 | `docker-compose.override.yml` | Local fixes, layered on top of the primary | busybox-`wget` healthchecks, Kafka-UI port remap, SIS endpoint injection |
 | `docker-compose.infrastructure.yml` | **Observability + infra** stack | Kafka, Consul, Kafka-UI, Kong, Kong-UI **plus** Prometheus, Grafana, Loki, Promtail, kafka-exporter |
 | `docker-compose.dev.yml` | Development variant (run services from your IDE) | infra only, for local IDE workflows |
-| `docker-compose.yml` (root) | **Legacy** — kept for reference | older single-file layout (uses `dcs-waltid-proxy`) |
 
 !!! note "Primary vs. infrastructure"
     `docker-compose.microservices.yml` is what you run day-to-day. The **monitoring** components (Prometheus / Grafana / Loki / Promtail / kafka-exporter) live only in `docker-compose.infrastructure.yml`. Bring up observability separately (see [Observability](#observability)) or compose both files together if you want everything in one `up`.

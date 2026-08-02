@@ -136,7 +136,7 @@ The complete variable reference (defaults, consuming component, precedence) live
 
 ## 3. Build and run the full stack
 
-Use the **microservices** compose file plus the **override** file. Do **not** use the root `docker-compose.yml` — it is a stale legacy layout.
+Use the **microservices** compose file plus the **override** file.
 
 ```bash
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build

@@ -10,7 +10,7 @@ See also: [Getting Started](GETTING_STARTED.md) · [Configuration](CONFIGURATION
 
 ## Primary run command
 
-Use the microservices compose file **plus** the local override — do **not** use the root `docker-compose.yml` (it is stale and references deleted build directories):
+Use the microservices compose file **plus** the local override:
 
 ```bash
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d
@@ -87,13 +87,6 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 docker rm -f kafka
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d
 ```
-
-### Root `docker-compose.yml` errors about missing build dirs
-
-- **Cause:** the root `docker-compose.yml` is **stale** and references directories that no longer exist (e.g. a removed waltid-proxy dir).
-- **Fix:** always use `docker-compose.microservices.yml` **together with** `docker-compose.override.yml` (the override is untracked and holds required fixes: busybox healthchecks, host-port remaps, the sis API endpoint, 127.0.0.1 bindings). See the [primary run command](#primary-run-command).
-
----
 
 ## Health & discovery issues
 

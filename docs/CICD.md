@@ -2,7 +2,7 @@
 
 A thorough guide to continuous integration and delivery for the **Digital Credential System (DCS)**, implemented with **GitHub Actions**. It explains **every workflow** in `.github/workflows/`, what triggers each one, the path filters that scope them, how to read a failure, the repository settings and secrets they need, and how to reproduce every check locally. Dependabot and the docs-site pipeline are covered too.
 
-> See also: [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md) · [Deployment](DEPLOYMENT.md) · [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) · [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Getting Started](GETTING_STARTED.md) · [Project README](index.md)
+> See also: [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/.github/CONTRIBUTING.md) · [Deployment](DEPLOYMENT.md) · [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) · [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Getting Started](GETTING_STARTED.md) · [Project README](index.md)
 
 ---
 
@@ -264,13 +264,13 @@ pip install -r requirements-docs.txt
 mkdocs build --strict
 ```
 
-Matching CI locally is the fastest way to keep PRs green. For day-to-day conventions, see [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md).
+Matching CI locally is the fastest way to keep PRs green. For day-to-day conventions, see [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/.github/CONTRIBUTING.md).
 
 ---
 
 ## Related documentation
 
-- [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md) — build, test, branch & PR conventions
+- [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/.github/CONTRIBUTING.md) — build, test, branch & PR conventions
 - [Deployment](DEPLOYMENT.md) — Compose files, images, KRaft, healthchecks
 - [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) — pre-deployment readiness
 - [Security](SECURITY.md) — secrets handling and hardening
