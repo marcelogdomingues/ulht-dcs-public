@@ -21,7 +21,7 @@
         <spring-cloud.version>2025.1.2</spring-cloud.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <springdoc.version>3.0.3</springdoc.version>
-        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <avro.version>1.12.1</avro.version>
         <kafka-avro-serializer.version>8.3.0</kafka-avro-serializer.version>
     </properties>
