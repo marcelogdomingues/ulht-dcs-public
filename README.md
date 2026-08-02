@@ -178,7 +178,7 @@ All published ports bind to `127.0.0.1` (loopback) by default.
 | Service | Port | Context path | Purpose |
 |---|---|---|---|
 | Student Service | 8084 | `/api/v1` | Entry point, request validation, correlation IDs |
-| Example University Service | 8085 | `/api/v1` | University SIS integration & student data |
+| SIS Service | 8085 | `/api/v1` | University SIS integration & student data |
 | Credential Service | 8086 | `/api/v1` | W3C issuance, wallet, verifier (walt.id) |
 | Fulfilment Service | 8087 | `/api/v1` | Workflow tracking & results |
 
@@ -205,18 +205,22 @@ Full details in [Configuration](docs/CONFIGURATION.md) and [Deployment](docs/DEP
 ```
 dcs/
 ├── student-service/          # Entry point (8084)
-├── sis-service/         # University SIS integration (8085)
+├── sis-service/              # University SIS integration (8085)
 ├── credential-service/       # W3C issuance + walt.id (8086)
 ├── fulfilment-service/       # Workflow tracking (8087)
+├── dcs-commons/              # Shared auto-configured security module
+├── mobile-apps/              # Flutter apps: student / verifier / issuer
 ├── api-gateway/              # Kong declarative config (kong.yml)
 ├── kong-ui/                  # Static Kong admin console
 ├── monitoring/               # Prometheus, Grafana, Loki, Promtail configs
-├── mobile-apps/              # Flutter apps: student / verifier / issuer
-├── postman/                  # API collections
-├── docs/                     # ← Documentation (Markdown + HTML site)
+├── docker/                   # keycloak / postgres / walt.id service configs
+├── postman/                  # API collection + environment
+├── scripts/                  # Helper scripts (Kafka debug / reset)
+├── docs/                     # Documentation (MkDocs Material site)
+├── .github/                  # CI workflows + community-health files
 ├── docker-compose.microservices.yml   # Primary stack
 ├── docker-compose.override.yml        # Local overrides (healthchecks, ports)
-├── docker-compose.infrastructure.yml  # Infra-only
+├── docker-compose.infrastructure.yml  # Observability + infra
 ├── .env.example              # Required environment variables (template)
 └── README.md
 ```
