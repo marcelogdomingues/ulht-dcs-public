@@ -28,7 +28,7 @@ public class GenericCredentialBuilder {
      * Builds a W3C credential from a template and student data
      * 
      * @param template The credential template configuration
-     * @param studentData Raw student data from Sis Service
+     * @param studentData Raw student data from SIS Service
      * @param subjectDid The DID of the credential subject (student)
      * @param issuerDid The DID of the credential issuer (university)
      * @return W3C credential data ready for issuance

@@ -30,7 +30,7 @@ The Student Service is the **primary gateway** for student interactions in the D
        ▼
    [Kafka Topics]
        │
-       ├─► Sis Service (fetches real student data)
+       ├─► SIS Service (fetches real student data)
        │
        └─► Credential Service (issues credentials)
               │
@@ -263,7 +263,7 @@ mvn package -DskipTests
 - **Fulfilment Service** - For status and credentials retrieval
 
 **Consumed by:**
-- **Sis Service** - Processes login requests
+- **SIS Service** - Processes login requests
 
 ## Workflow Example
 
@@ -278,9 +278,9 @@ mvn package -DskipTests
    - Topic: `student.login.requested`
    - Includes: correlationId, userName, installKey
 
-3. **Sis Service:**
+3. **SIS Service:**
    - Consumes event
-   - Fetches real student data from DCS API
+   - Fetches real student data from university SIS API
    - Publishes enriched data to `credential.requests`
 
 4. **Credential Service:**

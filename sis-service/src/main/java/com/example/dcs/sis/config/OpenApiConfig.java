@@ -26,7 +26,7 @@ public class OpenApiConfig {
                         .description("""
                             # DCS Digital Wallet API
                             
-                            This API provides comprehensive integration between DCS (Example University de Humanidades e Tecnologias) 
+                            This API provides comprehensive integration between DCS 
                             and WaltID digital wallet platform. It enables secure management of student academic data, 
                             digital credentials, and seamless integration with the university's information systems.
                             

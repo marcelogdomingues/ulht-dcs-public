@@ -56,7 +56,7 @@ public class StudentLogin extends BaseEntity {
     
     @NotBlank(message = "Institution name is required")
     @Size(max = 100, message = "Institution name cannot exceed 100 characters")
-    @Schema(description = "Institution name", example = "Example University de Humanidades e Tecnologias")
+    @Schema(description = "Institution name", example = "Example University")
     private String institutionName;
     
     @Builder.Default

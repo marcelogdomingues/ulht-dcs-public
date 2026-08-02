@@ -355,4 +355,4 @@ For technical support or questions:
 ## Related Services
 
 - **Credential Service**: Digital credential issuance and management
-- **Sis Service**: Student data and university integration
+- **SIS Service**: Student data and university integration

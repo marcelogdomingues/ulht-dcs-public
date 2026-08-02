@@ -111,7 +111,7 @@
 							}
 						}
 					],
-					"description": "**THE COMPLETE CREDENTIAL ISSUANCE WORKFLOW** - Fully Event-Driven!\n\n**What Happens (Kafka-Driven):**\n1. **Validate Student Data** (10%) - Validates input from Sis Service\n2. **Prepare Issuer** (20%) - Gets/creates institution signing keys and DID\n3. **Wallet Operations** (40%) - **NEW!** Ensures student wallet exists:\n   - Publishes to `wallet.requests` topic\n   - WalletWorkflowConsumer processes async\n   - Creates wallet if needed, retrieves student's DID\n   - Publishes to `wallet.progress` and `wallet.completed`\n4. **Issue Credentials** (80%) - Issues W3C Verifiable Credentials with student's DID\n5. **Complete** (100%) - All credentials issued successfully\n\n**Kafka Topics Used:**\n- `credential.requests` - Input (from Sis Service)\n- `wallet.requests` - Wallet operations (internal)\n- `wallet.progress` - Wallet progress updates\n- `wallet.completed` - Wallet completion\n- `credential.progress` - Credential progress updates\n- `credential.completed` - Final results\n\n**Features:**\n- ✅ Fully async via Kafka\n- ✅ Each student has their own wallet\n- ✅ Credentials use student's wallet DID (not generated)\n- ✅ Real-time progress tracking\n- ✅ Event-driven architecture\n\n**Test Flow:**\n1. Run \"1. Issue Credentials\" → Returns `correlationId`\n2. Wait 10-15 seconds ⏳\n3. Run \"3. Get Credentials\" → Returns credential URLs"
+					"description": "**THE COMPLETE CREDENTIAL ISSUANCE WORKFLOW** - Fully Event-Driven!\n\n**What Happens (Kafka-Driven):**\n1. **Validate Student Data** (10%) - Validates input from SIS Service\n2. **Prepare Issuer** (20%) - Gets/creates institution signing keys and DID\n3. **Wallet Operations** (40%) - **NEW!** Ensures student wallet exists:\n   - Publishes to `wallet.requests` topic\n   - WalletWorkflowConsumer processes async\n   - Creates wallet if needed, retrieves student's DID\n   - Publishes to `wallet.progress` and `wallet.completed`\n4. **Issue Credentials** (80%) - Issues W3C Verifiable Credentials with student's DID\n5. **Complete** (100%) - All credentials issued successfully\n\n**Kafka Topics Used:**\n- `credential.requests` - Input (from SIS Service)\n- `wallet.requests` - Wallet operations (internal)\n- `wallet.progress` - Wallet progress updates\n- `wallet.completed` - Wallet completion\n- `credential.progress` - Credential progress updates\n- `credential.completed` - Final results\n\n**Features:**\n- ✅ Fully async via Kafka\n- ✅ Each student has their own wallet\n- ✅ Credentials use student's wallet DID (not generated)\n- ✅ Real-time progress tracking\n- ✅ Event-driven architecture\n\n**Test Flow:**\n1. Run \"1. Issue Credentials\" → Returns `correlationId`\n2. Wait 10-15 seconds ⏳\n3. Run \"3. Get Credentials\" → Returns credential URLs"
 				},
 				{
 					"name": "🔍 Verification Workflow (Selective)",
@@ -1351,7 +1351,7 @@
 									"",
 									"console.log(\"🎯 Student Service received login request\");",
 									"console.log(\"📡 Published to Kafka: student.login.requested\");",
-									"console.log(\"⚙️  Sis Service will fetch DCS data automatically\");",
+									"console.log(\"⚙️  SIS Service will fetch DCS data automatically\");",
 									"console.log(\"🎓 Credential Service will issue credentials\");",
 									"console.log(\"📬 Fulfilment Service will track & notify\");"
 								],
@@ -1381,7 +1381,7 @@
 								"login"
 							]
 						},
-						"description": "**THE ENTRY POINT** for credential issuance!\n\n**New Architecture:**\n1. Student Service (NEW!) → receives minimal data, publishes to Kafka\n2. Sis Service → gets REAL student data from DCS API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks progress & notifies\n\n**You provide:** username + installKey (MINIMAL!)\n**You get:** correlationId for tracking\n**Everything else is automatic via Kafka!**"
+						"description": "**THE ENTRY POINT** for credential issuance!\n\n**New Architecture:**\n1. Student Service (NEW!) → receives minimal data, publishes to Kafka\n2. SIS Service → gets REAL student data from DCS API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks progress & notifies\n\n**You provide:** username + installKey (MINIMAL!)\n**You get:** correlationId for tracking\n**Everything else is automatic via Kafka!**"
 					},
 					"response": []
 				},
@@ -1671,7 +1671,7 @@
 					"response": []
 				}
 			],
-			"description": "**THE CORRECT FLOW** - 4 Microservices Architecture!\n\n**Test Flow:**\n1. Student Login → Student Service (minimal: username + installKey)\n2. Monitor Progress → Fulfilment Service (real-time updates)\n3. Get Credentials → Fulfilment Service (final URLs)\n\n**What happens automatically:**\n1. Student Service → publishes to Kafka: student.login.requested\n2. Sis Service → gets ALL student data from DCS API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks & stores results\n\n**You provide:** username + installKey (2 fields!)\n**You get:** Verifiable Credentials!\n**4 services, fully automated, event-driven!**"
+			"description": "**THE CORRECT FLOW** - 4 Microservices Architecture!\n\n**Test Flow:**\n1. Student Login → Student Service (minimal: username + installKey)\n2. Monitor Progress → Fulfilment Service (real-time updates)\n3. Get Credentials → Fulfilment Service (final URLs)\n\n**What happens automatically:**\n1. Student Service → publishes to Kafka: student.login.requested\n2. SIS Service → gets ALL student data from DCS API\n3. Credential Service → issues W3C credentials via Walt.id\n4. Fulfilment Service → tracks & stores results\n\n**You provide:** username + installKey (2 fields!)\n**You get:** Verifiable Credentials!\n**4 services, fully automated, event-driven!**"
 		},
 		{
 			"name": "Flow Utilities",

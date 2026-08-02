@@ -18,7 +18,7 @@ info:
     ## Workflow
     1. Student submits credential issuance request with username and installKey
     2. Service generates correlationId and publishes to `student.login.requested` topic
-    3. Sis Service retrieves real student data from DCS API
+    3. SIS Service retrieves real student data from DCS API
     4. Credential Service issues W3C Verifiable Credentials (EducationalID, IdentityCredential, etc.)
     5. Fulfilment Service tracks progress and stores results
     6. Student can query status and retrieve credentials via this service
@@ -32,7 +32,7 @@ info:
     ## Integration
     - **Publishes to**: `student.login.requested` (Kafka)
     - **Proxies to**: Fulfilment Service (HTTP/REST)
-    - **Consumed by**: Sis Service (via Kafka)
+    - **Consumed by**: SIS Service (via Kafka)
   version: 1.0.0
   contact:
     name: DCS Development Team
@@ -71,7 +71,7 @@ paths:
         1. Generates unique correlationId for tracking
         2. Publishes to `student.login.requested` Kafka topic
         3. Returns immediately with correlationId for async tracking
-        4. Sis Service picks up event and fetches real student data
+        4. SIS Service picks up event and fetches real student data
         5. Credential Service issues W3C credentials (Educational ID, Identity Credential, etc.)
         6. Fulfilment Service tracks progress
         

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: DCS Digital Wallet API
   description: |
-    The DCS Digital Wallet API provides comprehensive student services for the Example University de Humanidades e Tecnologias. 
+    The DCS Digital Wallet API provides comprehensive student services for the Example University. 
     This API enables students to access their academic information, manage their digital wallet, and interact with various university services.
   version: 1.0.0
   contact:

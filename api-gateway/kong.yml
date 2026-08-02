@@ -177,7 +177,7 @@ services:
                 headers:
                   - "X-Service-Version: 1.0.0"
 
-  # Sis Service
+  # SIS Service
   - name: sis-service
     url: http://sis-service:8080
     routes:

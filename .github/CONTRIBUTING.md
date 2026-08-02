@@ -38,7 +38,7 @@ apps, gateway config, observability config, and docs:
 | Path | What it is |
 | --- | --- |
 | `student-service/` | Orchestrates issuance & verification (Maven service, port `8084`) |
-| `sis-service/` | University SIS academic data, proxies the external DCS API (Maven service, port `8085`) |
+| `sis-service/` | University SIS academic data, proxies the external university SIS API (Maven service, port `8085`) |
 | `credential-service/` | W3C issuance, wallet & verifier via walt.id (Maven service, port `8086`) |
 | `fulfilment-service/` | Workflow / fulfilment tracking (Maven service, port `8087`) |
 | `mobile-apps/` | Three Flutter apps: `student-app/`, `verifier-app/`, `issuer-app/` |

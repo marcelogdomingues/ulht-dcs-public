@@ -27,7 +27,7 @@ public class OpenApiConfig {
                             # DCS Credential Service API
                             
                             This API provides comprehensive digital credential management and wallet integration 
-                            services for DCS (Example University de Humanidades e Tecnologias). It enables 
+                            services for DCS. It enables 
                             secure issuance, management, and verification of digital credentials through 
                             integration with the WaltID platform.
                             

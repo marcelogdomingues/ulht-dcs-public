@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Kafka consumer for credential workflow requests from Sis Service.
+ * Kafka consumer for credential workflow requests from SIS Service.
  * Automatically issues W3C Verifiable Credentials based on configured templates.
  * NEW: Uses generic template-based system - add credential types via application.yml!
  * NEW: Integrates with student wallets - each student has their own wallet and DID
@@ -230,7 +230,7 @@ public class CredentialWorkflowConsumer {
     
     /**
      * Processes the complete credential workflow
-     * Issues W3C Verifiable Credentials based on student data from Sis Service
+     * Issues W3C Verifiable Credentials based on student data from SIS Service
      */
     private void processCredentialWorkflow(String correlationId, String userId, Object studentData) {
         log.info("Starting W3C credential issuance workflow for user: {} (correlationId: {})", userId, correlationId);

@@ -13,7 +13,7 @@
     <groupId>com.example.dcs</groupId>
     <artifactId>sis-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Sis Service</name>
+    <name>SIS Service</name>
     <description>DCS WaltID Proxy - Independent Microservice</description>
 
     <properties>

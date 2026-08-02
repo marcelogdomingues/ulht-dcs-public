@@ -15,7 +15,7 @@ info:
     
     ## Usage
     
-    This service is designed to work in conjunction with the Credential Service and Sis Service
+    This service is designed to work in conjunction with the Credential Service and SIS Service
     to provide end-to-end workflow tracking capabilities for digital credential issuance processes.
   version: 1.0.0
   contact:

@@ -64,7 +64,7 @@ The monitoring stack includes:
 
 ### Microservices
 - **Student Service** (port 8084)
-- **Sis Service** (port 8085)
+- **SIS Service** (port 8085)
 - **Credential Service** (port 8086)
 - **Fulfilment Service** (port 8087)
 

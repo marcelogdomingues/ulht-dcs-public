@@ -20,7 +20,7 @@
   "portsAttributes": {
     "8000": { "label": "Kong Gateway (proxy)" },
     "8084": { "label": "Student Service" },
-    "8085": { "label": "Sis Service" },
+    "8085": { "label": "SIS Service" },
     "8086": { "label": "Credential Service" },
     "8087": { "label": "Fulfilment Service" },
     "3000": { "label": "Grafana" },

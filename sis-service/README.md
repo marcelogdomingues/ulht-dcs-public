@@ -1,8 +1,8 @@
-# DCS Sis Service
+# DCS SIS Service
 
 ## Overview
 
-The DCS Sis Service (Digital Wallet Service) provides comprehensive integration between DCS (Example University de Humanidades e Tecnologias) and WaltID digital wallet platform. It enables secure management of student academic data, digital credentials, and seamless integration with the university's information systems (SIGES).
+The DCS SIS Service (Digital Wallet Service) provides comprehensive integration between DCS and WaltID digital wallet platform. It enables secure management of student academic data, digital credentials, and seamless integration with the university's information systems (SIGES).
 
 ## Key Features
 

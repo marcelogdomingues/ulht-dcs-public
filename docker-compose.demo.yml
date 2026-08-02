@@ -151,7 +151,7 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # Sis service (university SIS proxy - MOCKED in demo)
+  # SIS service (university SIS proxy - MOCKED in demo)
   # ---------------------------------------------------------------------------
   sis-service:
     build:

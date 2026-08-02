@@ -54,7 +54,7 @@ The unified collection includes:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `student_url` | http://localhost:8084/api/v1 | Student service |
-| `sis_url` | http://localhost:8085/api/v1 | Sis service |
+| `sis_url` | http://localhost:8085/api/v1 | SIS service |
 | `credential_url` | http://localhost:8086/api/v1 | Credential service |
 | `fulfilment_url` | http://localhost:8087/api/v1 | Fulfilment service |
 | `waltid_verifier_url` | http://localhost:7003 | WaltID Verifier |

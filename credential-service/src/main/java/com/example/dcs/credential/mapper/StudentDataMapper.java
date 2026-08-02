@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * Maps student data from Sis Service to credential requests
+ * Maps student data from SIS Service to credential requests
  */
 @Slf4j
 public class StudentDataMapper {

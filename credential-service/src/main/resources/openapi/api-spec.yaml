@@ -12,7 +12,7 @@ info:
     - OpenID4VCI protocol support
     
     ## Workflow
-    1. Student logs in via Sis Service
+    1. Student logs in via SIS Service
     2. Student data published to Kafka (`credential.requests`)
     3. Credential Service processes and issues credentials
     4. Progress updates sent to Fulfilment Service
@@ -416,7 +416,7 @@ components:
           example: a12345678
         studentData:
           type: object
-          description: Student data from Sis Service (real DCS data)
+          description: Student data from SIS Service (real DCS data)
           properties:
             studentId:
               type: string
