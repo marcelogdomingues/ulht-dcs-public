@@ -21,7 +21,7 @@ class ApiService {
       defaultValue: 'http://localhost:8086/api/v1');
 
   static const String _apiKey =
-      String.fromEnvironment('API_KEY', defaultValue: 'ulht-dev-local-CHANGE-ME');
+      String.fromEnvironment('API_KEY', defaultValue: 'dcs-dev-local-CHANGE-ME');
 
   // Centralized headers so every request carries the required api key.
   static Map<String, String> get _headers => {

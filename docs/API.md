@@ -1,11 +1,11 @@
 # API Reference
 
-Complete REST reference for the **ULHT Digital Credential System (DCS)**. Every endpoint below is verified against the service controllers and OpenAPI specs in this repository.
+Complete REST reference for the **Digital Credential System (DCS)**. Every endpoint below is verified against the service controllers and OpenAPI specs in this repository.
 
 See also: [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [Getting Started](GETTING_STARTED.md) · [Deployment](DEPLOYMENT.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project home](index.md)
 
 !!! info "Public repository — placeholders only"
-    All examples use placeholders: `$APP_API_KEY`, `<your-username>`, `<your-install-key>`, `<correlation-id>`, `<credential-type>`. Never use real student identifiers, install keys, or the real SIS URL. The dev default is `APP_API_KEY=ulht-dev-local-CHANGE-ME` — for local use only.
+    All examples use placeholders: `$APP_API_KEY`, `<your-username>`, `<your-install-key>`, `<correlation-id>`, `<credential-type>`. Never use real student identifiers, install keys, or the real SIS URL. The dev default is `APP_API_KEY=dcs-dev-local-CHANGE-ME` — for local use only.
 
 ---
 
@@ -16,7 +16,7 @@ Each service is reachable **directly** on its own loopback port, or through the 
 | Service | Direct base URL | Kong route prefix | Responsibility |
 | --- | --- | --- | --- |
 | student-service | `http://localhost:8084/api/v1` | — | Orchestrates issuance & verification (publishes to Kafka) |
-| lusofona-service | `http://localhost:8085/api/v1` | `/api/v1/lusofona` | Academic data — proxies the university SIS / SIGES |
+| sis-service | `http://localhost:8085/api/v1` | `/api/v1/sis` | Academic data — proxies the university SIS / SIGES |
 | credential-service | `http://localhost:8086/api/v1` | `/api/v1/credentials`, `/api/v1/wallet`, `/api/v1/students` | W3C issuance, wallet & verifier via walt.id |
 | fulfilment-service | `http://localhost:8087/api/v1` | `/api/v1/fulfilment` | Workflow / fulfilment tracking |
 
@@ -38,7 +38,7 @@ Missing or invalid keys are rejected with `401 Unauthorized` before any business
 Set the key in your shell for the examples:
 
 ```bash
-export APP_API_KEY="<your-api-key>"   # dev default: ulht-dev-local-CHANGE-ME
+export APP_API_KEY="<your-api-key>"   # dev default: dcs-dev-local-CHANGE-ME
 ```
 
 ---
@@ -60,7 +60,7 @@ Available on **every** service under its base URL (from each `SecurityConfig.PUB
 | Service | Swagger UI URL |
 | --- | --- |
 | student-service | `http://localhost:8084/api/v1/swagger-ui/index.html` |
-| lusofona-service | `http://localhost:8085/api/v1/swagger-ui/index.html` |
+| sis-service | `http://localhost:8085/api/v1/swagger-ui/index.html` |
 | credential-service | `http://localhost:8086/api/v1/swagger-ui/index.html` |
 | fulfilment-service | `http://localhost:8087/api/v1/swagger-ui/index.html` |
 
@@ -71,17 +71,17 @@ Available on **every** service under its base URL (from each `SecurityConfig.PUB
 | Status | Meaning |
 | --- | --- |
 | `200 OK` | Success. For async **issuance** via `student-service`, the body carries `correlationId` and `status: PROCESSING` — poll for progress. |
-| `202 Accepted` | Async accepted / still processing. `lusofona-service` `/student/login` returns `202` with a `correlationId`; `student-service` `/student/credentials/{id}` returns `202` while a workflow is not yet `COMPLETED`. |
+| `202 Accepted` | Async accepted / still processing. `sis-service` `/student/login` returns `202` with a `correlationId`; `student-service` `/student/credentials/{id}` returns `202` while a workflow is not yet `COMPLETED`. |
 | `400 Bad Request` | Validation failure or malformed body (`VALIDATION_ERROR` / `ILLEGAL_ARGUMENT`). |
 | `401 Unauthorized` | Missing or invalid `apikey` header on a protected endpoint. |
 | `404 Not Found` | Resource (session / result) not found. |
-| `408 Request Timeout` | Upstream call timed out (lusofona-service). |
+| `408 Request Timeout` | Upstream call timed out (sis-service). |
 | `500 Internal Server Error` | Unexpected server error (`INTERNAL_SERVER_ERROR`). |
-| `503 Service Unavailable` | An external backend is unavailable — walt.id (issuer `:7002`, verifier `:7003`, wallet `:7001`) for credential-service, or the SIS for lusofona-service. |
+| `503 Service Unavailable` | An external backend is unavailable — walt.id (issuer `:7002`, verifier `:7003`, wallet `:7001`) for credential-service, or the SIS for sis-service. |
 
 ### Async issue → poll → fetch pattern
 
-Issuance is asynchronous: `student-service` accepts the request, publishes a Kafka event that fans out across lusofona-service → credential-service → fulfilment-service, and returns immediately with a `correlationId`. Clients then poll status and finally fetch the credential offer URLs.
+Issuance is asynchronous: `student-service` accepts the request, publishes a Kafka event that fans out across sis-service → credential-service → fulfilment-service, and returns immediately with a `correlationId`. Clients then poll status and finally fetch the credential offer URLs.
 
 ```mermaid
 sequenceDiagram
@@ -89,7 +89,7 @@ sequenceDiagram
     participant App as Client app
     participant SS as student-service :8084
     participant K as Kafka
-    participant LS as lusofona-service :8085
+    participant LS as sis-service :8085
     participant CS as credential-service :8086
     participant FS as fulfilment-service :8087
 
@@ -125,7 +125,7 @@ sequenceDiagram
 ## student-service
 
 Base URL: `http://localhost:8084/api/v1` · All endpoints require the `apikey` header. This service is the single entry point for issuance/verification; it publishes to Kafka and proxies status/results from `fulfilment-service`.
-Source: [`StudentController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/ulusofona/student/controller/StudentController.java)
+Source: [`StudentController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/usis/student/controller/StudentController.java)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -139,10 +139,10 @@ Source: [`StudentController.java`](https://github.com/marcelogdomingues/ulht-dcs
 
 ---
 
-## lusofona-service
+## sis-service
 
 Base URL: `http://localhost:8085/api/v1` · All endpoints require the `apikey` header. These endpoints proxy the external university SIS / SIGES; each expects a body with the student's `userName` and `installKey` (plus optional `language`, `platform`, `application`, `versionCode`).
-Source: [`AuthenticationController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/lusofona-service/src/main/java/pt/ulusofona/digital/wallet/controller/AuthenticationController.java) · [`StudentServicesController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/lusofona-service/src/main/java/pt/ulusofona/digital/wallet/controller/StudentServicesController.java)
+Source: [`AuthenticationController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/sis-service/src/main/java/pt/usis/digital/wallet/controller/AuthenticationController.java) · [`StudentServicesController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/sis-service/src/main/java/pt/usis/digital/wallet/controller/StudentServicesController.java)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -155,7 +155,7 @@ Source: [`AuthenticationController.java`](https://github.com/marcelogdomingues/u
 | POST | `/student/course-credits` | Retrieve course credit totals (total / earned / remaining / GPA) | ✅ |
 
 !!! warning "These are POST, not GET"
-    Although they read data, all `lusofona-service` student-data endpoints are **POST** because they require a request body containing `userName` and `installKey`. Failures return `503` (SIS unavailable / external error), `408` (timeout), or `400` (validation).
+    Although they read data, all `sis-service` student-data endpoints are **POST** because they require a request body containing `userName` and `installKey`. Failures return `503` (SIS unavailable / external error), `408` (timeout), or `400` (validation).
 
 ---
 
@@ -165,7 +165,7 @@ Base URL: `http://localhost:8086/api/v1` · All endpoints require the `apikey` h
 
 ### Wallet
 
-Source: [`WaltidController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/ulusofona/ulht/credential/controller/WaltidController.java) (`@RequestMapping("/wallet")`)
+Source: [`WaltidController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/WaltidController.java) (`@RequestMapping("/wallet")`)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -191,7 +191,7 @@ Source: [`WaltidController.java`](https://github.com/marcelogdomingues/ulht-dcs-
 
 ### Verifier
 
-Source: [`VerifierController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/ulusofona/ulht/credential/controller/VerifierController.java) (`@RequestMapping("/verifier")`)
+Source: [`VerifierController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/VerifierController.java) (`@RequestMapping("/verifier")`)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -203,7 +203,7 @@ Source: [`VerifierController.java`](https://github.com/marcelogdomingues/ulht-dc
 
 ### Issuer (session management)
 
-Source: [`IssuerController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/ulusofona/ulht/credential/controller/IssuerController.java) (`@RequestMapping("/issuer")`)
+Source: [`IssuerController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/IssuerController.java) (`@RequestMapping("/issuer")`)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -220,7 +220,7 @@ Source: [`IssuerController.java`](https://github.com/marcelogdomingues/ulht-dcs-
 
 ### Presentation & health
 
-Source: [`PresentationController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/ulusofona/ulht/credential/controller/PresentationController.java) · [`HealthController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/ulusofona/ulht/credential/controller/HealthController.java)
+Source: [`PresentationController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/PresentationController.java) · [`HealthController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/controller/HealthController.java)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -238,7 +238,7 @@ Source: [`PresentationController.java`](https://github.com/marcelogdomingues/ulh
 ## fulfilment-service
 
 Base URL: `http://localhost:8087/api/v1` · All endpoints require the `apikey` header. Tracks workflow fulfilment and exposes real-time progress.
-Source: [`FulfilmentController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/fulfilment-service/src/main/java/pt/ulusofona/ulht/fulfilment/controller/FulfilmentController.java) (`@RequestMapping("/fulfilment")`)
+Source: [`FulfilmentController.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/fulfilment-service/src/main/java/pt/usis/dcs/fulfilment/controller/FulfilmentController.java) (`@RequestMapping("/fulfilment")`)
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
@@ -333,19 +333,19 @@ Protected endpoints return `401` on a missing/invalid `apikey`. Service errors c
 | --- | --- | --- |
 | `200 OK` | Success; for async issuance, body `status: PROCESSING` | — |
 | `201 Created` | Issuer session created | — |
-| `202 Accepted` | `lusofona-service` login accepted; credentials not yet ready | — |
+| `202 Accepted` | `sis-service` login accepted; credentials not yet ready | — |
 | `204 No Content` | Issuer session deleted | — |
 | `400 Bad Request` | Validation failure / malformed request | `VALIDATION_ERROR` (`CRED-002`), `ILLEGAL_ARGUMENT` (`CRED-003-ARG`) |
 | `401 Unauthorized` | Missing/invalid `apikey` | — |
 | `404 Not Found` | Session/result not found | `WALTID_NOT_FOUND` (`CRED-WALTID-404`) |
-| `408 Request Timeout` | Upstream/SIS call timed out (lusofona-service) | `TIMEOUT` |
+| `408 Request Timeout` | Upstream/SIS call timed out (sis-service) | `TIMEOUT` |
 | `409 Conflict` | Wallet user already exists | `USER_ALREADY_EXISTS` |
 | `500 Internal Server Error` | Unexpected server error | `INTERNAL_SERVER_ERROR` (`CRED-999`) |
 | `503 Service Unavailable` | walt.id (`:7001/:7002/:7003`) or SIS unavailable | `EXTERNAL_SERVICE_ERROR` (`CRED-001`), `WALTID_UNAVAILABLE` (`CRED-WALTID-503`) |
 
 ### credential-service error codes (selected)
 
-From [`ErrorCodes.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/ulusofona/ulht/credential/exception/ErrorCodes.java):
+From [`ErrorCodes.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/exception/ErrorCodes.java):
 
 | Code | Meaning |
 | --- | --- |

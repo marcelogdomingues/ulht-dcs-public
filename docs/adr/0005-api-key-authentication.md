@@ -60,7 +60,7 @@ custom `ApiKeyAuthFilter`.
   least-privilege between callers.
 - **Interim model only** — a shared static key is not sufficient for shared or
   internet-facing deployment; it must be rotated and never shipped as the dev
-  default (`ulht-dev-local-CHANGE-ME`).
+  default (`dcs-dev-local-CHANGE-ME`).
 
 ## Path to production
 

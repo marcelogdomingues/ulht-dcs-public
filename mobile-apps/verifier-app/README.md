@@ -1,4 +1,4 @@
-# ULHT Verifier Mobile App
+# DCS Verifier Mobile App
 
 A Flutter mobile application for bar/office staff to verify student credentials.
 

@@ -50,7 +50,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "max(up{job=~\"student-service|lusofona-service|credential-service|fulfilment-service\"}) by (job)",
+          "expr": "max(up{job=~\"student-service|sis-service|credential-service|fulfilment-service\"}) by (job)",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -645,7 +645,7 @@
   "refresh": "10s",
   "schemaVersion": 27,
   "style": "dark",
-  "tags": ["api", "performance", "ulht"],
+  "tags": ["api", "performance", "dcs"],
   "templating": {
     "list": []
   },
@@ -655,7 +655,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ULHT DCS - API Performance",
+  "title": "DCS - API Performance",
   "uid": "api-performance",
   "version": 1
 }

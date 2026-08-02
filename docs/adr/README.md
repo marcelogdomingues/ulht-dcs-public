@@ -1,7 +1,7 @@
 # Architecture Decision Records (ADRs)
 
 This directory records the significant architectural decisions made for the
-**ULHT Digital Credential System (DCS)** — the event-driven microservices
+**Digital Credential System (DCS)** — the event-driven microservices
 platform that issues, stores, and selectively verifies **W3C Verifiable
 Credentials** for university students (see [Architecture](../ARCHITECTURE.md)).
 

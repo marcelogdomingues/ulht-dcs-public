@@ -1,6 +1,6 @@
 # Configuration
 
-Exhaustive configuration reference for the **ULHT Digital Credential System (DCS)**: every environment variable, the `.env` workflow, Spring profiles and how config is resolved, the complete ports map, a per-service deep-dive, Kafka client settings, and every override mechanism.
+Exhaustive configuration reference for the **Digital Credential System (DCS)**: every environment variable, the `.env` workflow, Spring profiles and how config is resolved, the complete ports map, a per-service deep-dive, Kafka client settings, and every override mechanism.
 
 Related docs: [Getting Started](GETTING_STARTED.md), [Architecture](ARCHITECTURE.md), [Security](SECURITY.md), [Deployment](DEPLOYMENT.md), [API](API.md), [Mobile Apps](MOBILE_APPS.md), [Troubleshooting](TROUBLESHOOTING.md), and the [project home](index.md).
 
@@ -14,11 +14,11 @@ All variables are read from the root `.env` file (copied from [`.env.example`](h
 
 | Variable | Required? | Default | Used by | Description |
 | --- | --- | --- | --- | --- |
-| `APP_API_KEY` | No | `ulht-dev-local-CHANGE-ME` | All 4 services | Shared client/gateway key. Every business endpoint expects this in the `apikey` header. Bound in each `application.yml` as `app.security.api-key`. |
+| `APP_API_KEY` | No | `dcs-dev-local-CHANGE-ME` | All 4 services | Shared client/gateway key. Every business endpoint expects this in the `apikey` header. Bound in each `application.yml` as `app.security.api-key`. |
 | `WALLET_PASSWORD_SECRET` | **Yes** | _(none)_ | credential-service | Secret used to derive per-student wallet passwords (`wallet.password.secret`). No default — the app **fails to start** if unset. |
 | `WALLET_PASSWORD_SALT` | **Yes** | _(none)_ | credential-service | Salt combined with the secret for wallet password derivation (`wallet.password.salt`). No default — the app **fails to start** if unset. |
 | `APP_CORS_ALLOWED_ORIGINS` | No | `http://localhost:8000,http://localhost:3000` | All 4 services | Comma-separated CORS allow-list (`app.cors.allowed-origins`). |
-| `LUSOFONA_API_URL` | No | `https://university-sis.example.edu/api` | lusofona-service | SIS base URL for the `lusofonaClient` Feign client. Placeholder default; override per environment. |
+| `SIS_API_URL` | No | `https://university-sis.example.edu/api` | sis-service | SIS base URL for the `sisClient` Feign client. Placeholder default; override per environment. |
 | `GRAFANA_ADMIN_USER` | No | `admin` | Grafana | Grafana admin username. |
 | `GRAFANA_ADMIN_PASSWORD` | **Yes** | _(none)_ | Grafana | Grafana admin password. Empty value prevents startup. |
 | `KAFKA_UI_USER` | No | `admin` | Kafka-UI | Kafka-UI login username. |
@@ -62,7 +62,7 @@ Two profiles drive the backend. Locally (Maven/IDE) the **default** profile appl
 | Kafka bootstrap | `localhost:29092` | `kafka:9092` |
 | Consul host | `localhost:8500` | `consul:8500` |
 | walt.id issuer / wallet / verifier | `http://localhost:7002 / 7001 / 7003` | `http://issuer-api:7002 / wallet-api:7001 / verifier-api:7003` |
-| lusofona SIS client (`lusofonaClient`) | `${LUSOFONA_API_URL:https://university-sis.example.edu/api}` | usually injected via `SPRING_APPLICATION_JSON` (see override) |
+| sis SIS client (`sisClient`) | `${SIS_API_URL:https://university-sis.example.edu/api}` | usually injected via `SPRING_APPLICATION_JSON` (see override) |
 | Actuator base-path | `/actuator` | `/actuator` |
 | Health path (with `/api/v1` context) | `/api/v1/actuator/health` | `/api/v1/actuator/health` |
 | `management.endpoint.health.show-details` | `when-authorized` | `when-authorized` |
@@ -106,7 +106,7 @@ All ports are bound to `127.0.0.1` (loopback only) — nothing is exposed to the
 | Component | Host port(s) | Container | Notes |
 | --- | --- | --- | --- |
 | student-service | `8084` | 8084 | context-path `/api/v1` |
-| lusofona-service | `8085` | 8085 | context-path `/api/v1` |
+| sis-service | `8085` | 8085 | context-path `/api/v1` |
 | credential-service | `8086` | 8086 | context-path `/api/v1` |
 | fulfilment-service | `8087` | 8087 | context-path `/api/v1` |
 | Kong proxy (HTTP) | `8000` | 8000 | API gateway proxy (partial/aspirational) |
@@ -137,7 +137,7 @@ All ports are bound to `127.0.0.1` (loopback only) — nothing is exposed to the
 ### Common to all four services
 
 - **Context path:** `server.servlet.context-path: /api/v1`.
-- **API key:** business endpoints require the `apikey` header matching `app.security.api-key` (`${APP_API_KEY:ulht-dev-local-CHANGE-ME}`).
+- **API key:** business endpoints require the `apikey` header matching `app.security.api-key` (`${APP_API_KEY:dcs-dev-local-CHANGE-ME}`).
 - **CORS:** `app.cors.allowed-origins` from `${APP_CORS_ALLOWED_ORIGINS:http://localhost:8000,http://localhost:3000}` (comma-separated).
 - **Actuator:** `management.endpoints.web.exposure.include: health,info,prometheus`, `base-path: /actuator`, `health.show-details: when-authorized`, Prometheus registry enabled with `application`/`version` tags.
 - **Consul discovery:** `health-check-path: /api/v1/actuator/health`, `health-check-interval: 10s`.
@@ -152,13 +152,13 @@ The public entry point. Publishes `student.login.requested` and orchestrates the
 - Optional request-reply pattern: `kafka.reply.enabled` (`${KAFKA_REPLY_ENABLED:false}`), reply topic `student.login.reply`, `timeout` `${KAFKA_REPLY_TIMEOUT:30000}` ms.
 - Default Feign timeouts: connect/read `5000` ms, `loggerLevel: basic`.
 
-### lusofona-service (:8085)
+### sis-service (:8085)
 
 SIS / SIGES integration. Notable extras:
 
-- **SIS client URL:** `lusofonaClient` Feign client → `${LUSOFONA_API_URL:https://university-sis.example.edu/api}`. In containers this is typically injected via `SPRING_APPLICATION_JSON` in the override; use the placeholder SIS URL in any shared copy.
-- **resilience4j — circuit breaker** (`lusofonaClient`): `failure-rate-threshold: 50`, `wait-duration-in-open-state: 30s`, `permitted-number-of-calls-in-half-open-state: 5`, `sliding-window-size: 10`, `minimum-number-of-calls: 5`.
-- **resilience4j — retry** (`lusofonaClient`): `max-attempts: 5`, `wait-duration: 1s`, `exponential-backoff-multiplier: 2`, `max-wait-duration: 30s`.
+- **SIS client URL:** `sisClient` Feign client → `${SIS_API_URL:https://university-sis.example.edu/api}`. In containers this is typically injected via `SPRING_APPLICATION_JSON` in the override; use the placeholder SIS URL in any shared copy.
+- **resilience4j — circuit breaker** (`sisClient`): `failure-rate-threshold: 50`, `wait-duration-in-open-state: 30s`, `permitted-number-of-calls-in-half-open-state: 5`, `sliding-window-size: 10`, `minimum-number-of-calls: 5`.
+- **resilience4j — retry** (`sisClient`): `max-attempts: 5`, `wait-duration: 1s`, `exponential-backoff-multiplier: 2`, `max-wait-duration: 30s`.
 - Consul `service-name: waltid-proxy`; topics `student.login.requested` (in) and `student.login.reply`.
 - Feign/PII logging is deliberately set to `WARN` to avoid leaking `installKey`, passwords, and PII.
 
@@ -193,18 +193,18 @@ The internal KRaft **controller** listener is `29093` (not host-published).
 ### Producer / consumer settings (shared across services)
 
 - **Producer:** key serializer `StringSerializer`, value serializer `JsonSerializer`; `max-request-size: 10485760` (10 MB), `buffer-memory: 33554432`, `compression-type: snappy`, `batch-size: 16384`, `linger-ms: 1`.
-- **Consumer:** key deserializer `StringDeserializer`, value deserializer `JsonDeserializer`; `fetch-max-bytes` / `max-partition-fetch-bytes: 10485760`; per-service `group-id` (e.g. `credential-service-group`, `lusofona-service-group`).
+- **Consumer:** key deserializer `StringDeserializer`, value deserializer `JsonDeserializer`; `fetch-max-bytes` / `max-partition-fetch-bytes: 10485760`; per-service `group-id` (e.g. `credential-service-group`, `sis-service-group`).
 - **Listener:** `ack-mode: manual_immediate`, `concurrency: 3`, `poll-timeout: 3000`.
 - **Trusted packages** (JSON deserialization allow-list, `spring.json.trusted.packages`):
-    - credential-service: `pt.ulusofona.ulht.credential,java.util,java.lang`
-    - lusofona-service: `pt.ulusofona.digital.wallet,java.util,java.lang`
+    - credential-service: `com.example.dcs.credential,java.util,java.lang`
+    - sis-service: `com.example.dcs.sis,java.util,java.lang`
 - **credential-service retry/DLT** (`kafka.retry.*`): enabled with DLT (`.DLT` suffix), `default-retry-attempts: 3`, exponential backoff (`initial 1000ms`, `multiplier 2.0`, `max 10000ms`), idempotent producer, `auto-offset-reset: earliest`, `enable-auto-commit: false`, tracing headers (`X-Correlation-ID`, `X-Trace-ID`, etc.).
 
 !!! warning "KRaft data volume"
     If migrating from a non-KRaft (ZooKeeper) layout, wipe the data volume before the first KRaft start:
 
     ```bash
-    docker volume rm ulht-dcs_kafka_data
+    docker volume rm dcs_kafka_data
     ```
 
 ---
@@ -217,7 +217,7 @@ Spring Boot resolves configuration from multiple sources (see the precedence dia
 
 ```bash
 APP_CORS_ALLOWED_ORIGINS=http://localhost:8000,http://localhost:3000
-LUSOFONA_API_URL=https://university-sis.example.edu/api
+SIS_API_URL=https://university-sis.example.edu/api
 ```
 
 **2. Command-line arguments** (`--spring.*`) — highest precedence:
@@ -229,19 +229,19 @@ java -jar credential-service.jar \
   --management.endpoint.health.show-details=when-authorized
 ```
 
-**3. `SPRING_APPLICATION_JSON`** — structured overrides, ideal in compose. This is how the SIS client URL is injected for `lusofona-service` at container runtime:
+**3. `SPRING_APPLICATION_JSON`** — structured overrides, ideal in compose. This is how the SIS client URL is injected for `sis-service` at container runtime:
 
 ```bash
 export SPRING_APPLICATION_JSON='{
   "spring": {
     "cloud": { "openfeign": { "client": { "config": {
-      "lusofonaClient": { "url": "https://university-sis.example.edu/api" }
+      "sisClient": { "url": "https://university-sis.example.edu/api" }
     }}}}
   }
 }'
 ```
 
-In `docker-compose.override.yml` the equivalent lives under the `ulht-lusofona-service` service's `environment.SPRING_APPLICATION_JSON`. Use the placeholder SIS URL in any shared copy.
+In `docker-compose.override.yml` the equivalent lives under the `dcs-sis-service` service's `environment.SPRING_APPLICATION_JSON`. Use the placeholder SIS URL in any shared copy.
 
 For the compose commands and profile activation used by the running stack, see [Getting Started](GETTING_STARTED.md) and [Deployment](DEPLOYMENT.md).
 </content>

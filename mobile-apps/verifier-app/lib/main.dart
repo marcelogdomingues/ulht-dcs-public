@@ -36,7 +36,7 @@ class VerifierApp extends StatelessWidget {
         Provider(create: (_) => ApiService()),
       ],
       child: MaterialApp(
-        title: 'ULHT Verifier App',
+        title: 'DCS Verifier App',
         theme: ThemeData(
           primarySwatch: Colors.green,
           useMaterial3: true,

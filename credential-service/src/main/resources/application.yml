@@ -6,7 +6,7 @@ spring:
     allow-bean-definition-overriding: true
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/credential}
-    username: ${SPRING_DATASOURCE_USERNAME:ulht}
+    username: ${SPRING_DATASOURCE_USERNAME:dcs}
     password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:demo-pg}}
     driver-class-name: org.postgresql.Driver
   jpa:
@@ -54,7 +54,7 @@ spring:
       fetch-max-bytes: 10485760
       max-partition-fetch-bytes: 10485760
       properties:
-        spring.json.trusted.packages: "pt.ulusofona.ulht.credential,java.util,java.lang"
+        spring.json.trusted.packages: "com.example.dcs.credential,java.util,java.lang"
     # Propagate trace context across Kafka (producer -> consumer).
     template:
       observation-enabled: true
@@ -83,7 +83,7 @@ kafka:
     dlt-topic-suffix: ".DLT"
     retry-topic-suffix-pattern: "-retry-{index}"
     max-message-size: 10485760
-    trusted-packages: "pt.ulusofona.ulht.credential,java.util,java.lang"
+    trusted-packages: "com.example.dcs.credential,java.util,java.lang"
     enable-tracing: true
     correlation-id-header: "X-Correlation-ID"
     trace-id-header: "X-Trace-ID"
@@ -130,7 +130,7 @@ kafka:
 # Application security / CORS
 app:
   security:
-    api-key: ${APP_API_KEY:ulht-dev-local-CHANGE-ME}
+    api-key: ${APP_API_KEY:dcs-dev-local-CHANGE-ME}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:8000,http://localhost:3000}
 
@@ -176,7 +176,7 @@ springdoc:
     # OAuth2 Settings
     oauth2RedirectUrl: /swagger-ui/oauth2-redirect.html
     # Custom Headers
-    customSiteTitle: "ULHT Credential Service API"
+    customSiteTitle: "DCS Credential Service API"
     customfavIcon: /favicon.ico
   # Default Media Types
   default-produces-media-type: application/json
@@ -190,16 +190,16 @@ springdoc:
     - /actuator/**
   # Packages to Scan
   packages-to-scan:
-    - pt.ulusofona.ulht.credential.controller
+    - com.example.dcs.credential.controller
   # Info Configuration
   info:
-    title: "ULHT Credential Service API"
+    title: "DCS Credential Service API"
     description: "Comprehensive digital credential management and wallet integration services"
     version: "1.0.0"
     contact:
-      name: "ULHT Development Team"
-      email: "dev@ulusofona.pt"
-      url: "https://www.ulusofona.pt"
+      name: "DCS Development Team"
+      email: "dev@usis.pt"
+      url: "https://www.usis.pt"
     license:
       name: "MIT License"
       url: "https://opensource.org/licenses/MIT"
@@ -414,7 +414,7 @@ credentials:
         placeOfBirth: [placeOfBirth, birthPlace]
       staticFields:
         verificationLevel: "basic"
-        verifiedBy: "ULHT Identity Service"
+        verifiedBy: "DCS Identity Service"
         
     # Boarding Pass - For travel/event credentials
     - id: boarding-pass
@@ -451,7 +451,7 @@ credentials:
 # Resilience4j Configuration
 # Guards the outward walt.id calls (issuer onboarding, credential issuance,
 # verification) in WaltidService / VerifierService via @CircuitBreaker(name="waltid")
-# + @Retry(name="waltid"). Values mirror the lusofona-service SIS client pattern.
+# + @Retry(name="waltid"). Values mirror the sis-service SIS client pattern.
 # NOTE: no @TimeLimiter is configured on purpose - it would force a reactive /
 # CompletableFuture return type and change the (synchronous) service signatures.
 resilience4j:
@@ -477,7 +477,7 @@ logging:
     # Carry trace context (traceId/spanId) in every log line for correlation.
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
   level:
-    pt.ulusofona.ulht.credential: DEBUG
+    com.example.dcs.credential: DEBUG
     org.springframework.kafka: INFO
     org.springframework.cloud.openfeign: WARN
     feign: WARN

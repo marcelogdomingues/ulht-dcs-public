@@ -1,0 +1,112 @@
+{
+  "type": "record",
+  "name": "UniversityRegistrationRequest",
+  "namespace": "com.example.dcs.sis.domain.avro",
+  "doc": "Enhanced Avro schema for new user registration requests with better type safety and validation",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "Unique request identifier for tracing"
+    },
+    {
+      "name": "userName",
+      "type": "string",
+      "doc": "Unique identifier for the user. Can be a string (e.g., student ID like 'a12345678')."
+    },
+    {
+      "name": "language",
+      "type": {
+        "type": "enum",
+        "name": "LanguageCode",
+        "doc": "Supported language codes",
+        "symbols": ["PT", "EN", "ES", "FR"]
+      },
+      "doc": "Preferred language of the user, ISO 639-1 code"
+    },
+    {
+      "name": "platform",
+      "type": {
+        "type": "enum",
+        "name": "PlatformType",
+        "doc": "Supported client platforms",
+        "symbols": ["ios", "android", "web", "desktop"]
+      },
+      "doc": "The client platform from which the service request was made"
+    },
+    {
+      "name": "password",
+      "type": "string",
+      "doc": "The user's chosen password for authentication. This field should be handled securely and never logged directly."
+    },
+    {
+      "name": "application",
+      "type": "string",
+      "doc": "The unique identifier (e.g., bundle ID for iOS, package name for Android) of the university's mobile application"
+    },
+    {
+      "name": "versionCode",
+      "type": "string",
+      "doc": "The internal version code of the client application making the request"
+    },
+    {
+      "name": "requestTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Request timestamp in milliseconds since epoch"
+    },
+    {
+      "name": "correlationId",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Correlation ID for distributed tracing"
+    },
+    {
+      "name": "installKey",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Device installation key"
+    },
+    {
+      "name": "deviceInfo",
+      "type": ["null", {
+        "type": "record",
+        "name": "DeviceInfo",
+        "doc": "Device information for registration",
+        "fields": [
+          {
+            "name": "deviceModel",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "Device model information"
+          },
+          {
+            "name": "osVersion",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "Operating system version"
+          },
+          {
+            "name": "deviceId",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "Unique device identifier"
+          }
+        ]
+      }],
+      "default": null,
+      "doc": "Device information (optional)"
+    },
+    {
+      "name": "registrationMetadata",
+      "type": ["null", {
+        "type": "map",
+        "values": "string"
+      }],
+      "default": null,
+      "doc": "Additional registration metadata"
+    }
+  ]
+}

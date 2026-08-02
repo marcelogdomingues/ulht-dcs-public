@@ -229,7 +229,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ULHT DCS - Kafka Overview",
+  "title": "DCS - Kafka Overview",
   "uid": "kafka-overview",
   "version": 1
 }

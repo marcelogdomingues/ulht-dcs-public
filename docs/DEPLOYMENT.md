@@ -1,6 +1,6 @@
 # Deployment
 
-A complete, hands-on guide to building and running the **ULHT Digital Credential System (DCS)** with Docker Compose — every container, network, volume, healthcheck, environment variable, and build stage, explained. For the system design behind these components, see [Architecture](ARCHITECTURE.md); for the full variable reference, see [Configuration](CONFIGURATION.md); for the auth model and hardening, see [Security](SECURITY.md).
+A complete, hands-on guide to building and running the **Digital Credential System (DCS)** with Docker Compose — every container, network, volume, healthcheck, environment variable, and build stage, explained. For the system design behind these components, see [Architecture](ARCHITECTURE.md); for the full variable reference, see [Configuration](CONFIGURATION.md); for the auth model and hardening, see [Security](SECURITY.md).
 
 > See also: [Architecture](ARCHITECTURE.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) · [CI/CD](CICD.md) · [Project README](index.md)
 
@@ -30,7 +30,7 @@ The repository ships several Compose files. Use the right combination for the jo
 | `docker-compose.override.yml` | Local fixes, layered on top of the primary | busybox-`wget` healthchecks, Kafka-UI port remap, SIS endpoint injection |
 | `docker-compose.infrastructure.yml` | **Observability + infra** stack | Kafka, Consul, Kafka-UI, Kong, Kong-UI **plus** Prometheus, Grafana, Loki, Promtail, kafka-exporter |
 | `docker-compose.dev.yml` | Development variant (run services from your IDE) | infra only, for local IDE workflows |
-| `docker-compose.yml` (root) | **Legacy** — kept for reference | older single-file layout (uses `ulht-waltid-proxy`) |
+| `docker-compose.yml` (root) | **Legacy** — kept for reference | older single-file layout (uses `dcs-waltid-proxy`) |
 
 !!! note "Primary vs. infrastructure"
     `docker-compose.microservices.yml` is what you run day-to-day. The **monitoring** components (Prometheus / Grafana / Loki / Promtail / kafka-exporter) live only in `docker-compose.infrastructure.yml`. Bring up observability separately (see [Observability](#observability)) or compose both files together if you want everything in one `up`.
@@ -55,10 +55,10 @@ flowchart TB
             kafka[("kafka<br/>cp-kafka:8.3.0 (KRaft)<br/>9092 · 29092 · 29093 ctrl")]
             consul[("consul<br/>hashicorp/consul:1.22<br/>8500 · 8600")]
             kui["kafka-ui<br/>kafbat/kafka-ui:v1.5.0<br/>8081→8080 (8181 via override)"]
-            student["ulht-student-service<br/>:8084"]
-            lusofona["ulht-lusofona-service<br/>:8085"]
-            credential["ulht-credential-service<br/>:8086"]
-            fulfilment["ulht-fulfilment-service<br/>:8087"]
+            student["dcs-student-service<br/>:8084"]
+            sis["dcs-sis-service<br/>:8085"]
+            credential["dcs-credential-service<br/>:8086"]
+            fulfilment["dcs-fulfilment-service<br/>:8087"]
         end
 
         subgraph waltid["waltid_network (external: docker-compose_default)"]
@@ -68,25 +68,25 @@ flowchart TB
         end
     end
 
-    kong --> student & lusofona & credential & fulfilment
+    kong --> student & sis & credential & fulfilment
     student --> fulfilment
     student -. request/reply .-> kafka
-    lusofona --> kafka
+    sis --> kafka
     credential --> kafka
     fulfilment --> kafka
     student --> consul
-    lusofona --> consul
+    sis --> consul
     credential --> consul
     fulfilment --> consul
     kui --> kafka
     credential --> issuer & verifier & wallet
-    lusofona -. SIS (external) .-> ext[("University SIS<br/>LUSOFONA_API_URL")]
+    sis -. SIS (external) .-> ext[("University SIS<br/>SIS_API_URL")]
 
     vol1[("kafka_data")] --- kafka
     vol2[("consul_data")] --- consul
 ```
 
-Every microservice, Kong, Kafka-UI, and Kong-UI attach to both `frontend` and `backend`; only the components that must reach walt.id (Kong, Kafka-UI, credential, lusofona) also join `waltid_network`. Kafka and Consul sit on `backend` (Consul also on `frontend`).
+Every microservice, Kong, Kafka-UI, and Kong-UI attach to both `frontend` and `backend`; only the components that must reach walt.id (Kong, Kafka-UI, credential, sis) also join `waltid_network`. Kafka and Consul sit on `backend` (Consul also on `frontend`).
 
 ---
 
@@ -101,7 +101,7 @@ cp .env.example .env
 
 | Variable | Default | Required? |
 | --- | --- | --- |
-| `APP_API_KEY` | `ulht-dev-local-CHANGE-ME` | Change for anything real |
+| `APP_API_KEY` | `dcs-dev-local-CHANGE-ME` | Change for anything real |
 | `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:8000` | No |
 | `WALLET_PASSWORD_SECRET` | *(none)* | **Yes — startup fails if unset** |
 | `WALLET_PASSWORD_SALT` | *(none)* | **Yes — startup fails if unset** |
@@ -109,7 +109,7 @@ cp .env.example .env
 | `KAFKA_UI_PASSWORD` | *(none)* | **Yes — startup fails if unset** |
 | `GRAFANA_ADMIN_USER` | `admin` | No |
 | `GRAFANA_ADMIN_PASSWORD` | *(none)* | **Yes for observability stack** |
-| `LUSOFONA_API_URL` | built-in default | No — point lusofona-service at your SIS |
+| `SIS_API_URL` | built-in default | No — point sis-service at your SIS |
 | `JVM_XMS` / `JVM_XMX` | `-Xms256m` / `-Xmx512m` | No — Kafka-UI JVM sizing |
 
 See [Configuration](CONFIGURATION.md) for the complete reference.
@@ -129,7 +129,7 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 
 ```bash
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml ps
-docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml logs -f ulht-student-service
+docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml logs -f dcs-student-service
 ```
 
 Wait until every container reports `healthy`. First boot can take a minute or two while Kafka forms its KRaft quorum and the services register with Consul.
@@ -147,10 +147,10 @@ flowchart LR
 
     kafka --> kui["kafka-ui"]
     kafka --> credential["credential-service"]
-    kafka --> lusofona["lusofona-service"]
+    kafka --> sis["sis-service"]
     kafka --> fulfilment["fulfilment-service"]
     consul --> credential
-    consul --> lusofona
+    consul --> sis
     consul --> fulfilment
     consul --> student["student-service"]
     kafka --> student
@@ -158,7 +158,7 @@ flowchart LR
     kong["api-gateway (kong)"] --> kongui["kong-ui"]
 ```
 
-`student-service` is intentionally last in the application tier: it depends on `kafka`, `consul`, **and** `ulht-fulfilment-service` being healthy (it calls fulfilment synchronously and via Kafka request/reply).
+`student-service` is intentionally last in the application tier: it depends on `kafka`, `consul`, **and** `dcs-fulfilment-service` being healthy (it calls fulfilment synchronously and via Kafka request/reply).
 
 ### Healthcheck reference
 
@@ -170,7 +170,7 @@ flowchart LR
 | api-gateway (kong) | `kong health` | 30s / 10s / 3 / — |
 | credential-service | `curl -f http://localhost:8086/api/v1/actuator/health` | 30s / 10s / 5 / 60s |
 | student-service | `curl -f http://localhost:8084/api/v1/actuator/health` | 30s / 10s / 5 / 40s |
-| lusofona-service | `curl -f http://localhost:8085/api/v1/actuator/health` | 30s / 10s / 5 / 60s |
+| sis-service | `curl -f http://localhost:8085/api/v1/actuator/health` | 30s / 10s / 5 / 60s |
 | fulfilment-service | `curl -f http://localhost:8087/api/v1/actuator/health` | 30s / 10s / 5 / 60s |
 
 !!! danger "The `curl` healthchecks fail on the alpine runtime — that's what the override fixes"
@@ -190,13 +190,13 @@ The alpine runtime images have no `curl`, so the healthchecks are redefined to u
 
 ```yaml
 services:
-  ulht-student-service:
+  dcs-student-service:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8084/api/v1/actuator/health"]
-  ulht-credential-service:
+  dcs-credential-service:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8086/api/v1/actuator/health"]
-  # …lusofona (8085), fulfilment (8087) likewise
+  # …sis (8085), fulfilment (8087) likewise
 ```
 
 The same fix applies to `kafka-ui` — the `kafbat/kafka-ui` image ships `wget` but not `curl`, so its default `curl` healthcheck reports unhealthy even though the UI is up.
@@ -213,12 +213,12 @@ The override moves Kafka-UI off `8081` (a common local conflict) using the `!ove
 
 The **internal** container port is unchanged, so inter-service links still work; only the host port moves to **`8181`**.
 
-### 3. SIS endpoint via `LUSOFONA_API_URL` / `SPRING_APPLICATION_JSON`
+### 3. SIS endpoint via `SIS_API_URL` / `SPRING_APPLICATION_JSON`
 
-`lusofona-service` talks to the university **Student Information System (SIS)**. The override injects the real endpoint at runtime (via `SPRING_APPLICATION_JSON`, wiring the OpenFeign client `url`). In this public repo the value is a **placeholder** — set `LUSOFONA_API_URL` in your `.env` to your institution's SIS base URL:
+`sis-service` talks to the university **Student Information System (SIS)**. The override injects the real endpoint at runtime (via `SPRING_APPLICATION_JSON`, wiring the OpenFeign client `url`). In this public repo the value is a **placeholder** — set `SIS_API_URL` in your `.env` to your institution's SIS base URL:
 
 ```bash
-LUSOFONA_API_URL=https://your-sis-endpoint/api
+SIS_API_URL=https://your-sis-endpoint/api
 ```
 
 !!! tip
@@ -249,7 +249,7 @@ Kafka runs as **Confluent `cp-kafka:8.3.0` in KRaft mode** — there is **no Zoo
     A `kafka_data` volume that was previously written by a **ZooKeeper-mode** broker holds metadata that is **incompatible with KRaft**. The KRaft broker will refuse to start against it. Wipe the volume before the first KRaft start:
     ```bash
     docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down
-    docker volume rm ulht-dcs_kafka_data     # volume name = <project>_kafka_data
+    docker volume rm dcs_kafka_data     # volume name = <project>_kafka_data
     docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d
     ```
     Confirm the volume name first with `docker volume ls | grep kafka_data`. `down -v` also removes it.
@@ -272,7 +272,7 @@ Kafka runs as **Confluent `cp-kafka:8.3.0` in KRaft mode** — there is **no Zoo
 | Kafka exporter | `danielqsj/kafka-exporter` | `v1.9.0` | infra |
 | credential-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
 | student-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
-| lusofona-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
+| sis-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
 | fulfilment-service | *built locally / GHCR* | Java 25 · Spring Boot 4.1.0 | primary |
 
 ### Exposed ports
@@ -282,7 +282,7 @@ All host ports are bound to **`127.0.0.1` (loopback only)**.
 | Component | Host port(s) | Container |
 | --- | --- | --- |
 | student-service | `8084` | `8084` |
-| lusofona-service | `8085` | `8085` |
+| sis-service | `8085` | `8085` |
 | credential-service | `8086` | `8086` |
 | fulfilment-service | `8087` | `8087` |
 | Kong proxy / admin / TLS | `8000` / `8001` / `8443` / `8444` | same |
@@ -338,14 +338,14 @@ flowchart LR
 The **Docker Build** workflow builds one image per service and, on the default branch or a `v*` tag, pushes to the **GitHub Container Registry (GHCR)** using the built-in `GITHUB_TOKEN`. Image tags:
 
 ```
-ghcr.io/<owner>/ulht-<service>:<git-sha>
-ghcr.io/<owner>/ulht-<service>:latest
+ghcr.io/<owner>/dcs-<service>:<git-sha>
+ghcr.io/<owner>/dcs-<service>:latest
 ```
 
 Pull a published image locally (packages must be public, or `docker login ghcr.io` first):
 
 ```bash
-docker pull ghcr.io/<owner>/ulht-credential-service:latest
+docker pull ghcr.io/<owner>/dcs-credential-service:latest
 ```
 
 To run pre-built images instead of building locally, drop `--build` and set an `image:` per service (or add an override that pins `image:` to the GHCR tag). See [CI/CD](CICD.md) for the full pipeline, triggers, and required repo settings.
@@ -400,7 +400,7 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 
 ## walt.id dependency
 
-The [walt.id](ARCHITECTURE.md) components — issuer (`:7002`), verifier (`:7003`), wallet (`:7001`), plus vc-repo + postgres — are **external to this repo** and run on a shared Docker network joined via `waltid_network` (external name `docker-compose_default`). `credential-service`, `lusofona-service`, Kong, and Kafka-UI join that network.
+The [walt.id](ARCHITECTURE.md) components — issuer (`:7002`), verifier (`:7003`), wallet (`:7001`), plus vc-repo + postgres — are **external to this repo** and run on a shared Docker network joined via `waltid_network` (external name `docker-compose_default`). `credential-service`, `sis-service`, Kong, and Kafka-UI join that network.
 
 !!! warning "issuer-api time-bomb"
     Some `issuer-api` versions crash with `notBefore cannot be in the past` (expired example certificates). Use a patched / newer `issuer-api`. Without walt.id reachable, `credential-service` returns **503** on issuance/verify (auth still passes). See [Troubleshooting](TROUBLESHOOTING.md).
@@ -449,7 +449,7 @@ docker compose -f docker-compose.waltid.yml -p docker-compose down          # ad
 
 ### Revocation-aware issued VCs (ADR 0007)
 
-When issuing against the real walt.id, `credential-service` embeds a W3C `credentialStatus` entry (`type: BitstringStatusListEntry`, `statusPurpose: revocation`, `statusListIndex`, `statusListCredential`) into each VC, pointing at `GET /api/v1/status-list/{listId}`. Set the externally-reachable base URL via `credentials.status.base-url` (default `http://ulht-credential-service:8086/api/v1`) so verifiers can resolve the list. See [ADR 0007](adr/0007-credential-revocation.md).
+When issuing against the real walt.id, `credential-service` embeds a W3C `credentialStatus` entry (`type: BitstringStatusListEntry`, `statusPurpose: revocation`, `statusListIndex`, `statusListCredential`) into each VC, pointing at `GET /api/v1/status-list/{listId}`. Set the externally-reachable base URL via `credentials.status.base-url` (default `http://dcs-credential-service:8086/api/v1`) so verifiers can resolve the list. See [ADR 0007](adr/0007-credential-revocation.md).
 
 ---
 
@@ -463,7 +463,7 @@ request is authenticated with **either** a valid `apikey` **or** a valid
 **Keycloak** (`quay.io/keycloak/keycloak:26.0`, dev mode) importing the realm at
 [`docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json)
 and sets `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` on every service,
-which is what activates the JWT auth leg in `ulht-commons`.
+which is what activates the JWT auth leg in `dcs-commons`.
 
 When this overlay is **absent**, no issuer-uri is set, no `JwtDecoder` is created,
 and the services stay api-key only (byte-for-byte prior behaviour). The api-key
@@ -477,15 +477,15 @@ docker compose \
   up -d --build
 
 # 2) Confirm the realm is up (OIDC discovery -> 200).
-curl -s http://localhost:8080/realms/ulht/.well-known/openid-configuration | head -c 200
+curl -s http://localhost:8080/realms/dcs/.well-known/openid-configuration | head -c 200
 
 # 3) Obtain an access token (direct-access grant; PLACEHOLDER creds — rotate!).
 AT=$(curl -s -X POST \
-  http://localhost:8080/realms/ulht/protocol/openid-connect/token \
+  http://localhost:8080/realms/dcs/protocol/openid-connect/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d grant_type=password \
-  -d client_id=ulht-service \
-  -d client_secret=CHANGE-ME-ulht-client-secret \
+  -d client_id=dcs-service \
+  -d client_secret=CHANGE-ME-dcs-client-secret \
   -d username=demo-user \
   -d password=CHANGE-ME-demo-user-password \
   | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
@@ -503,14 +503,14 @@ curl -s -X POST http://localhost:8084/api/v1/student/issue \
 ```
 
 !!! note "Issuer must match the token's `iss`"
-    The overlay sets the resource-server issuer-uri to `http://keycloak:8080/realms/ulht`
+    The overlay sets the resource-server issuer-uri to `http://keycloak:8080/realms/dcs`
     (the in-network Keycloak hostname). The `iss` claim in a token is derived from
     the host used to reach the token endpoint. Obtaining a token from the host via
-    `http://localhost:8080` yields `iss: http://localhost:8080/realms/ulht`, which
+    `http://localhost:8080` yields `iss: http://localhost:8080/realms/dcs`, which
     will **not** match the in-network issuer-uri. For a working end-to-end host
     call, either point the issuer-uri at the same host the token was minted from,
     or fetch the token from inside the compose network
-    (`docker compose exec ulht-student-service ...` against `http://keycloak:8080`).
+    (`docker compose exec dcs-student-service ...` against `http://keycloak:8080`).
     Keycloak runs with `KC_HOSTNAME_STRICT=false` in dev mode so both hostnames
     resolve.
 
@@ -521,8 +521,8 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.keycloak.ym
 ```
 
 !!! danger "Placeholder credentials"
-    The bundled realm ships a confidential client (`ulht-service`), a public
-    client (`ulht-public`), and a `demo-user` — all with **placeholder**
+    The bundled realm ships a confidential client (`dcs-service`), a public
+    client (`dcs-public`), and a `demo-user` — all with **placeholder**
     `CHANGE-ME-*` secrets/passwords, plus a `KC_BOOTSTRAP_ADMIN_PASSWORD` default
     of `admin`. **Rotate every one** before any non-local use. See
     [Security → OAuth2 / OIDC (optional)](SECURITY.md#oauth2-oidc-optional).
@@ -534,7 +534,7 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.keycloak.ym
 The defaults are tuned for **local development**. Before any real deployment, work through [Security](SECURITY.md) and the [Deployment Checklist](DEPLOYMENT_CHECKLIST.md), and at minimum:
 
 - **Enable TLS everywhere** — terminate HTTPS at the edge (Kong `8443`/`8444`), and use encrypted listeners between components.
-- **Use real secrets** — replace `APP_API_KEY` (default `ulht-dev-local-CHANGE-ME`); set strong `WALLET_PASSWORD_SECRET`, `WALLET_PASSWORD_SALT`, `GRAFANA_ADMIN_PASSWORD`, `KAFKA_UI_PASSWORD`. Never commit `.env`.
+- **Use real secrets** — replace `APP_API_KEY` (default `dcs-dev-local-CHANGE-ME`); set strong `WALLET_PASSWORD_SECRET`, `WALLET_PASSWORD_SALT`, `GRAFANA_ADMIN_PASSWORD`, `KAFKA_UI_PASSWORD`. Never commit `.env`.
 - **Do not expose the Kong admin API (`:8001`)** — keep it loopback-only or firewalled; exposing it hands over full gateway control.
 - **Restrict CORS** — set `APP_CORS_ALLOWED_ORIGINS` to the exact origins you serve, not a wildcard.
 - **Secure Kafka** — enable **SASL/TLS** instead of PLAINTEXT for any non-loopback deployment; the current listeners are PLAINTEXT.

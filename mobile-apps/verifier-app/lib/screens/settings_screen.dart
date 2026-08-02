@@ -182,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(width: 12),
                 const Text(
-                  'ULHT Verifier App',
+                  'DCS Verifier App',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

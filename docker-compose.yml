@@ -129,28 +129,28 @@ services:
   # APPLICATION SERVICES - TIER 4 (DEPENDS ON KAFKA)
   # =============================================================================
 
-  ulht-student-service:
+  dcs-student-service:
     build:
       context: ./student-service
       dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
-    container_name: ulht-student-service
-    hostname: ulht-student-service
+    container_name: dcs-student-service
+    hostname: dcs-student-service
     depends_on:
       kafka:
         condition: service_healthy
-      ulht-fulfilment-service:
+      dcs-fulfilment-service:
         condition: service_healthy
     ports:
       - "127.0.0.1:8084:8084"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      APP_API_KEY: ${APP_API_KEY:-ulht-dev-local-CHANGE-ME}
+      APP_API_KEY: ${APP_API_KEY:-dcs-dev-local-CHANGE-ME}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:8000}
       SERVER_PORT: 8084
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      FULFILMENT_SERVICE_URL: http://ulht-fulfilment-service:8087/api/v1
+      FULFILMENT_SERVICE_URL: http://dcs-fulfilment-service:8087/api/v1
       # Request-Reply Pattern Configuration (Option 2)
       KAFKA_REPLY_ENABLED: "true"
       KAFKA_REPLY_TIMEOUT: "30000"
@@ -176,14 +176,14 @@ services:
           memory: 256M
           cpus: '0.25'
 
-  ulht-waltid-proxy:
+  dcs-waltid-proxy:
     build:
-      context: ./ulht-waltid-proxy
+      context: ./dcs-waltid-proxy
       dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
-    container_name: ulht-waltid-proxy
-    hostname: ulht-waltid-proxy
+    container_name: dcs-waltid-proxy
+    hostname: dcs-waltid-proxy
     depends_on:
       kafka:
         condition: service_healthy
@@ -223,14 +223,14 @@ services:
           memory: 512M
           cpus: '0.5'
 
-  ulht-credential-service:
+  dcs-credential-service:
     build:
       context: ./credential-service
       dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
-    container_name: ulht-credential-service
-    hostname: ulht-credential-service
+    container_name: dcs-credential-service
+    hostname: dcs-credential-service
     depends_on:
       kafka:
         condition: service_healthy
@@ -238,7 +238,7 @@ services:
       - "127.0.0.1:8086:8086"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      APP_API_KEY: ${APP_API_KEY:-ulht-dev-local-CHANGE-ME}
+      APP_API_KEY: ${APP_API_KEY:-dcs-dev-local-CHANGE-ME}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:8000}
       WALLET_PASSWORD_SECRET: ${WALLET_PASSWORD_SECRET:?WALLET_PASSWORD_SECRET required}
       WALLET_PASSWORD_SALT: ${WALLET_PASSWORD_SALT:?WALLET_PASSWORD_SALT required}
@@ -274,14 +274,14 @@ services:
           memory: 512M
           cpus: '0.5'
 
-  ulht-fulfilment-service:
+  dcs-fulfilment-service:
     build:
       context: ./fulfilment-service
       dockerfile: Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: 1
-    container_name: ulht-fulfilment-service
-    hostname: ulht-fulfilment-service
+    container_name: dcs-fulfilment-service
+    hostname: dcs-fulfilment-service
     depends_on:
       kafka:
         condition: service_healthy
@@ -289,7 +289,7 @@ services:
       - "127.0.0.1:8087:8087"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      APP_API_KEY: ${APP_API_KEY:-ulht-dev-local-CHANGE-ME}
+      APP_API_KEY: ${APP_API_KEY:-dcs-dev-local-CHANGE-ME}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:8000}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092

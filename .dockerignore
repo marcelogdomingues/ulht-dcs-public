@@ -1,6 +1,6 @@
-# Docker build context is the repository ROOT (so the shared `ulht-commons`
+# Docker build context is the repository ROOT (so the shared `dcs-commons`
 # module is available alongside each service). Keep the context lean: only the
-# service source trees + ulht-commons are needed; everything below is excluded.
+# service source trees + dcs-commons are needed; everything below is excluded.
 
 # VCS & IDE
 .git

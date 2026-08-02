@@ -20,7 +20,7 @@ class ApiService {
   static String get verifierUrl => '$credentialBase/verifier';
 
   static const String _apiKey =
-      String.fromEnvironment('API_KEY', defaultValue: 'ulht-dev-local-CHANGE-ME');
+      String.fromEnvironment('API_KEY', defaultValue: 'dcs-dev-local-CHANGE-ME');
 
   // Centralized headers so every request carries the required api key.
   static Map<String, String> get _headers => {

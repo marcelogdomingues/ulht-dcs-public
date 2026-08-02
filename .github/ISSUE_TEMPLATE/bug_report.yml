@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a defect in the ULHT Digital Credential System
+description: Report a defect in the Digital Credential System
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
@@ -56,7 +56,7 @@ body:
       description: Select the component most affected.
       options:
         - Student service
-        - Lusofona / SIS service
+        - Sis / SIS service
         - Credential service
         - Fulfilment service
         - API gateway (Kong) / Consul

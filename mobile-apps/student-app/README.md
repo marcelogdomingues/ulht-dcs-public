@@ -1,4 +1,4 @@
-# ULHT Student Mobile App
+# DCS Student Mobile App
 
 A Flutter mobile application for students to manage their digital credentials and wallet.
 

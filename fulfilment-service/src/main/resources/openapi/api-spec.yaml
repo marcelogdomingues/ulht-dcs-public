@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: ULHT Fulfilment Service API
+  title: DCS Fulfilment Service API
   description: |
-    The ULHT Fulfilment Service API provides workflow fulfilment and progress tracking capabilities.
+    The DCS Fulfilment Service API provides workflow fulfilment and progress tracking capabilities.
     This service enables real-time monitoring of credential workflow processes through Server-Sent Events (SSE)
     and REST endpoints for status checking.
     
@@ -15,13 +15,13 @@ info:
     
     ## Usage
     
-    This service is designed to work in conjunction with the Credential Service and Lusofona Service
+    This service is designed to work in conjunction with the Credential Service and Sis Service
     to provide end-to-end workflow tracking capabilities for digital credential issuance processes.
   version: 1.0.0
   contact:
-    name: ULHT Development Team
-    email: dev@ulusofona.pt
-    url: https://www.ulusofona.pt
+    name: DCS Development Team
+    email: dev@usis.pt
+    url: https://www.usis.pt
   license:
     name: MIT License
     url: https://opensource.org/licenses/MIT
@@ -29,9 +29,9 @@ info:
 servers:
   - url: http://localhost:8087/api/v1
     description: Development server
-  - url: https://api.ulusofona.pt/fulfilment/v1
+  - url: https://api.usis.pt/fulfilment/v1
     description: Production server
-  - url: https://staging-api.ulusofona.pt/fulfilment/v1
+  - url: https://staging-api.usis.pt/fulfilment/v1
     description: Staging server
 
 paths:

@@ -36,7 +36,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=~\"ulht-.*\"}",
+          "expr": "{job=\"docker\", container=~\"dcs-.*\"}",
           "refId": "A"
         }
       ],
@@ -71,7 +71,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=\"ulht-student-service\"}",
+          "expr": "{job=\"docker\", container=\"dcs-student-service\"}",
           "refId": "A"
         }
       ],
@@ -106,7 +106,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=\"ulht-credential-service\"}",
+          "expr": "{job=\"docker\", container=\"dcs-credential-service\"}",
           "refId": "A"
         }
       ],
@@ -141,7 +141,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=\"ulht-fulfilment-service\"}",
+          "expr": "{job=\"docker\", container=\"dcs-fulfilment-service\"}",
           "refId": "A"
         }
       ],
@@ -150,7 +150,7 @@
     },
     {
       "datasource": "Loki",
-      "description": "Logs from lusofona-service",
+      "description": "Logs from sis-service",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -176,11 +176,11 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=\"ulht-lusofona-service\"}",
+          "expr": "{job=\"docker\", container=\"dcs-sis-service\"}",
           "refId": "A"
         }
       ],
-      "title": "Lusofona Service Logs",
+      "title": "Sis Service Logs",
       "type": "logs"
     },
     {
@@ -211,7 +211,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=~\"ulht-.*\"} |~ \"(?i)(ERROR|WARN)\"",
+          "expr": "{job=\"docker\", container=~\"dcs-.*\"} |~ \"(?i)(ERROR|WARN)\"",
           "refId": "A"
         }
       ],
@@ -280,7 +280,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(count_over_time({job=\"docker\", container=~\"ulht-.*\"} [1m])) by (level)",
+          "expr": "sum(count_over_time({job=\"docker\", container=~\"dcs-.*\"} [1m])) by (level)",
           "legendFormat": "{{level}}",
           "refId": "A"
         }
@@ -316,7 +316,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=~\"ulht-.*\"} |~ \"(?i)correlationId|correlation_id\"",
+          "expr": "{job=\"docker\", container=~\"dcs-.*\"} |~ \"(?i)correlationId|correlation_id\"",
           "refId": "A"
         }
       ],
@@ -386,7 +386,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=~\"ulht-.*\"} |~ \"(?i)kafka\"",
+          "expr": "{job=\"docker\", container=~\"dcs-.*\"} |~ \"(?i)kafka\"",
           "refId": "A"
         }
       ],
@@ -397,7 +397,7 @@
   "refresh": "10s",
   "schemaVersion": 27,
   "style": "dark",
-  "tags": ["logs", "loki", "ulht"],
+  "tags": ["logs", "loki", "dcs"],
   "templating": {
     "list": [
       {
@@ -462,7 +462,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ULHT DCS - Logs Explorer",
+  "title": "DCS - Logs Explorer",
   "uid": "logs-explorer",
   "version": 1
 }

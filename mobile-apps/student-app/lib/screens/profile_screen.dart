@@ -202,7 +202,7 @@ class ProfileScreen extends StatelessWidget {
                           _buildModernProfileRow(
                             Icons.business_rounded,
                             'Institution',
-                            userProvider.institutionName ?? 'ULHT - Universidade Lusófona',
+                            userProvider.institutionName ?? 'DCS - Example University',
                             Colors.teal,
                           ),
                           if (userProvider.firstName != null && userProvider.firstName!.isNotEmpty) ...[
@@ -317,9 +317,9 @@ class ProfileScreen extends StatelessWidget {
                         () {
                           showAboutDialog(
                             context: context,
-                            applicationName: 'ULHT Student App',
+                            applicationName: 'DCS Student App',
                             applicationVersion: '1.0.0',
-                            applicationLegalese: '© 2024 ULHT',
+                            applicationLegalese: '© 2024 DCS',
                           );
                         },
                       ),

@@ -1,7 +1,7 @@
 {
-  // ULHT Digital Credential System — dev container for GitHub Codespaces / VS Code.
+  // Digital Credential System — dev container for GitHub Codespaces / VS Code.
   // Open in the cloud, then follow the postCreate message to configure .env and start the stack.
-  "name": "ULHT DCS",
+  "name": "DCS",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
 
   "features": {
@@ -20,7 +20,7 @@
   "portsAttributes": {
     "8000": { "label": "Kong Gateway (proxy)" },
     "8084": { "label": "Student Service" },
-    "8085": { "label": "Lusofona Service" },
+    "8085": { "label": "Sis Service" },
     "8086": { "label": "Credential Service" },
     "8087": { "label": "Fulfilment Service" },
     "3000": { "label": "Grafana" },
@@ -29,7 +29,7 @@
   },
 
   // Non-destructive welcome message; does not start containers.
-  "postCreateCommand": "echo '👋 Welcome to ULHT DCS! To start: 1) cp .env.example .env  2) edit .env and set APP_API_KEY, WALLET_PASSWORD_SECRET, WALLET_PASSWORD_SALT, GRAFANA_ADMIN_PASSWORD, KAFKA_UI_PASSWORD  3) docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build  |  Docs: https://marcelogdomingues.github.io/ulht-dcs-public/'",
+  "postCreateCommand": "echo '👋 Welcome to DCS! To start: 1) cp .env.example .env  2) edit .env and set APP_API_KEY, WALLET_PASSWORD_SECRET, WALLET_PASSWORD_SALT, GRAFANA_ADMIN_PASSWORD, KAFKA_UI_PASSWORD  3) docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml up -d --build  |  Docs: https://marcelogdomingues.github.io/ulht-dcs-public/'",
 
   "customizations": {
     "vscode": {

@@ -15,5 +15,5 @@ spring:
 
 logging:
   level:
-    pt.ulusofona: INFO
+    com.example.dcs: INFO
     org.apache.kafka: WARN

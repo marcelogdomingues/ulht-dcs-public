@@ -70,7 +70,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "max(up{job=~\"student-service|lusofona-service|credential-service|fulfilment-service\"}) by (job)",
+          "expr": "max(up{job=~\"student-service|sis-service|credential-service|fulfilment-service\"}) by (job)",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -1211,7 +1211,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "max(process_uptime_seconds{job=~\"student-service|lusofona-service|credential-service|fulfilment-service\"}) by (job)",
+          "expr": "max(process_uptime_seconds{job=~\"student-service|sis-service|credential-service|fulfilment-service\"}) by (job)",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -1339,7 +1339,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "avg(process_files_open{job=~\"student-service|lusofona-service|credential-service|fulfilment-service\"}) by (job)",
+          "expr": "avg(process_files_open{job=~\"student-service|sis-service|credential-service|fulfilment-service\"}) by (job)",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -1416,7 +1416,7 @@
   "refresh": "10s",
   "schemaVersion": 27,
   "style": "dark",
-  "tags": ["microservices", "overview", "ulht"],
+  "tags": ["microservices", "overview", "dcs"],
   "templating": {
     "list": []
   },
@@ -1426,7 +1426,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ULHT DCS - Microservices Overview (Enhanced)",
+  "title": "DCS - Microservices Overview (Enhanced)",
   "uid": "microservices-overview-enhanced",
   "version": 1
 }

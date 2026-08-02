@@ -1,6 +1,6 @@
-# ULHT DCS Monitoring Stack
+# DCS Monitoring Stack
 
-This directory contains the monitoring and observability stack for the ULHT Digital Credential System.
+This directory contains the monitoring and observability stack for the Digital Credential System.
 
 ## Overview
 
@@ -64,7 +64,7 @@ The monitoring stack includes:
 
 ### Microservices
 - **Student Service** (port 8084)
-- **Lusofona Service** (port 8085)
+- **Sis Service** (port 8085)
 - **Credential Service** (port 8086)
 - **Fulfilment Service** (port 8087)
 
@@ -199,7 +199,7 @@ kafka_consumer_lag_sum
 
 ### Service Health Status
 ```promql
-up{job=~"student-service|lusofona-service|credential-service|fulfilment-service"}
+up{job=~"student-service|sis-service|credential-service|fulfilment-service"}
 ```
 
 ## Alerting (Future)
@@ -228,7 +228,7 @@ Loki is Grafana's log aggregation system (similar to Splunk or Datadog) that col
 ### Log Collection
 
 Logs are automatically collected from:
-- All microservices (`ulht-*-service`)
+- All microservices (`dcs-*-service`)
 - Infrastructure services (Kafka, Consul, Prometheus, Grafana, etc.)
 - Logs are parsed to extract:
   - Log level (INFO, WARN, ERROR, etc.)
@@ -290,7 +290,7 @@ sum(count_over_time({job="microservices"} [1m])) by (level)
 
 1. Check if services are running:
    ```bash
-   docker ps | grep ulht
+   docker ps | grep dcs
    ```
 
 2. Check Prometheus targets:
@@ -303,7 +303,7 @@ sum(count_over_time({job="microservices"} [1m])) by (level)
 
 4. Check service logs:
    ```bash
-   docker logs ulht-student-service
+   docker logs dcs-student-service
    ```
 
 ### Grafana not showing data

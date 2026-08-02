@@ -1,19 +1,19 @@
 # Security
 
-This document is the complete security reference for the **ULHT Digital Credential System (DCS)**. It describes the trust model, authentication, secrets handling, transport hardening, and the messaging/data-protection posture — and it is deliberately honest about the line between what is already hardened and what still needs manual work before the stack is exposed beyond `localhost`.
+This document is the complete security reference for the **Digital Credential System (DCS)**. It describes the trust model, authentication, secrets handling, transport hardening, and the messaging/data-protection posture — and it is deliberately honest about the line between what is already hardened and what still needs manual work before the stack is exposed beyond `localhost`.
 
 The stack is a **hardened development / academic deployment**. Sensible, security-conscious defaults are in place (constant-time API-key checks, loopback-only port bindings, no secrets in git, non-root containers, defense-in-depth authentication at every service). A short list of production steps — TLS everywhere, Kafka SASL/TLS, a real secret manager, rotated keys — is required before shared or internet-facing use. Those are enumerated in [Remaining manual / production steps](#remaining-manual-production-steps).
 
 See also: [Architecture](ARCHITECTURE.md) · [Configuration](CONFIGURATION.md) · [Getting Started](GETTING_STARTED.md) · [Deployment](DEPLOYMENT.md) · [Troubleshooting](TROUBLESHOOTING.md) · [API Reference](API.md) · [Project home](index.md)
 
 !!! info "Public repository — placeholders only"
-    This repository is public. Every credential value in this document is a placeholder (`$APP_API_KEY`, `<your-username>`, `<your-install-key>`). The dev default `APP_API_KEY=ulht-dev-local-CHANGE-ME` exists solely to make local bring-up frictionless and **must never be shipped or reused** outside a local machine.
+    This repository is public. Every credential value in this document is a placeholder (`$APP_API_KEY`, `<your-username>`, `<your-install-key>`). The dev default `APP_API_KEY=dcs-dev-local-CHANGE-ME` exists solely to make local bring-up frictionless and **must never be shipped or reused** outside a local machine.
 
 ---
 
 ## Threat model & trust boundaries
 
-The DCS is a set of Spring Boot microservices behind an optional [Kong](https://konghq.com/) API gateway, coordinating asynchronously over Kafka, and delegating all cryptographic credential work to a **walt.id** stack (issuer, verifier, wallet). Academic data originates from the university **Student Information System (SIS / SIGES)**, reached only by `lusofona-service`.
+The DCS is a set of Spring Boot microservices behind an optional [Kong](https://konghq.com/) API gateway, coordinating asynchronously over Kafka, and delegating all cryptographic credential work to a **walt.id** stack (issuer, verifier, wallet). Academic data originates from the university **Student Information System (SIS / SIGES)**, reached only by `sis-service`.
 
 The core design principle is **the gateway is untrusted middleware**. Authentication is *never* delegated solely to the edge — every backend service independently enforces the API key, so bypassing or removing Kong does not weaken authentication.
 
@@ -32,7 +32,7 @@ flowchart LR
 
     subgraph services["Service zone (loopback-bound :8084-8087)"]
         student["student-service :8084\napikey enforced"]
-        lusofona["lusofona-service :8085\napikey enforced"]
+        sis["sis-service :8085\napikey enforced"]
         credential["credential-service :8086\napikey enforced"]
         fulfilment["fulfilment-service :8087\napikey enforced"]
     end
@@ -55,19 +55,19 @@ flowchart LR
     curl -->|apikey| kong
     mobile -.->|apikey, direct port| services
     kong -->|apikey forwarded| student
-    kong -->|apikey forwarded| lusofona
+    kong -->|apikey forwarded| sis
     kong -->|apikey forwarded| credential
     kong -->|apikey forwarded| fulfilment
 
     student <--> kafka
-    lusofona <--> kafka
+    sis <--> kafka
     credential <--> kafka
     fulfilment <--> kafka
 
     credential -->|HTTP| issuer
     credential -->|HTTP| verifier
     credential -->|HTTP| wallet
-    lusofona -->|HTTPS, install key| sis
+    sis -->|HTTPS, install key| sis
 ```
 
 | Boundary | What crosses it | Control at the boundary |
@@ -76,7 +76,7 @@ flowchart LR
 | Client/Gateway ↔ Service | REST + `apikey` header | Spring Security + `ApiKeyAuthFilter` (constant-time compare) on **every** service |
 | Service ↔ Kafka | Event messages | KRaft, PLAINTEXT, loopback-bound (⚠ no auth/TLS yet — see Kafka section) |
 | credential-service ↔ walt.id | HTTP issuance/verification/wallet calls | Internal network; upstream errors mapped to `503` without leaking detail |
-| lusofona-service ↔ SIS | HTTPS + institutional **install key** | Install key is a secret; must be rotated & kept out of git |
+| sis-service ↔ SIS | HTTPS + institutional **install key** | Install key is a secret; must be rotated & kept out of git |
 
 ### Assets worth protecting
 
@@ -126,7 +126,7 @@ Each service ships an identical `ApiKeyAuthFilter extends OncePerRequestFilter`,
 3. On a match, populates the `SecurityContext` with a `UsernamePasswordAuthenticationToken` for principal `"service"` holding `ROLE_SERVICE`.
 4. On no/invalid key, it does **not** set authentication and simply continues the chain — Spring Security's `authorizeHttpRequests` then rejects the (now anonymous) request on any protected path via the configured `AuthenticationEntryPoint`, which sends `401 Unauthorized`.
 
-Source: [`ApiKeyAuthFilter.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/ulusofona/student/config/ApiKeyAuthFilter.java) · [`SecurityConfig.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/ulusofona/student/config/SecurityConfig.java) (identical filter/config in `lusofona-service`, `credential-service`, and `fulfilment-service`).
+Source: [`ApiKeyAuthFilter.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/usis/student/config/ApiKeyAuthFilter.java) · [`SecurityConfig.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/student-service/src/main/java/pt/usis/student/config/SecurityConfig.java) (identical filter/config in `sis-service`, `credential-service`, and `fulfilment-service`).
 
 ### Request flow through the filter
 
@@ -194,14 +194,14 @@ Kong forwards the credential rather than stripping it (`hide_credentials: false`
 Alongside the shared API key, every service can **also** accept an OAuth2 / OIDC
 Bearer JWT — a "dual auth" model: a request is authenticated if it carries
 **either** a valid `apikey` header **or** a valid `Authorization: Bearer <jwt>`.
-This is implemented once in `ulht-commons` so it applies to all four services,
+This is implemented once in `dcs-commons` so it applies to all four services,
 and it is **opt-in**: with no issuer configured the services behave byte-for-byte
 as the api-key-only model above.
 
 | Aspect | Detail |
 | --- | --- |
 | Standard | OpenID Connect / OAuth2 Resource Server (`spring-boot-starter-oauth2-resource-server`) |
-| IdP | Keycloak (optional overlay `docker-compose.keycloak.yml`, realm `ulht`) |
+| IdP | Keycloak (optional overlay `docker-compose.keycloak.yml`, realm `dcs`) |
 | Header | `Authorization: Bearer <access-token>` |
 | Validation | JWT signature verified against the realm JWKS; issuer checked |
 | Activation | Set `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` on the service |
@@ -210,7 +210,7 @@ as the api-key-only model above.
 ### How the dual auth chain works
 
 The single shared `SecurityFilterChain` in
-[`ApiKeySecurityAutoConfiguration`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/ulht-commons/src/main/java/pt/ulusofona/commons/security/ApiKeySecurityAutoConfiguration.java):
+[`ApiKeySecurityAutoConfiguration`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/dcs-commons/src/main/java/pt/usis/commons/security/ApiKeySecurityAutoConfiguration.java):
 
 1. Keeps the public paths public (actuator health/info/prometheus, swagger, api-docs).
 2. Runs the `ApiKeyAuthFilter` first — a valid `apikey` authenticates the request exactly as before (constant-time compare, `ROLE_SERVICE`).
@@ -225,7 +225,7 @@ existing 401 entry point is unchanged.
 
 !!! info "Placeholder credentials"
     The bundled realm ([`docker/keycloak/realm-export.json`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker/keycloak/realm-export.json))
-    ships a confidential client (`ulht-service`), a public client (`ulht-public`),
+    ships a confidential client (`dcs-service`), a public client (`dcs-public`),
     and a `demo-user` — all with **placeholder** secrets/passwords
     (`CHANGE-ME-*`). Rotate every one before any non-local use.
 
@@ -243,11 +243,11 @@ for the step-by-step run, token, and Bearer-call commands, and
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `APP_API_KEY` | Shared API key gating all service/gateway calls | `ulht-dev-local-CHANGE-ME` (dev only — rotate!) |
+| `APP_API_KEY` | Shared API key gating all service/gateway calls | `dcs-dev-local-CHANGE-ME` (dev only — rotate!) |
 | `APP_CORS_ALLOWED_ORIGINS` | Comma-separated CORS origin allow-list | `http://localhost:8000` |
 | `WALLET_PASSWORD_SECRET` | Secret input to per-student wallet-password derivation | **REQUIRED — no default** |
 | `WALLET_PASSWORD_SALT` | Salt input to per-student wallet-password derivation | **REQUIRED — no default** |
-| `LUSOFONA_API_URL` | SIS base URL for `lusofona-service` | Optional override |
+| `SIS_API_URL` | SIS base URL for `sis-service` | Optional override |
 | `GRAFANA_ADMIN_PASSWORD` | Grafana admin password | **REQUIRED — no default** |
 | `KAFKA_UI_PASSWORD` | Kafka-UI login password | **REQUIRED — no default** |
 
@@ -258,7 +258,7 @@ for the step-by-step run, token, and Bearer-call commands, and
 1. It builds a per-student input string combining the student identifier, the student email, the `WALLET_PASSWORD_SECRET`, and the `WALLET_PASSWORD_SALT`.
 2. It hashes that input with **SHA-256** and encodes a fixed-length slice of the digest as the wallet password.
 
-Because both `WALLET_PASSWORD_SECRET` and `WALLET_PASSWORD_SALT` are **required with no defaults**, the stack refuses to derive wallet passwords unless an operator has explicitly set strong values. Each student therefore gets a distinct, deterministic-yet-non-guessable password that is **never stored in plaintext, never logged, and never committed**. The derivation lives in [`StudentWalletService.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/ulusofona/ulht/credential/service/StudentWalletService.java).
+Because both `WALLET_PASSWORD_SECRET` and `WALLET_PASSWORD_SALT` are **required with no defaults**, the stack refuses to derive wallet passwords unless an operator has explicitly set strong values. Each student therefore gets a distinct, deterministic-yet-non-guessable password that is **never stored in plaintext, never logged, and never committed**. The derivation lives in [`StudentWalletService.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/service/StudentWalletService.java).
 
 !!! note "Rotating the wallet secret"
     Because derivation is deterministic, changing `WALLET_PASSWORD_SECRET`/`WALLET_PASSWORD_SALT` changes every derived password. Plan rotation together with wallet re-provisioning.
@@ -300,9 +300,9 @@ CORS is enforced in two places kept in sync: Spring Security's `CorsConfiguratio
 
 - **Selective disclosure.** Credentials can be issued as **SD-JWT** (Selective-Disclosure JWT) so holders reveal only the specific claims a verifier needs, rather than the whole credential. The wallet `match-presentation` flow surfaces disclosure information for a selective-disclosure UI.
 - **Mobile secure storage.** The mobile apps keep wallet material in the platform secure store rather than plain app storage. See [Mobile Apps](MOBILE_APPS.md) for details.
-- **Masking in this public repo.** Sample values throughout the code and docs are masked/placeholder (e.g. `a12345678`, `00000_0000000000000`, `student@ulusofona.pt`, `did:jwk:student123`). No real student identifiers, install keys, or SIS URLs are committed.
-- **PII-aware logging.** Emails are masked before logging; wallet passwords are never logged (not even a prefix); upstream/walt.id error detail is logged **server-side only**, and clients receive a generic, non-leaking message (see [`GlobalExceptionHandler.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/ulusofona/ulht/credential/exception/GlobalExceptionHandler.java)).
-- **No mock fallback for identity data.** If the SIS call fails, `lusofona-service` fails the request rather than issuing credentials from fabricated data — real credentials are only ever backed by real SIS data.
+- **Masking in this public repo.** Sample values throughout the code and docs are masked/placeholder (e.g. `a12345678`, `00000_0000000000000`, `student@usis.pt`, `did:jwk:student123`). No real student identifiers, install keys, or SIS URLs are committed.
+- **PII-aware logging.** Emails are masked before logging; wallet passwords are never logged (not even a prefix); upstream/walt.id error detail is logged **server-side only**, and clients receive a generic, non-leaking message (see [`GlobalExceptionHandler.java`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/credential-service/src/main/java/pt/usis/dcs/credential/exception/GlobalExceptionHandler.java)).
+- **No mock fallback for identity data.** If the SIS call fails, `sis-service` fails the request rather than issuing credentials from fabricated data — real credentials are only ever backed by real SIS data.
 
 ---
 
@@ -311,7 +311,7 @@ CORS is enforced in two places kept in sync: Spring Security's `CorsConfiguratio
 The stack is hardened for development but is **not production-ready** until the following are completed:
 
 1. **Rotate the SIS install key** and **purge it from git history** (e.g. with `git filter-repo`), then force-push and invalidate the old key upstream.
-2. **Never ship the dev API key.** Replace `APP_API_KEY=ulht-dev-local-CHANGE-ME` with a strong, unique key generated per environment; consider per-consumer keys in Kong.
+2. **Never ship the dev API key.** Replace `APP_API_KEY=dcs-dev-local-CHANGE-ME` with a strong, unique key generated per environment; consider per-consumer keys in Kong.
 3. **Enable HTTPS/TLS everywhere.** Terminate TLS at Kong and/or per service and disable plaintext HTTP listeners.
 4. **Add SASL authentication and TLS to Kafka** (and per-topic ACLs) before any shared deployment.
 5. **Do not expose the Kong admin API.** Keep `:8001` (and the status listener) loopback/internal-only; never route it through the public proxy.

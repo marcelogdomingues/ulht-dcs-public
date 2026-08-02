@@ -1,4 +1,4 @@
-# ULHT DCS Makefile
+# DCS Makefile
 # Provides convenient commands for managing the application stack
 
 .PHONY: help start stop restart logs status clean
@@ -9,7 +9,7 @@
 
 # Default target
 help:
-	@echo "ULHT DCS Management Commands"
+	@echo "DCS Management Commands"
 	@echo "============================"
 	@echo ""
 	@echo "Full Stack Commands:"
@@ -40,7 +40,7 @@ help:
 	@echo "  infra-status   - Show infrastructure status"
 	@echo ""
 	@echo "Project Commands (Spring Boot Services):"
-	@echo "  project-start   - Start only the Spring Boot services (ulht-waltid-proxy, ulht-credential-service)"
+	@echo "  project-start   - Start only the Spring Boot services (dcs-waltid-proxy, dcs-credential-service)"
 	@echo "  project-stop    - Stop only the Spring Boot services"
 	@echo "  project-restart - Restart only the Spring Boot services"
 	@echo "  project-logs    - Show Spring Boot services logs"
@@ -49,7 +49,7 @@ help:
 	@echo "Demo Commands (self-contained, mock walt.id + SIS, no .env):"
 	@echo "  demo           - Build and start the one-command demo stack"
 	@echo "  demo-stop      - Stop and remove the demo stack"
-	@echo "  demo-logs      - Follow demo credential + lusofona logs"
+	@echo "  demo-logs      - Follow demo credential + sis logs"
 	@echo "  demo-status    - Show demo services status"
 	@echo ""
 	@echo "Development Commands:"
@@ -60,7 +60,7 @@ help:
 
 # Self-contained demo (mock walt.id + mock SIS, no external deps, no .env)
 demo:
-	@echo "🎬 Starting self-contained ULHT DCS demo (mock walt.id + SIS)..."
+	@echo "🎬 Starting self-contained DCS demo (mock walt.id + SIS)..."
 	docker compose -f docker-compose.demo.yml up -d --build
 	@echo "✅ Demo stack starting. Poll status with: make demo-status"
 	@echo "   Entry point: http://localhost:8084/api/v1/student/issue (apikey: demo-key)"
@@ -72,28 +72,28 @@ demo-stop:
 	@echo "✅ Demo stack stopped!"
 
 demo-logs:
-	docker compose -f docker-compose.demo.yml logs -f credential-service lusofona-service
+	docker compose -f docker-compose.demo.yml logs -f credential-service sis-service
 
 demo-status:
 	docker compose -f docker-compose.demo.yml ps
 
 # Application stack commands
 start:
-	@echo "🚀 Starting ULHT DCS full stack..."
+	@echo "🚀 Starting DCS full stack..."
 	docker-compose up -d
 	@echo "✅ Full stack started!"
 	@echo "📊 Services available at:"
 	@echo "   Kafka UI: http://localhost:8081"
-	@echo "   ulht-waltid-proxy: http://localhost:8085"
-	@echo "   ulht-credential-service: http://localhost:8086"
+	@echo "   dcs-waltid-proxy: http://localhost:8085"
+	@echo "   dcs-credential-service: http://localhost:8086"
 
 stop:
-	@echo "🛑 Stopping ULHT DCS full stack..."
+	@echo "🛑 Stopping DCS full stack..."
 	docker-compose down
 	@echo "✅ Full stack stopped!"
 
 restart:
-	@echo "🔄 Restarting ULHT DCS full stack..."
+	@echo "🔄 Restarting DCS full stack..."
 	docker-compose down
 	docker-compose up -d
 	@echo "✅ Full stack restarted!"
@@ -126,8 +126,8 @@ rebuild:
 
 shell:
 	@echo "🐚 Available services for shell access:"
-	@echo "   make shell SERVICE=ulht-credential-service"
-	@echo "   make shell SERVICE=ulht-waltid-proxy"
+	@echo "   make shell SERVICE=dcs-credential-service"
+	@echo "   make shell SERVICE=dcs-waltid-proxy"
 	@echo "   make shell SERVICE=kafka"
 	@if [ -n "$(SERVICE)" ]; then \
 		echo "Opening shell in $(SERVICE)..."; \
@@ -143,7 +143,7 @@ kafka-logs:
 
 app-logs:
 	@echo "📝 Showing application logs..."
-	docker-compose logs -f ulht-credential-service ulht-waltid-proxy
+	docker-compose logs -f dcs-credential-service dcs-waltid-proxy
 
 
 # Infrastructure (Kafka, Zookeeper) commands
@@ -177,29 +177,29 @@ infra-status:
 # Project (Spring Boot services) commands
 project-start:
 	@echo "🚀 Starting Spring Boot services..."
-	docker-compose up -d ulht-waltid-proxy ulht-credential-service
+	docker-compose up -d dcs-waltid-proxy dcs-credential-service
 	@echo "✅ Spring Boot services started!"
 	@echo "📊 Services available at:"
-	@echo "   ulht-waltid-proxy: http://localhost:8085"
-	@echo "   ulht-credential-service: http://localhost:8086"
+	@echo "   dcs-waltid-proxy: http://localhost:8085"
+	@echo "   dcs-credential-service: http://localhost:8086"
 
 project-stop:
 	@echo "🛑 Stopping Spring Boot services..."
-	docker-compose stop ulht-waltid-proxy ulht-credential-service
+	docker-compose stop dcs-waltid-proxy dcs-credential-service
 	@echo "✅ Spring Boot services stopped!"
 
 project-restart:
 	@echo "🔄 Restarting Spring Boot services..."
-	docker-compose restart ulht-waltid-proxy ulht-credential-service
+	docker-compose restart dcs-waltid-proxy dcs-credential-service
 	@echo "✅ Spring Boot services restarted!"
 
 project-logs:
 	@echo "📝 Showing Spring Boot services logs..."
-	docker-compose logs -f ulht-waltid-proxy ulht-credential-service
+	docker-compose logs -f dcs-waltid-proxy dcs-credential-service
 
 project-status:
 	@echo "📊 Spring Boot Services Status:"
-	docker-compose ps ulht-waltid-proxy ulht-credential-service 
+	docker-compose ps dcs-waltid-proxy dcs-credential-service 
 
 # Development environment commands
 dev-start:
@@ -218,8 +218,8 @@ dev-start:
 	@echo "     Zookeeper: localhost:2181"
 	@echo "     Kafka UI: http://localhost:8081"
 	@echo "   Applications:"
-	@echo "     ulht-waltid-proxy: http://localhost:8085"
-	@echo "     ulht-credential-service: http://localhost:8086"
+	@echo "     dcs-waltid-proxy: http://localhost:8085"
+	@echo "     dcs-credential-service: http://localhost:8086"
 
 dev-stop:
 	@echo "🛑 Stopping complete development environment..."

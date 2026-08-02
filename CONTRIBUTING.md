@@ -1,6 +1,6 @@
-# Contributing to the ULHT Digital Credential System
+# Contributing to the Digital Credential System
 
-Thanks for working on the **ULHT Digital Credential System (DCS)**. This guide is
+Thanks for working on the **Digital Credential System (DCS)**. This guide is
 the practical starting point for anyone building, testing, or extending the system.
 It is written for the university team taking over maintenance of this thesis project.
 
@@ -38,7 +38,7 @@ apps, gateway config, observability config, and docs:
 | Path | What it is |
 | --- | --- |
 | `student-service/` | Orchestrates issuance & verification (Maven service, port `8084`) |
-| `lusofona-service/` | ULHT/SIGES academic data, proxies the external ULHT API (Maven service, port `8085`) |
+| `sis-service/` | University SIS academic data, proxies the external DCS API (Maven service, port `8085`) |
 | `credential-service/` | W3C issuance, wallet & verifier via walt.id (Maven service, port `8086`) |
 | `fulfilment-service/` | Workflow / fulfilment tracking (Maven service, port `8087`) |
 | `mobile-apps/` | Three Flutter apps: `student-app/`, `verifier-app/`, `issuer-app/` |
@@ -61,7 +61,7 @@ walt.id integration — read [Architecture](docs/ARCHITECTURE.md).
 Each service builds and tests independently. From the repo root:
 
 ```bash
-cd student-service        # or credential-service, lusofona-service, fulfilment-service
+cd student-service        # or credential-service, sis-service, fulfilment-service
 mvn -B verify             # compile, run unit tests, and package
 ```
 
@@ -79,7 +79,7 @@ mvn -B test
 To build all four services in one pass locally:
 
 ```bash
-for svc in student-service lusofona-service credential-service fulfilment-service; do
+for svc in student-service sis-service credential-service fulfilment-service; do
   ( cd "$svc" && mvn -B verify ) || break
 done
 ```
@@ -111,7 +111,7 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 
 Always include **both** files: `docker-compose.microservices.yml` is the primary
 stack and `docker-compose.override.yml` layers required local fixes (busybox `wget`
-healthchecks, the Kafka-UI port remap, and the lusofona endpoint). Do **not** run the
+healthchecks, the Kafka-UI port remap, and the sis endpoint). Do **not** run the
 bare root `docker-compose.yml` — it is stale and points at removed directories.
 
 Verify health (public endpoints, no `apikey` needed):
@@ -139,7 +139,7 @@ curl -X POST http://127.0.0.1:8084/api/v1/student/issue \
   -d '{"userName":"<your-username>","installKey":"<your-install-key>"}'
 ```
 
-The dev default is `APP_API_KEY=ulht-dev-local-CHANGE-ME` — fine for a local machine,
+The dev default is `APP_API_KEY=dcs-dev-local-CHANGE-ME` — fine for a local machine,
 never for anything shared. See the [Security](docs/SECURITY.md) auth model and the
 full [API Reference](docs/API.md).
 

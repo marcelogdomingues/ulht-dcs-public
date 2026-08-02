@@ -14,5 +14,5 @@ spring:
 # Service URLs for Docker
 services:
   fulfilment:
-    url: ${FULFILMENT_SERVICE_URL:http://ulht-fulfilment-service:8087/api/v1}
+    url: ${FULFILMENT_SERVICE_URL:http://dcs-fulfilment-service:8087/api/v1}
 

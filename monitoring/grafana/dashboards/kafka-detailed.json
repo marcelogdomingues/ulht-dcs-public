@@ -726,7 +726,7 @@
   "refresh": "10s",
   "schemaVersion": 27,
   "style": "dark",
-  "tags": ["kafka", "messaging", "ulht"],
+  "tags": ["kafka", "messaging", "dcs"],
   "templating": {
     "list": []
   },
@@ -736,7 +736,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ULHT DCS - Kafka Detailed",
+  "title": "DCS - Kafka Detailed",
   "uid": "kafka-detailed",
   "version": 1
 }

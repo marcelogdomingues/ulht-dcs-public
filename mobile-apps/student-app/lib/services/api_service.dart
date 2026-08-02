@@ -5,7 +5,7 @@ import 'secure_store.dart';
 class ApiService {
   // The apps talk DIRECTLY to each backend service on its own port (there is
   // no single working gateway: different features live on different services,
-  // and student-service and lusofona-service both serve '/api/v1/student/*'
+  // and student-service and sis-service both serve '/api/v1/student/*'
   // paths, a collision a gateway cannot disambiguate). Each service base URL
   // and the shared API key are build-time configurable via --dart-define;
   // dev defaults point at the local per-service ports. Every request carries
@@ -21,10 +21,10 @@ class ApiService {
       'STUDENT_SVC_URL',
       defaultValue: 'http://localhost:8084/api/v1');
 
-  // lusofona-service: /student/schedule, /student/enrolment, /student/grades,
+  // sis-service: /student/schedule, /student/enrolment, /student/grades,
   // /student/course-credits, /student/login
-  static const String _lusofonaSvcUrl = String.fromEnvironment(
-      'LUSOFONA_SVC_URL',
+  static const String _sisSvcUrl = String.fromEnvironment(
+      'SIS_SVC_URL',
       defaultValue: 'http://localhost:8085/api/v1');
 
   // credential-service: /wallet/..., /issuer/...
@@ -40,12 +40,12 @@ class ApiService {
   // Getter names kept stable so existing call sites keep working; each now
   // points at the correct direct-service base.
   static String get apiV1 => _studentSvcUrl;
-  static String get lusofonaUrl => _lusofonaSvcUrl;
+  static String get sisUrl => _sisSvcUrl;
   static String get credentialUrl => _credentialSvcUrl;
   static String get fulfilmentUrl => _fulfilmentSvcUrl;
 
   static const String _apiKey =
-      String.fromEnvironment('API_KEY', defaultValue: 'ulht-dev-local-CHANGE-ME');
+      String.fromEnvironment('API_KEY', defaultValue: 'dcs-dev-local-CHANGE-ME');
 
   // Centralized headers so every request carries the required api key.
   static Map<String, String> get _headers => {
@@ -116,7 +116,7 @@ class ApiService {
           'installKey': installKey,
           'language': 'PT',
           'platform': 'ios',
-          'application': 'org.cofac.mobile.ulht',
+          'application': 'com.example.dcs.mobile',
           'versionCode': '1601206',
         }),
       );
@@ -235,14 +235,14 @@ class ApiService {
   Future<List<dynamic>> getStudentSchedule() async {
     try {
       final response = await http.post(
-        Uri.parse('$lusofonaUrl/student/schedule'),
+        Uri.parse('$sisUrl/student/schedule'),
         headers: _headers,
         body: jsonEncode({
           'userName': studentUsername,
           'installKey': installKey,
           'language': 'PT',
           'platform': 'ios',
-          'application': 'org.cofac.mobile.ulht',
+          'application': 'com.example.dcs.mobile',
           'versionCode': '1601206',
         }),
       );
@@ -262,14 +262,14 @@ class ApiService {
   Future<Map<String, dynamic>> getStudentEnrolments() async {
     try {
       final response = await http.post(
-        Uri.parse('$lusofonaUrl/student/enrolment'),
+        Uri.parse('$sisUrl/student/enrolment'),
         headers: _headers,
         body: jsonEncode({
           'userName': studentUsername,
           'installKey': installKey,
           'language': 'PT',
           'platform': 'ios',
-          'application': 'org.cofac.mobile.ulht',
+          'application': 'com.example.dcs.mobile',
           'versionCode': '1601206',
         }),
       );
@@ -287,14 +287,14 @@ class ApiService {
   Future<Map<String, dynamic>> getStudentGrades() async {
     try {
       final response = await http.post(
-        Uri.parse('$lusofonaUrl/student/grades'),
+        Uri.parse('$sisUrl/student/grades'),
         headers: _headers,
         body: jsonEncode({
           'userName': studentUsername,
           'installKey': installKey,
           'language': 'PT',
           'platform': 'ios',
-          'application': 'org.cofac.mobile.ulht',
+          'application': 'com.example.dcs.mobile',
           'versionCode': '1601206',
         }),
       );
@@ -312,14 +312,14 @@ class ApiService {
   Future<Map<String, dynamic>> getStudentCourseCredits() async {
     try {
       final response = await http.post(
-        Uri.parse('$lusofonaUrl/student/course-credits'),
+        Uri.parse('$sisUrl/student/course-credits'),
         headers: _headers,
         body: jsonEncode({
           'userName': studentUsername,
           'installKey': installKey,
           'language': 'PT',
           'platform': 'ios',
-          'application': 'org.cofac.mobile.ulht',
+          'application': 'com.example.dcs.mobile',
           'versionCode': '1601206',
         }),
       );
@@ -337,14 +337,14 @@ class ApiService {
   Future<Map<String, dynamic>> login() async {
     try {
       final response = await http.post(
-        Uri.parse('$lusofonaUrl/student/login'),
+        Uri.parse('$sisUrl/student/login'),
         headers: _headers,
         body: jsonEncode({
           'userName': studentUsername,
           'installKey': installKey,
           'language': 'PT',
           'platform': 'ios',
-          'application': 'org.cofac.mobile.ulht',
+          'application': 'com.example.dcs.mobile',
           'versionCode': '1601206',
         }),
       );

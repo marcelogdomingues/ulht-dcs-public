@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide is a **complete onboarding walkthrough** for the **ULHT Digital Credential System (DCS)** — from installing prerequisites to issuing your first W3C Verifiable Credential end-to-end. It explains not just *what* to run, but *why* each step matters and what happens under the hood.
+This guide is a **complete onboarding walkthrough** for the **Digital Credential System (DCS)** — from installing prerequisites to issuing your first W3C Verifiable Credential end-to-end. It explains not just *what* to run, but *why* each step matters and what happens under the hood.
 
 For deeper reference material, see [Configuration](CONFIGURATION.md), [Architecture](ARCHITECTURE.md), [Security](SECURITY.md), [Deployment](DEPLOYMENT.md), [API](API.md), [Mobile Apps](MOBILE_APPS.md), and [Troubleshooting](TROUBLESHOOTING.md). See also the [project home](index.md).
 
@@ -77,8 +77,8 @@ dart --version
 ## 1. Clone the repository
 
 ```bash
-git clone https://github.com/marcelogdomingues/ulht-dcs-public.git ulht-dcs
-cd ulht-dcs
+git clone https://github.com/marcelogdomingues/ulht-dcs-public.git dcs
+cd dcs
 ```
 
 The repository layout you will use most:
@@ -88,7 +88,7 @@ The repository layout you will use most:
 | [`.env.example`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/.env.example) | Template for the secrets/config file you must create |
 | [`docker-compose.microservices.yml`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/docker-compose.microservices.yml) | The compose file that builds & runs the four services + infra |
 | `docker-compose.override.yml` | Local-only overrides (health checks, port remaps) — you create this; see below |
-| `credential-service/`, `student-service/`, `lusofona-service/`, `fulfilment-service/` | The four Spring Boot microservices |
+| `credential-service/`, `student-service/`, `sis-service/`, `fulfilment-service/` | The four Spring Boot microservices |
 | `mobile-apps/` | The Flutter student & verifier apps |
 
 ---
@@ -111,9 +111,9 @@ Then open `.env` and fill in the required variables. **This is not optional.** S
 | `WALLET_PASSWORD_SALT` | **Yes** | Salt combined with the secret for password derivation. Also `${WALLET_PASSWORD_SALT}` with no default — same fail-fast behaviour. |
 | `GRAFANA_ADMIN_PASSWORD` | **Yes** | Grafana refuses to boot with an empty admin password. |
 | `KAFKA_UI_PASSWORD` | **Yes** | Kafka-UI login password. |
-| `APP_API_KEY` | Recommended | The shared `apikey` gating every business endpoint. Has a dev default (`ulht-dev-local-CHANGE-ME`) — change it, but the stack starts without you setting it. |
+| `APP_API_KEY` | Recommended | The shared `apikey` gating every business endpoint. Has a dev default (`dcs-dev-local-CHANGE-ME`) — change it, but the stack starts without you setting it. |
 | `APP_CORS_ALLOWED_ORIGINS` | No | CORS allow-list; defaults to the Kong proxy origin. |
-| `LUSOFONA_API_URL` | No | SIS base URL for `lusofona-service`; overrides the built-in placeholder. |
+| `SIS_API_URL` | No | SIS base URL for `sis-service`; overrides the built-in placeholder. |
 | `GRAFANA_ADMIN_USER` / `KAFKA_UI_USER` | No | Default to `admin`. |
 
 !!! warning "Fail-fast is intentional"
@@ -154,16 +154,16 @@ What this does:
 
     ```yaml
     services:
-      ulht-student-service:
+      dcs-student-service:
         healthcheck:
           test: ["CMD", "wget", "-qO-", "http://localhost:8084/api/v1/actuator/health"]
-      ulht-lusofona-service:
+      dcs-sis-service:
         healthcheck:
           test: ["CMD", "wget", "-qO-", "http://localhost:8085/api/v1/actuator/health"]
-      ulht-credential-service:
+      dcs-credential-service:
         healthcheck:
           test: ["CMD", "wget", "-qO-", "http://localhost:8086/api/v1/actuator/health"]
-      ulht-fulfilment-service:
+      dcs-fulfilment-service:
         healthcheck:
           test: ["CMD", "wget", "-qO-", "http://localhost:8087/api/v1/actuator/health"]
       kafka-ui:
@@ -173,13 +173,13 @@ What this does:
           test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
     ```
 
-    `lusofona-service` additionally needs its SIS client URL pointed at your institution's SIS via `SPRING_APPLICATION_JSON` (see [Configuration](CONFIGURATION.md)); use the placeholder `https://university-sis.example.edu/api` in any shared copy.
+    `sis-service` additionally needs its SIS client URL pointed at your institution's SIS via `SPRING_APPLICATION_JSON` (see [Configuration](CONFIGURATION.md)); use the placeholder `https://university-sis.example.edu/api` in any shared copy.
 
 !!! warning "Kafka KRaft data volume"
     The broker runs in **KRaft** mode (no ZooKeeper). If you are migrating from an older ZooKeeper-based layout, wipe the Kafka data volume before the first KRaft start, or the broker will refuse to format:
 
     ```bash
-    docker volume rm ulht-dcs_kafka_data
+    docker volume rm dcs_kafka_data
     ```
 
 ---
@@ -192,13 +192,13 @@ First confirm the containers are up and reporting healthy:
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml ps
 ```
 
-Look for `running (healthy)` on each `ulht-*` service. Startup takes a bit — services register with Consul and connect to Kafka before they report `UP`.
+Look for `running (healthy)` on each `dcs-*` service. Startup takes a bit — services register with Consul and connect to Kafka before they report `UP`.
 
 Every service exposes a **public** health endpoint (no `apikey` required). Note the context path `/api/v1` and the actuator base-path `/actuator`, so the full path is **`/api/v1/actuator/health`**:
 
 ```bash
 curl http://127.0.0.1:8084/api/v1/actuator/health   # student-service
-curl http://127.0.0.1:8085/api/v1/actuator/health   # lusofona-service
+curl http://127.0.0.1:8085/api/v1/actuator/health   # sis-service
 curl http://127.0.0.1:8086/api/v1/actuator/health   # credential-service
 curl http://127.0.0.1:8087/api/v1/actuator/health   # fulfilment-service
 ```
@@ -278,7 +278,7 @@ sequenceDiagram
     actor You
     participant SS as student-service :8084
     participant K as Kafka (KRaft)
-    participant LS as lusofona-service :8085
+    participant LS as sis-service :8085
     participant CS as credential-service :8086
     participant W as walt.id issuer :7002
     participant FS as fulfilment-service :8087
@@ -345,7 +345,7 @@ If you want to build and test just one service with Maven (Java 25 + Maven 3.9 r
 cd credential-service && mvn -B verify
 ```
 
-`mvn -B verify` runs a non-interactive (batch) build including unit and integration tests. Swap the directory for `student-service`, `lusofona-service`, or `fulfilment-service` as needed. For a faster package-only build, use `mvn -q clean package`.
+`mvn -B verify` runs a non-interactive (batch) build including unit and integration tests. Swap the directory for `student-service`, `sis-service`, or `fulfilment-service` as needed. For a faster package-only build, use `mvn -q clean package`.
 
 When you run a service outside Docker it uses the **default (local)** Spring profile — Kafka bootstrap `localhost:29092`, Consul on `localhost`, and walt.id on `localhost:700x`. See the profile differences in [Configuration](CONFIGURATION.md).
 
@@ -364,7 +364,7 @@ The Flutter apps (student and verifier) call the services directly by loopback p
 | `credential-service` exits on startup | `WALLET_PASSWORD_SECRET` / `WALLET_PASSWORD_SALT` missing from `.env` | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) · [CONFIGURATION.md](CONFIGURATION.md) |
 | Grafana / Kafka-UI won't start | Empty `GRAFANA_ADMIN_PASSWORD` / `KAFKA_UI_PASSWORD` | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
 | Container marked `unhealthy` but service works | Health check uses `curl` (absent) — apply the `wget` override | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
-| Kafka refuses to start after an upgrade | Stale non-KRaft data volume | `docker volume rm ulht-dcs_kafka_data` |
+| Kafka refuses to start after an upgrade | Stale non-KRaft data volume | `docker volume rm dcs_kafka_data` |
 | Business endpoint returns `401` | Missing/incorrect `apikey` header | [SECURITY.md](SECURITY.md) |
 | Issuance returns `503` | walt.id backend not running | [walt-id-backend](#walt-id-backend) · [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
 | `issuer-api` crash: `notBefore cannot be in the past` | Expired example certs in old issuer-api | Use patched issuer-api (0.22.0) · [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |

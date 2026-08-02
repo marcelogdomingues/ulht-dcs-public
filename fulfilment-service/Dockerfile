@@ -2,7 +2,7 @@
 #
 # NOTE: the build context for this Dockerfile is the REPOSITORY ROOT (see
 # docker-compose.*.yml -> build.context: . / dockerfile: fulfilment-service/Dockerfile),
-# because the service depends on the shared `ulht-commons` module which lives at
+# because the service depends on the shared `dcs-commons` module which lives at
 # the repo root and must be installed into the local Maven repo before the
 # service is packaged.
 FROM maven:3.9-eclipse-temurin-25 AS builder
@@ -10,10 +10,10 @@ FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /build
 
 # 1. Build & install the shared commons module into the local Maven repository.
-COPY ulht-commons ./ulht-commons
-RUN mvn -q -f ulht-commons/pom.xml -DskipTests install
+COPY dcs-commons ./dcs-commons
+RUN mvn -q -f dcs-commons/pom.xml -DskipTests install
 
-# 2. Build the service (now that pt.ulusofona:ulht-commons is available).
+# 2. Build the service (now that com.example.dcs:dcs-commons is available).
 COPY fulfilment-service ./fulfilment-service
 RUN mvn -q -f fulfilment-service/pom.xml clean package -DskipTests -Dmaven.test.skip=true
 

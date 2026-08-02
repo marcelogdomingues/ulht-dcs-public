@@ -1,0 +1,29 @@
+# =============================================================================
+# DEMO profile - sis-service
+# =============================================================================
+# Activated alongside the `docker` profile (SPRING_PROFILES_INCLUDE=demo).
+# Real Kafka + Consul wiring is inherited from application-docker.yml; this file
+# only marks that the SIS (university Student Information System) is mocked.
+#
+# The mock SisClient bean is provided by
+#   com.example.dcs.sis.config.DemoConfiguration
+# which is @Primary + @Profile("demo"), so NO real SIS is called.
+# All demo data is illustrative and obviously fake.
+# =============================================================================
+demo:
+  enabled: true
+  description: "Mock university SIS (SisClient) - no external dependencies"
+
+# Point the Feign client at an obviously-fake placeholder so nothing real is
+# ever contacted even if the mock were bypassed.
+spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          sisClient:
+            url: http://university-sis.demo.invalid/api
+
+logging:
+  level:
+    com.example.dcs.sis.config.DemoConfiguration: INFO

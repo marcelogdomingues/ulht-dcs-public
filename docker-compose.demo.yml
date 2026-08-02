@@ -1,5 +1,5 @@
 # =============================================================================
-# ULHT Digital Credential System - SELF-CONTAINED DEMO
+# Digital Credential System - SELF-CONTAINED DEMO
 # =============================================================================
 # One command, no external services:
 #
@@ -89,7 +89,7 @@ services:
     hostname: postgres
     environment:
       POSTGRES_DB: fulfilment
-      POSTGRES_USER: ulht
+      POSTGRES_USER: dcs
       POSTGRES_PASSWORD: demo-pg
     # Creates the extra `credential` database on first init (fulfilment is created
     # by POSTGRES_DB above; credential-service uses its own DB on this container).
@@ -98,7 +98,7 @@ services:
     # No host port published — services reach it via the `postgres` hostname on the
     # demo network. (Avoids clashing with any Postgres already on the host's 5432.)
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ulht -d fulfilment"]
+      test: ["CMD-SHELL", "pg_isready -U dcs -d fulfilment"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -115,7 +115,7 @@ services:
       context: .
       dockerfile: fulfilment-service/Dockerfile
     container_name: demo-fulfilment-service
-    hostname: ulht-fulfilment-service
+    hostname: dcs-fulfilment-service
     depends_on:
       consul:
         condition: service_healthy
@@ -131,7 +131,7 @@ services:
       SPRING_CLOUD_CONSUL_HOST: consul
       SPRING_CLOUD_CONSUL_PORT: 8500
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fulfilment
-      SPRING_DATASOURCE_USERNAME: ulht
+      SPRING_DATASOURCE_USERNAME: dcs
       SPRING_DATASOURCE_PASSWORD: demo-pg
       APP_API_KEY: demo-key
       APP_CORS_ALLOWED_ORIGINS: http://localhost:8000
@@ -151,14 +151,14 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # Lusofona service (university SIS proxy - MOCKED in demo)
+  # Sis service (university SIS proxy - MOCKED in demo)
   # ---------------------------------------------------------------------------
-  lusofona-service:
+  sis-service:
     build:
       context: .
-      dockerfile: lusofona-service/Dockerfile
-    container_name: demo-lusofona-service
-    hostname: ulht-lusofona-service
+      dockerfile: sis-service/Dockerfile
+    container_name: demo-sis-service
+    hostname: dcs-sis-service
     depends_on:
       consul:
         condition: service_healthy
@@ -196,7 +196,7 @@ services:
       context: .
       dockerfile: credential-service/Dockerfile
     container_name: demo-credential-service
-    hostname: ulht-credential-service
+    hostname: dcs-credential-service
     depends_on:
       consul:
         condition: service_healthy
@@ -212,7 +212,7 @@ services:
       SPRING_CLOUD_CONSUL_HOST: consul
       SPRING_CLOUD_CONSUL_PORT: 8500
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/credential
-      SPRING_DATASOURCE_USERNAME: ulht
+      SPRING_DATASOURCE_USERNAME: dcs
       SPRING_DATASOURCE_PASSWORD: demo-pg
       APP_API_KEY: demo-key
       APP_CORS_ALLOWED_ORIGINS: http://localhost:8000
@@ -241,7 +241,7 @@ services:
       context: .
       dockerfile: student-service/Dockerfile
     container_name: demo-student-service
-    hostname: ulht-student-service
+    hostname: dcs-student-service
     depends_on:
       consul:
         condition: service_healthy
@@ -262,7 +262,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:9092
-      FULFILMENT_SERVICE_URL: http://ulht-fulfilment-service:8087/api/v1
+      FULFILMENT_SERVICE_URL: http://dcs-fulfilment-service:8087/api/v1
       KAFKA_REPLY_ENABLED: "true"
       KAFKA_REPLY_TIMEOUT: "30000"
       JAVA_OPTS: -Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseContainerSupport

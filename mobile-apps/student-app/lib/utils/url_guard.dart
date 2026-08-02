@@ -27,7 +27,7 @@ class UrlGuard {
   /// replace them with the real university gateway / SIS domain suffix(es).
   static const List<String> _allowedHostSuffixes = [
     'university-sis.example.edu',
-    'ulusofona.pt',
+    'usis.pt',
   ];
 
   static bool isAllowed(Uri uri) {

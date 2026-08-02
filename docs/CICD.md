@@ -1,6 +1,6 @@
 # CI/CD
 
-A thorough guide to continuous integration and delivery for the **ULHT Digital Credential System (DCS)**, implemented with **GitHub Actions**. It explains **every workflow** in `.github/workflows/`, what triggers each one, the path filters that scope them, how to read a failure, the repository settings and secrets they need, and how to reproduce every check locally. Dependabot and the docs-site pipeline are covered too.
+A thorough guide to continuous integration and delivery for the **Digital Credential System (DCS)**, implemented with **GitHub Actions**. It explains **every workflow** in `.github/workflows/`, what triggers each one, the path filters that scope them, how to read a failure, the repository settings and secrets they need, and how to reproduce every check locally. Dependabot and the docs-site pipeline are covered too.
 
 > See also: [Contributing](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/CONTRIBUTING.md) · [Deployment](DEPLOYMENT.md) · [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) · [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Getting Started](GETTING_STARTED.md) · [Project README](index.md)
 
@@ -43,7 +43,7 @@ flowchart TB
     docspush --> docs
 
     subgraph backend["Backend CI (matrix ×4)"]
-        be["mvn -B -ntp verify<br/>credential · student · lusofona · fulfilment"]
+        be["mvn -B -ntp verify<br/>credential · student · sis · fulfilment"]
         be --> jars[["*-jar artifacts (7d)"]]
     end
 
@@ -54,7 +54,7 @@ flowchart TB
     subgraph docker["Docker Build"]
         dvalidate["compose-validate<br/>docker compose config"]
         dbuild["images (matrix ×4)<br/>build multi-stage Dockerfiles"]
-        ghcr[("GHCR<br/>ghcr.io/&lt;owner&gt;/ulht-*:sha + :latest")]
+        ghcr[("GHCR<br/>ghcr.io/&lt;owner&gt;/dcs-*:sha + :latest")]
     end
 
     subgraph security["CodeQL"]
@@ -74,7 +74,7 @@ flowchart TB
 
 - `credential-service`
 - `student-service`
-- `lusofona-service`
+- `sis-service`
 - `fulfilment-service`
 
 Each job checks out the repo, sets up **JDK 25 (Temurin)** via `actions/setup-java@v4` with `cache: maven`, changes into the service directory, and runs:
@@ -93,7 +93,7 @@ Because the four services are **independent** Maven projects (no parent/aggregat
 paths:
   - "credential-service/**"
   - "student-service/**"
-  - "lusofona-service/**"
+  - "sis-service/**"
   - "fulfilment-service/**"
   - ".github/workflows/backend.yml"
 ```
@@ -151,8 +151,8 @@ A matrix (`fail-fast: false`) over the four services. Each job sets up Buildx an
 - On **push to `main`** or a **`v*` tag**: after `docker/login-action` to `ghcr.io` (username `github.actor`, password `GITHUB_TOKEN`), images are **pushed to GHCR**:
 
 ```
-ghcr.io/<owner>/ulht-<service>:<git-sha>
-ghcr.io/<owner>/ulht-<service>:latest
+ghcr.io/<owner>/dcs-<service>:<git-sha>
+ghcr.io/<owner>/dcs-<service>:latest
 ```
 
 The `images` job declares `permissions: packages: write` so `GITHUB_TOKEN` can push.
@@ -248,7 +248,7 @@ Reproduce each CI gate before pushing:
 
 ```bash
 # Backend — per service (NO Docker required)
-cd credential-service && mvn -B -ntp verify   # repeat for student/lusofona/fulfilment
+cd credential-service && mvn -B -ntp verify   # repeat for student/sis/fulfilment
 
 # Mobile — per app
 cd mobile-apps/student-app && flutter pub get && flutter analyze && flutter test

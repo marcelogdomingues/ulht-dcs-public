@@ -1,5 +1,5 @@
 # =============================================================================
-# ULHT DCS - OPTIONAL OAuth2 / OIDC overlay (Keycloak)
+# DCS - OPTIONAL OAuth2 / OIDC overlay (Keycloak)
 # =============================================================================
 # ADDITIVE overlay that enables the SECOND, optional authentication leg:
 # a valid `Authorization: Bearer <jwt>` from Keycloak is accepted ALONGSIDE the
@@ -16,7 +16,7 @@
 #
 # This starts Keycloak (dev mode) importing docker/keycloak/realm-export.json
 # and sets SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI on every service,
-# which is what activates the JWT auth leg in ulht-commons. When this overlay is
+# which is what activates the JWT auth leg in dcs-commons. When this overlay is
 # absent, no issuer-uri is set, the JwtDecoder bean is not created, and the
 # services stay api-key only (byte-for-byte prior behaviour).
 #
@@ -60,35 +60,35 @@ services:
 
   # ---------------------------------------------------------------------------
   # Layer the OAuth2 issuer onto each service. Setting the issuer-uri is what
-  # makes ulht-commons wire the additional Bearer-JWT auth leg. The api-key env
+  # makes dcs-commons wire the additional Bearer-JWT auth leg. The api-key env
   # (APP_API_KEY) from the base file is unchanged, so BOTH auth methods work.
   # The issuer here matches the in-network Keycloak host (keycloak:8080); tokens
   # obtained from the host must carry the same `iss` (see docs).
   # ---------------------------------------------------------------------------
-  ulht-credential-service:
+  dcs-credential-service:
     environment:
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/ulht
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/dcs
     depends_on:
       keycloak:
         condition: service_healthy
 
-  ulht-student-service:
+  dcs-student-service:
     environment:
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/ulht
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/dcs
     depends_on:
       keycloak:
         condition: service_healthy
 
-  ulht-lusofona-service:
+  dcs-sis-service:
     environment:
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/ulht
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/dcs
     depends_on:
       keycloak:
         condition: service_healthy
 
-  ulht-fulfilment-service:
+  dcs-fulfilment-service:
     environment:
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/ulht
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/dcs
     depends_on:
       keycloak:
         condition: service_healthy

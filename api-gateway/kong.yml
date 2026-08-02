@@ -6,14 +6,14 @@ _format_version: "3.0"
 # Clients must present the shared API key in the `apikey` header.
 # Dev key value below is a placeholder and MUST be rotated for any real deploy.
 consumers:
-  - username: ulht-app
+  - username: dcs-app
     keyauth_credentials:
-      - key: ulht-dev-local-CHANGE-ME
+      - key: dcs-dev-local-CHANGE-ME
 
 services:
   # Credential Service
   - name: credential-service
-    url: http://ulht-credential-service:8086
+    url: http://dcs-credential-service:8086
     routes:
       - name: credential-service-route
         strip_path: true
@@ -72,7 +72,7 @@ services:
 
   # WaltID Proxy Service
   - name: waltid-proxy-service
-    url: http://ulht-waltid-proxy:8085
+    url: http://dcs-waltid-proxy:8085
     routes:
       - name: waltid-proxy-route
         strip_path: true
@@ -127,7 +127,7 @@ services:
 
   # Fulfilment Service
   - name: fulfilment-service
-    url: http://ulht-fulfilment-service:8087
+    url: http://dcs-fulfilment-service:8087
     routes:
       - name: fulfilment-service-route
         strip_path: true
@@ -177,14 +177,14 @@ services:
                 headers:
                   - "X-Service-Version: 1.0.0"
 
-  # Lusofona Service
-  - name: lusofona-service
-    url: http://lusofona-service:8080
+  # Sis Service
+  - name: sis-service
+    url: http://sis-service:8080
     routes:
-      - name: lusofona-service-route
+      - name: sis-service-route
         strip_path: true
         paths:
-          - /api/v1/lusofona
+          - /api/v1/sis
         plugins:
           - name: key-auth
             config:
@@ -224,7 +224,7 @@ services:
             config:
               add:
                 headers:
-                  - "X-Service: lusofona-service"
+                  - "X-Service: sis-service"
           - name: response-transformer
             config:
               add:

@@ -596,7 +596,7 @@
   "refresh": "10s",
   "schemaVersion": 27,
   "style": "dark",
-  "tags": ["infrastructure", "system", "ulht"],
+  "tags": ["infrastructure", "system", "dcs"],
   "templating": {
     "list": []
   },
@@ -606,7 +606,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ULHT DCS - Infrastructure & System",
+  "title": "DCS - Infrastructure & System",
   "uid": "infrastructure-system",
   "version": 1
 }

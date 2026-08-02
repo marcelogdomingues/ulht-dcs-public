@@ -1,6 +1,6 @@
-# ULHT Mobile Apps
+# DCS Mobile Apps
 
-This directory contains three Flutter mobile applications for testing the ULHT Digital Credential System backend.
+This directory contains three Flutter mobile applications for testing the Digital Credential System backend.
 
 ## Applications
 

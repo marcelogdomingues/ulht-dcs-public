@@ -11,7 +11,7 @@ event-driven microservices, which requires a durable, ordered, replayable event
 bus. The credential pipeline emits a defined set of topics
 (`student.login.requested`, `credential.requests`, `credential.progress/completed/error`,
 `verification.*`, `wallet.*`) consumed by dedicated consumer groups
-(`lusofona-service-group`, `credential-service-*-group`,
+(`sis-service-group`, `credential-service-*-group`,
 `fulfilment-service-workflow-group`).
 
 Two properties matter. First, **per-workflow ordering**: all events for one
@@ -38,7 +38,7 @@ so topics appear on first use, and default log retention is 7 days. Listeners
 expose `CLIENT://kafka:9092` in-cluster and `EXTERNAL://localhost:29092` for
 host/dev access, with `CONTROLLER` on `:29093`. Messages are **JSON** (Spring
 Kafka `JsonSerializer`/`JsonDeserializer`) with `JsonDeserializer` restricted to
-trusted packages (`pt.ulusofona.*,java.util,java.lang`), `ErrorHandlingDeserializer`
+trusted packages (`com.example.dcs.*,java.util,java.lang`), `ErrorHandlingDeserializer`
 wrapping the deserializer, manual acknowledgement, and retry + `.DLT`
 dead-letter topics.
 

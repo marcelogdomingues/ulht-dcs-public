@@ -6,7 +6,7 @@
 # only marks that the walt.id issuer/wallet/verifier calls are mocked.
 #
 # The mock walt.id client beans are provided by
-#   pt.ulusofona.ulht.credential.config.DemoConfiguration
+#   com.example.dcs.credential.config.DemoConfiguration
 # which registers @Primary + @Profile("demo") implementations of
 # WaltidIssuerClient, WaltidWalletClient and WaltidVerifierClient, so NO real
 # walt.id services are ever contacted. Issued credentials are illustrative only.
@@ -27,4 +27,4 @@ waltid:
 
 logging:
   level:
-    pt.ulusofona.ulht.credential.config.DemoConfiguration: INFO
+    com.example.dcs.credential.config.DemoConfiguration: INFO

@@ -1,4 +1,4 @@
-# ULHT Digital Credential System (DCS)
+# Digital Credential System (DCS)
 
 [![Backend CI](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/backend.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/backend.yml)
 [![Mobile CI](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/mobile.yml/badge.svg)](https://github.com/marcelogdomingues/ulht-dcs-public/actions/workflows/mobile.yml)
@@ -15,16 +15,22 @@
 
 > 📖 Documentation: <https://marcelogdomingues.github.io/ulht-dcs-public/> · 🧩 [Open in Codespaces](https://codespaces.new/marcelogdomingues/ulht-dcs-public)
 
-**Issue → hold → verify university credentials, the standards-compliant way.** ULHT DCS
+**Issue → hold → verify university credentials, the standards-compliant way.** DCS
 is an event-driven microservices platform that turns a single student login into a set of
 **W3C Verifiable Credentials** — then lets any verifier check exactly the one they need,
 with privacy-preserving selective disclosure. Java 25 · Spring Boot 4.1 · Kafka (KRaft) ·
 [walt.id](https://walt.id) · Flutter — all runnable with one `docker compose` command, or
 straight from your browser in **[GitHub Codespaces](https://codespaces.new/marcelogdomingues/ulht-dcs-public)**.
 
-<p align="center">
-  <img src="docs/SimpleArchitecture.png" alt="ULHT DCS architecture overview" width="820">
-</p>
+```mermaid
+graph TD
+    M[Mobile App] -->|calls| C[Credential Service]
+    C -->|calls| W[walt.id Proxy]
+    C -->|calls| S[University SIS]
+    C -->|connects to| K[(Kafka)]
+    W -->|calls| P[walt.id Platform]
+    W -->|connects to| K
+```
 
 | | |
 |---|---|
@@ -87,7 +93,7 @@ To preview the site locally: `pip install mkdocs-material && mkdocs serve` then 
 ```bash
 # 1. Clone
 git clone <repository-url>
-cd ulht-dcs
+cd dcs
 
 # 2. Configure secrets (required — services fail fast without them)
 cp .env.example .env
@@ -103,12 +109,12 @@ docker compose -f docker-compose.microservices.yml ps
 ```
 
 Every business endpoint now requires the `apikey` header. Issue your first credential
-(replace the placeholders with a real ULHT username / install key):
+(replace the placeholders with a real DCS username / install key):
 
 ```bash
 curl -X POST http://localhost:8084/api/v1/student/issue \
   -H "Content-Type: application/json" \
-  -H "apikey: ${APP_API_KEY:-ulht-dev-local-CHANGE-ME}" \
+  -H "apikey: ${APP_API_KEY:-dcs-dev-local-CHANGE-ME}" \
   -d '{"userName":"<your-username>","installKey":"<your-install-key>"}'
 # -> 202 Accepted { "correlationId": "...", "status": "PROCESSING" }
 
@@ -172,7 +178,7 @@ All published ports bind to `127.0.0.1` (loopback) by default.
 | Service | Port | Context path | Purpose |
 |---|---|---|---|
 | Student Service | 8084 | `/api/v1` | Entry point, request validation, correlation IDs |
-| Lusófona Service | 8085 | `/api/v1` | ULHT/SIGES integration & student data |
+| Example University Service | 8085 | `/api/v1` | University SIS integration & student data |
 | Credential Service | 8086 | `/api/v1` | W3C issuance, wallet, verifier (walt.id) |
 | Fulfilment Service | 8087 | `/api/v1` | Workflow tracking & results |
 
@@ -197,9 +203,9 @@ Full details in [Configuration](docs/CONFIGURATION.md) and [Deployment](docs/DEP
 ## Repository layout
 
 ```
-ulht-dcs/
+dcs/
 ├── student-service/          # Entry point (8084)
-├── lusofona-service/         # ULHT/SIGES integration (8085)
+├── sis-service/         # University SIS integration (8085)
 ├── credential-service/       # W3C issuance + walt.id (8086)
 ├── fulfilment-service/       # Workflow tracking (8087)
 ├── api-gateway/              # Kong declarative config (kong.yml)
@@ -226,7 +232,7 @@ ulht-dcs/
 - **Loopback-bound ports**, non-root containers, pinned images, Kong CORS allow-list.
 
 Read [`docs/SECURITY.md`](docs/SECURITY.md) for the full model and the manual steps that
-remain (rotating the ULHT install key, enabling TLS for production).
+remain (rotating the DCS install key, enabling TLS for production).
 
 ---
 

@@ -38,7 +38,7 @@ plan of record, not an implemented decision — hence **Proposed**.
   for machine-to-machine / internal traffic (defense-in-depth at the edge is
   unchanged); OIDC is added *alongside* it for human callers, so the two auth
   models coexist during and after migration.
-- **What shipped.** The shared `ulht-commons`
+- **What shipped.** The shared `dcs-commons`
   `ApiKeySecurityAutoConfiguration` now depends on
   `spring-boot-starter-oauth2-resource-server` and its single
   `SecurityFilterChain` runs the api-key filter first and **additionally** wires

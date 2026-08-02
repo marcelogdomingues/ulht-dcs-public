@@ -1,4 +1,4 @@
-# ULHT Issuer App
+# DCS Issuer App
 
 A Flutter mobile application for conference organizers and event managers to issue session credentials. This app allows you to create conference sessions, generate QR codes for student registration, and track registered students.
 

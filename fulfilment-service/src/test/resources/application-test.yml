@@ -24,6 +24,6 @@ spring:
 
 logging:
   level:
-    pt.ulusofona: DEBUG
+    com.example.dcs: DEBUG
     org.apache.kafka: WARN
 

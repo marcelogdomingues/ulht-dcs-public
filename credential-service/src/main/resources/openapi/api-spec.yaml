@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ULHT Credential Service API
+  title: DCS Credential Service API
   description: |
     Comprehensive digital credential management and W3C Verifiable Credentials issuance service.
     
@@ -12,16 +12,16 @@ info:
     - OpenID4VCI protocol support
     
     ## Workflow
-    1. Student logs in via Lusofona Service
+    1. Student logs in via Sis Service
     2. Student data published to Kafka (`credential.requests`)
     3. Credential Service processes and issues credentials
     4. Progress updates sent to Fulfilment Service
     5. Student receives credentials
   version: 1.0.0
   contact:
-    name: ULHT Development Team
-    email: dev@ulusofona.pt
-    url: https://www.ulusofona.pt
+    name: DCS Development Team
+    email: dev@usis.pt
+    url: https://www.usis.pt
   license:
     name: MIT License
     url: https://opensource.org/licenses/MIT
@@ -31,7 +31,7 @@ servers:
     description: Local development server
   - url: http://credential-service:8086/api/v1
     description: Docker internal
-  - url: https://api.ulht.pt/credential-service/api/v1
+  - url: https://api.example.edu/credential-service/api/v1
     description: Production server
 
 tags:
@@ -193,7 +193,7 @@ paths:
               studentData:
                 studentId: "511114706"
                 name: Luísa Costa
-                email: luisa.costa@alunos.ulusofona.pt
+                email: luisa.costa@alunos.usis.pt
                 dateOfBirth: "1970-01-01"
                 courseName: Computer Science
                 academicLevel: bachelor
@@ -339,7 +339,7 @@ components:
           example: Computer Science
         universityName:
           type: string
-          example: ULHT - Universidade Lusófona
+          example: DCS - Example University
         graduationDate:
           type: string
           format: date
@@ -365,7 +365,7 @@ components:
           format: date
         schacHomeOrganization:
           type: string
-          example: ulusofona.pt
+          example: usis.pt
         eduPersonPrimaryAffiliation:
           type: string
           enum: [student, faculty, staff, employee]
@@ -416,7 +416,7 @@ components:
           example: a12345678
         studentData:
           type: object
-          description: Student data from Lusofona Service (real ULHT data)
+          description: Student data from Sis Service (real DCS data)
           properties:
             studentId:
               type: string

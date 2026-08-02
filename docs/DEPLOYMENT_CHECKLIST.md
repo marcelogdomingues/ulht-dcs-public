@@ -1,6 +1,6 @@
 # Deployment Checklist
 
-A professional, actionable **pre-deployment and infrastructure-readiness checklist** for the **ULHT Digital Credential System (DCS)**. Work top to bottom; do not tick a box you cannot demonstrate. This complements the step-by-step [Deployment](DEPLOYMENT.md) guide, the [Security](SECURITY.md) hardening model, and the [CI/CD](CICD.md) pipeline.
+A professional, actionable **pre-deployment and infrastructure-readiness checklist** for the **Digital Credential System (DCS)**. Work top to bottom; do not tick a box you cannot demonstrate. This complements the step-by-step [Deployment](DEPLOYMENT.md) guide, the [Security](SECURITY.md) hardening model, and the [CI/CD](CICD.md) pipeline.
 
 > See also: [Deployment](DEPLOYMENT.md) · [Security](SECURITY.md) · [Configuration](CONFIGURATION.md) · [Architecture](ARCHITECTURE.md) · [CI/CD](CICD.md) · [Getting Started](GETTING_STARTED.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](index.md)
 
@@ -42,7 +42,7 @@ flowchart TD
     - [ ] wallet-api on `:7001`
     - [ ] issuer-api is a **patched/newer** build (no `notBefore cannot be in the past` time-bomb).
 - [ ] The `waltid_network` external network exists (`docker network ls | grep docker-compose_default`).
-- [ ] **University SIS endpoint reachable** from the host (set later via `LUSOFONA_API_URL`).
+- [ ] **University SIS endpoint reachable** from the host (set later via `SIS_API_URL`).
 - [ ] Host ports free on `127.0.0.1`: `8000/8001/8443/8444` (Kong), `8082` (Kong-UI), `8084–8087` (services), `8181` (Kafka-UI via override), `9092/29092` (Kafka), `8500/8600` (Consul), and — for observability — `9090/3000/3100/9308`.
 
 ---
@@ -64,12 +64,12 @@ cp .env.example .env
 
 **Must be changed from the insecure default before any real exposure:**
 
-- [ ] `APP_API_KEY` — default is `ulht-dev-local-CHANGE-ME`; replace with a strong, unique key.
+- [ ] `APP_API_KEY` — default is `dcs-dev-local-CHANGE-ME`; replace with a strong, unique key.
 
 **Should be reviewed / set for the environment:**
 
 - [ ] `APP_CORS_ALLOWED_ORIGINS` — set to the exact front-end origin(s), not a wildcard.
-- [ ] `LUSOFONA_API_URL` — your institution's SIS base URL (placeholder in the public repo).
+- [ ] `SIS_API_URL` — your institution's SIS base URL (placeholder in the public repo).
 - [ ] `KAFKA_UI_USER` / `GRAFANA_ADMIN_USER` — change from `admin` if policy requires.
 - [ ] `JVM_XMS` / `JVM_XMX` — sized for the host (Kafka-UI JVM).
 

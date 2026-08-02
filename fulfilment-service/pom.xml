@@ -8,7 +8,7 @@
         <version>4.1.0</version>
         <relativePath/>
     </parent>
-    <groupId>pt.ulusofona.ulht</groupId>
+    <groupId>com.example.dcs</groupId>
     <artifactId>fulfilment-service</artifactId>
     <version>1.0.0</version>
     <name>Fulfilment Service</name>
@@ -31,14 +31,14 @@
 
         <!--
           Shared security building blocks (API-key filter + SecurityFilterChain)
-          provided by the standalone ulht-commons module. This artifact is NOT on
+          provided by the standalone dcs-commons module. This artifact is NOT on
           Maven Central: install it locally first with
-          `mvn -q -f ulht-commons/pom.xml -DskipTests install` before building
+          `mvn -q -f dcs-commons/pom.xml -DskipTests install` before building
           this service (the Dockerfile does this automatically).
         -->
         <dependency>
-            <groupId>pt.ulusofona</groupId>
-            <artifactId>ulht-commons</artifactId>
+            <groupId>com.example.dcs</groupId>
+            <artifactId>dcs-commons</artifactId>
             <version>1.0.0</version>
         </dependency>
         <dependency>
@@ -188,8 +188,8 @@
                         <configuration>
                             <inputSpec>${project.basedir}/src/main/resources/openapi/api-spec.yaml</inputSpec>
                             <generatorName>spring</generatorName>
-                            <apiPackage>pt.ulusofona.ulht.fulfilment.generated.api</apiPackage>
-                            <modelPackage>pt.ulusofona.ulht.fulfilment.generated.model</modelPackage>
+                            <apiPackage>com.example.dcs.fulfilment.generated.api</apiPackage>
+                            <modelPackage>com.example.dcs.fulfilment.generated.model</modelPackage>
                             <configOptions>
                                 <sourceFolder>src/main/java</sourceFolder>
                                 <library>spring-boot</library>

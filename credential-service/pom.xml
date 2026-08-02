@@ -10,11 +10,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>pt.ulusofona</groupId>
+    <groupId>com.example.dcs</groupId>
     <artifactId>credential-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Credential Service</name>
-    <description>ULHT Credential Service - Independent Microservice</description>
+    <description>DCS Credential Service - Independent Microservice</description>
 
     <properties>
         <java.version>25</java.version>
@@ -38,14 +38,14 @@
 
         <!--
           Shared security building blocks (API-key filter + SecurityFilterChain)
-          provided by the standalone ulht-commons module. This artifact is NOT on
+          provided by the standalone dcs-commons module. This artifact is NOT on
           Maven Central: install it locally first with
-          `mvn -q -f ulht-commons/pom.xml -DskipTests install` before building
+          `mvn -q -f dcs-commons/pom.xml -DskipTests install` before building
           this service (the Dockerfile does this automatically).
         -->
         <dependency>
-            <groupId>pt.ulusofona</groupId>
-            <artifactId>ulht-commons</artifactId>
+            <groupId>com.example.dcs</groupId>
+            <artifactId>dcs-commons</artifactId>
             <version>1.0.0</version>
         </dependency>
         <dependency>

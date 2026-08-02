@@ -1,5 +1,5 @@
 name: verifier_app
-description: ULHT Verifier App - Verify Student Credentials
+description: DCS Verifier App - Verify Student Credentials
 publish_to: 'none'
 version: 1.0.0+1
 

@@ -37,7 +37,7 @@ spring:
 # Application security / CORS
 app:
   security:
-    api-key: ${APP_API_KEY:ulht-dev-local-CHANGE-ME}
+    api-key: ${APP_API_KEY:dcs-dev-local-CHANGE-ME}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:8000,http://localhost:3000}
 
@@ -120,14 +120,14 @@ springdoc:
     description: Entry point service for student requests - minimal and simple
     version: 1.0.0
     contact:
-      name: ULHT DCS Team
-      email: dcs@ulusofona.pt
+      name: DCS Team
+      email: dcs@usis.pt
 
 # Logging
 logging:
   level:
     root: INFO
-    pt.ulusofona.student: DEBUG
+    com.example.dcs.student: DEBUG
     org.springframework.kafka: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

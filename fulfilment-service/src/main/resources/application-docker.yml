@@ -1,12 +1,12 @@
 spring:
   application:
-    name: ulht-fulfilment-service
+    name: dcs-fulfilment-service
     version: 1.0.0
   main:
     allow-bean-definition-overriding: true
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/fulfilment}
-    username: ${SPRING_DATASOURCE_USERNAME:ulht}
+    username: ${SPRING_DATASOURCE_USERNAME:dcs}
     password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:demo-pg}}
     driver-class-name: org.postgresql.Driver
   jpa:
@@ -51,7 +51,7 @@ spring:
       fetch-max-bytes: 10485760
       max-partition-fetch-bytes: 10485760
       properties:
-        spring.json.trusted.packages: "pt.ulusofona.ulht.fulfilment,java.util,java.lang"
+        spring.json.trusted.packages: "com.example.dcs.fulfilment,java.util,java.lang"
     # Propagate trace context across Kafka (producer -> consumer).
     template:
       observation-enabled: true
@@ -96,7 +96,7 @@ springdoc:
 # Logging Configuration
 logging:
   level:
-    pt.ulusofona.ulht.fulfilment: INFO
+    com.example.dcs.fulfilment: INFO
     org.springframework.kafka: INFO
     org.apache.kafka: WARN
   pattern:

@@ -21,7 +21,7 @@ class IssuerApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'ULHT Issuer App',
+        title: 'DCS Issuer App',
         theme: ThemeData(
           primarySwatch: Colors.orange,
           useMaterial3: true,

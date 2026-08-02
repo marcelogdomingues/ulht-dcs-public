@@ -23,7 +23,7 @@ updates:
     open-pull-requests-limit: 5
 
   - package-ecosystem: maven
-    directory: /lusofona-service
+    directory: /sis-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -67,7 +67,7 @@ updates:
     open-pull-requests-limit: 5
 
   - package-ecosystem: docker
-    directory: /lusofona-service
+    directory: /sis-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

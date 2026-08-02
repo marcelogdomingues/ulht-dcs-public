@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         Provider(create: (_) => ApiService()),
       ],
       child: MaterialApp(
-        title: 'ULHT Student App',
+        title: 'DCS Student App',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           useMaterial3: true,
@@ -173,7 +173,7 @@ class _MainScreenState extends State<MainScreen> {
       key: _scaffoldKey,
       appBar: AppBar(
         title: const Text(
-          'ULHT Student App',
+          'DCS Student App',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.blue.shade700,
@@ -370,9 +370,9 @@ class _MainScreenState extends State<MainScreen> {
                 Navigator.pop(context);
                 showAboutDialog(
                   context: context,
-                  applicationName: 'ULHT Student App',
+                  applicationName: 'DCS Student App',
                   applicationVersion: '1.0.0',
-                  applicationLegalese: '© 2024 ULHT',
+                  applicationLegalese: '© 2024 DCS',
                 );
               },
             ),

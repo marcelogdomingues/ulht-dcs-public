@@ -1,6 +1,6 @@
 # Troubleshooting
 
-A practical **problem → cause → fix** guide for running the ULHT Digital Credential System.
+A practical **problem → cause → fix** guide for running the Digital Credential System.
 
 The stack is **Spring Boot 4.1.0 / Java 25** microservices, **KRaft-mode Kafka** (`confluentinc/cp-kafka:8.3.0`, no ZooKeeper), Consul, Prometheus/Grafana/Loki, and three [Flutter apps](MOBILE_APPS.md). The credential service talks to an external [walt.id](https://walt.id) stack.
 
@@ -31,12 +31,12 @@ flowchart TD
 
     B -->|"Yes — name conflict<br/>'/kafka already in use'"| C["docker rm -f kafka<br/>→ re-run up"]
     B -->|"Yes — 'WALLET_PASSWORD_SECRET<br/>required' / GRAFANA_/KAFKA_UI_"| D["cp .env.example .env<br/>→ fill required vars"]
-    B -->|"Yes — Kafka log-dir<br/>zookeeper incompatibility"| E["docker volume rm<br/>ulht-dcs_kafka_data"]
+    B -->|"Yes — Kafka log-dir<br/>zookeeper incompatibility"| E["docker volume rm<br/>dcs_kafka_data"]
     B -->|"Yes — root compose<br/>missing build dirs"| F["Use microservices +<br/>override compose files"]
 
     B -->|"No — containers up but<br/>never 'healthy'"| G{"Which one?"}
     G -->|"any service"| H["alpine lacks curl →<br/>override uses busybox wget<br/>path /api/v1/actuator/health"]
-    G -->|"consul (after long downtime)"| I["docker volume rm<br/>ulht-dcs_consul_data"]
+    G -->|"consul (after long downtime)"| I["docker volume rm<br/>dcs_consul_data"]
 
     B -->|"No — up & healthy,<br/>but calls fail"| J{"What fails?"}
     J -->|"401 Unauthorized"| K["Send header<br/>apikey: $APP_API_KEY"]
@@ -73,7 +73,7 @@ cp .env.example .env
 - **Fix:** wipe the stale Kafka volume, then bring the stack up again.
 
 ```bash
-docker volume rm ulht-dcs_kafka_data
+docker volume rm dcs_kafka_data
 # or reset all volumes at once:
 docker compose -f docker-compose.microservices.yml -f docker-compose.override.yml down -v
 ```
@@ -91,7 +91,7 @@ docker compose -f docker-compose.microservices.yml -f docker-compose.override.ym
 ### Root `docker-compose.yml` errors about missing build dirs
 
 - **Cause:** the root `docker-compose.yml` is **stale** and references directories that no longer exist (e.g. a removed waltid-proxy dir).
-- **Fix:** always use `docker-compose.microservices.yml` **together with** `docker-compose.override.yml` (the override is untracked and holds required fixes: busybox healthchecks, host-port remaps, the lusofona API endpoint, 127.0.0.1 bindings). See the [primary run command](#primary-run-command).
+- **Fix:** always use `docker-compose.microservices.yml` **together with** `docker-compose.override.yml` (the override is untracked and holds required fixes: busybox healthchecks, host-port remaps, the sis API endpoint, 127.0.0.1 bindings). See the [primary run command](#primary-run-command).
 
 ---
 
@@ -116,7 +116,7 @@ curl http://localhost:8084/api/v1/actuator/health
 - **Fix:**
 
 ```bash
-docker volume rm ulht-dcs_consul_data
+docker volume rm dcs_consul_data
 ```
 
 ### Prometheus not scraping a service
@@ -142,11 +142,11 @@ curl -H "apikey: $APP_API_KEY" \
   http://localhost:8084/api/v1/student/status/<credentialId>
 ```
 
-Only `/api/v1/actuator/health`, `/api/v1/actuator/info`, `/api/v1/actuator/prometheus`, and the Swagger endpoints are public. Everything else requires the key. The dev default is `ulht-dev-local-CHANGE-ME`. The [mobile apps](MOBILE_APPS.md) send this automatically from `--dart-define=API_KEY=…`.
+Only `/api/v1/actuator/health`, `/api/v1/actuator/info`, `/api/v1/actuator/prometheus`, and the Swagger endpoints are public. Everything else requires the key. The dev default is `dcs-dev-local-CHANGE-ME`. The [mobile apps](MOBILE_APPS.md) send this automatically from `--dart-define=API_KEY=…`.
 
 ### Kong gateway (8000) returns 503
 
-- **Cause:** the gateway routes are partial / aspirational and not fully wired (and now hardened with key-auth). `student-service` and `lusofona-service` also both serve `/api/v1/student/*`, a collision a single route can't disambiguate.
+- **Cause:** the gateway routes are partial / aspirational and not fully wired (and now hardened with key-auth). `student-service` and `sis-service` also both serve `/api/v1/student/*`, a collision a single route can't disambiguate.
 - **Fix:** call the services **directly by port** (`8084`–`8087`) with the `apikey` header. This is exactly what the [mobile apps](MOBILE_APPS.md) do.
 
 ---
@@ -178,7 +178,7 @@ Only `/api/v1/actuator/health`, `/api/v1/actuator/info`, `/api/v1/actuator/prome
 ### Scanned QR is "blocked — not an allowed destination"
 
 - **Cause:** the student-app validates scanned `http(s)` URLs against the `url_guard` allowlist. A host not in the allowlist is refused for safety.
-- **Fix:** in dev, the allowlist accepts `localhost`, `127.0.0.1`, `10.0.2.2`, and the `ulusofona.pt` / `university-sis.example.edu` suffixes, plus the `openid4vp` / `openid4vci` / `haip` schemes. For production, add your real gateway/SIS host (https only) to `url_guard.dart`. See [Mobile Apps → Security](MOBILE_APPS.md).
+- **Fix:** in dev, the allowlist accepts `localhost`, `127.0.0.1`, `10.0.2.2`, and the `usis.pt` / `university-sis.example.edu` suffixes, plus the `openid4vp` / `openid4vci` / `haip` schemes. For production, add your real gateway/SIS host (https only) to `url_guard.dart`. See [Mobile Apps → Security](MOBILE_APPS.md).
 
 ### Docs site build fails
 

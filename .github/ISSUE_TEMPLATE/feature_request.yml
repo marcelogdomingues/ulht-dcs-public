@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest an idea or enhancement for the ULHT Digital Credential System
+description: Suggest an idea or enhancement for the Digital Credential System
 title: "[Feature]: "
 labels: ["enhancement", "triage"]
 body:
@@ -44,7 +44,7 @@ body:
       description: Which part of the project does this affect?
       options:
         - Student service
-        - Lusofona / SIS service
+        - Sis / SIS service
         - Credential service
         - Fulfilment service
         - API gateway (Kong) / Consul

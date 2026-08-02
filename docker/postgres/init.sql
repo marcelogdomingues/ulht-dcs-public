@@ -2,4 +2,4 @@
 -- The primary database (fulfilment) is created by the container's POSTGRES_DB env var;
 -- credential-service uses its own database on the same container, created here.
 CREATE DATABASE credential;
-GRANT ALL PRIVILEGES ON DATABASE credential TO ulht;
+GRANT ALL PRIVILEGES ON DATABASE credential TO dcs;

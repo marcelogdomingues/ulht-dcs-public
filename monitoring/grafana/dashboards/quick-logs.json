@@ -36,7 +36,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=~\"ulht-.*\"}",
+          "expr": "{job=\"docker\", container=~\"dcs-.*\"}",
           "refId": "A"
         }
       ],
@@ -71,7 +71,7 @@
       },
       "targets": [
         {
-          "expr": "{job=\"docker\", container=~\"ulht-.*\"} |~ \"(?i)(ERROR|WARN)\"",
+          "expr": "{job=\"docker\", container=~\"dcs-.*\"} |~ \"(?i)(ERROR|WARN)\"",
           "refId": "A"
         }
       ],
@@ -140,7 +140,7 @@
       "pluginVersion": "8.0.0",
       "targets": [
         {
-          "expr": "sum(count_over_time({job=\"docker\", container=~\"ulht-.*\"} [1m])) by (container)",
+          "expr": "sum(count_over_time({job=\"docker\", container=~\"dcs-.*\"} [1m])) by (container)",
           "legendFormat": "{{container}}",
           "refId": "A"
         }
@@ -152,7 +152,7 @@
   "refresh": "10s",
   "schemaVersion": 27,
   "style": "dark",
-  "tags": ["logs", "loki", "ulht", "quick"],
+  "tags": ["logs", "loki", "dcs", "quick"],
   "templating": {
     "list": []
   },
@@ -162,7 +162,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ULHT DCS - Quick Logs View",
+  "title": "DCS - Quick Logs View",
   "uid": "quick-logs-view",
   "version": 1
 }

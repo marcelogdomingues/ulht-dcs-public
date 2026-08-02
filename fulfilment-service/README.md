@@ -1,8 +1,8 @@
-# ULHT Fulfilment Service
+# DCS Fulfilment Service
 
 ## Overview
 
-The ULHT Fulfilment Service provides workflow fulfilment and progress tracking capabilities for the ULHT digital credential ecosystem. It enables real-time monitoring of credential workflow processes through Server-Sent Events (SSE) and REST endpoints for status checking.
+The DCS Fulfilment Service provides workflow fulfilment and progress tracking capabilities for the DCS digital credential ecosystem. It enables real-time monitoring of credential workflow processes through Server-Sent Events (SSE) and REST endpoints for status checking.
 
 ## Key Features
 
@@ -84,7 +84,7 @@ server:
 
 spring:
   application:
-    name: ulht-fulfilment-service
+    name: dcs-fulfilment-service
   kafka:
     bootstrap-servers: localhost:29092
 
@@ -205,7 +205,7 @@ The service consumes events from Kafka topics:
 src/
 ├── main/
 │   ├── java/
-│   │   └── pt/ulusofona/ulht/fulfilment/
+│   │   └── pt/usis/dcs/fulfilment/
 │   │       ├── controller/      # REST and SSE controllers
 │   │       ├── service/         # Business services
 │   │       ├── kafka/           # Kafka consumers
@@ -349,10 +349,10 @@ MIT License - see LICENSE file for details
 ## Support
 
 For technical support or questions:
-- Email: dev@ulusofona.pt
-- Documentation: https://docs.ulusofona.pt/fulfilment-service
+- Email: dev@usis.pt
+- Documentation: https://docs.usis.pt/fulfilment-service
 
 ## Related Services
 
 - **Credential Service**: Digital credential issuance and management
-- **Lusofona Service**: Student data and university integration
+- **Sis Service**: Student data and university integration

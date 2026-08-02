@@ -46,9 +46,9 @@ class UserProvider with ChangeNotifier {
     
     // Set defaults first
     _studentCode = ApiService.studentUsername;
-    _email = '${_studentCode}@alunos.ulusofona.pt';
+    _email = '${_studentCode}@alunos.usis.pt';
     _name = 'Student';
-    _institutionName = 'ULHT - Universidade Lusófona';
+    _institutionName = 'DCS - Example University';
     
     notifyListeners();
 

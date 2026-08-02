@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the **ULHT Digital Credential System** will be documented
+All notable changes to the **Digital Credential System** will be documented
 in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-07-31
 
-First public release of the ULHT Digital Credential System — an event-driven
+First public release of the Digital Credential System — an event-driven
 microservices platform for issuing and verifying W3C Verifiable Credentials.
 
 ### Added
@@ -21,7 +21,7 @@ microservices platform for issuing and verifying W3C Verifiable Credentials.
   Verifiable Credentials using the OID4VCI and OID4VP protocols, powered by
   [walt.id](https://walt.id).
 - **Microservices**: Four Spring Boot 4.1 services running on Java 25 —
-  the **student** service, the **lusofona/SIS** (Student Information System)
+  the **student** service, the **sis/SIS** (Student Information System)
   service, the **credential** service, and the **fulfilment** service.
 - **Event-driven architecture**: Asynchronous inter-service communication over
   **Apache Kafka** running in **KRaft mode** (no ZooKeeper dependency).

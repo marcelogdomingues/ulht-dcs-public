@@ -1,6 +1,6 @@
 # Mobile Apps
 
-The ULHT Digital Credential System ships **three** [Flutter](https://flutter.dev) applications, one per role in the Verifiable Credential (VC) lifecycle. They live under [`mobile-apps/`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/mobile-apps) and share the same networking design: **each app talks directly to the backend microservices by port** and authenticates every request with an `apikey` header.
+The Digital Credential System ships **three** [Flutter](https://flutter.dev) applications, one per role in the Verifiable Credential (VC) lifecycle. They live under [`mobile-apps/`](https://github.com/marcelogdomingues/ulht-dcs-public/blob/main/mobile-apps) and share the same networking design: **each app talks directly to the backend microservices by port** and authenticates every request with an `apikey` header.
 
 See also: [Getting Started](GETTING_STARTED.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [API](API.md) · [Architecture](ARCHITECTURE.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project home](index.md)
 
@@ -35,7 +35,7 @@ graph TD
 
     subgraph Backend["Backend microservices (direct by port, apikey required)"]
         SS["student-service<br/>:8084<br/>/student/issue · /status · /credentials · /verify"]
-        LS["lusofona-service<br/>:8085<br/>/student/login · /schedule · /enrolment · /grades · /course-credits"]
+        LS["sis-service<br/>:8085<br/>/student/login · /schedule · /enrolment · /grades · /course-credits"]
         CS["credential-service<br/>:8086<br/>/wallet/* · /issuer/* · /verifier/*"]
         FS["fulfilment-service<br/>:8087<br/>/fulfilment/result/*"]
     end
@@ -124,7 +124,7 @@ Why direct calls instead of a single gateway route (verbatim from the app source
 
 - There is **no single working gateway route** today.
 - Different features live on **different services**.
-- `student-service` and `lusofona-service` **both** serve `/api/v1/student/*` paths — a collision a gateway route cannot disambiguate.
+- `student-service` and `sis-service` **both** serve `/api/v1/student/*` paths — a collision a gateway route cannot disambiguate.
 
 Consequences of this design, baked into every `ApiService`:
 
@@ -186,9 +186,9 @@ Every configurable value is a compile-time constant read via `String.fromEnviron
 
 | Key | Default | Used by | Description |
 | --- | --- | --- | --- |
-| `API_KEY` | `ulht-dev-local-CHANGE-ME` | all | Shared API key sent as the `apikey` header on **every** request. |
+| `API_KEY` | `dcs-dev-local-CHANGE-ME` | all | Shared API key sent as the `apikey` header on **every** request. |
 | `STUDENT_SVC_URL` | `http://localhost:8084/api/v1` | student-app | student-service (`/student/issue`, `/status`, `/credentials`, `/verify`). |
-| `LUSOFONA_SVC_URL` | `http://localhost:8085/api/v1` | student-app | lusofona-service (`/student/login`, `/schedule`, `/enrolment`, `/grades`, `/course-credits`). |
+| `SIS_SVC_URL` | `http://localhost:8085/api/v1` | student-app | sis-service (`/student/login`, `/schedule`, `/enrolment`, `/grades`, `/course-credits`). |
 | `CREDENTIAL_SVC_URL` | `http://localhost:8086/api/v1` | all | credential-service (`/wallet/*`, `/issuer/*`, `/verifier/*`). |
 | `FULFILMENT_SVC_URL` | `http://localhost:8087/api/v1` | student-app | fulfilment-service (`/fulfilment/result/*`). |
 
@@ -228,9 +228,9 @@ flutter run
 ```bash
 # student-app — reads all four service URLs
 flutter run \
-  --dart-define=API_KEY=ulht-dev-local-CHANGE-ME \
+  --dart-define=API_KEY=dcs-dev-local-CHANGE-ME \
   --dart-define=STUDENT_SVC_URL=http://localhost:8084/api/v1 \
-  --dart-define=LUSOFONA_SVC_URL=http://localhost:8085/api/v1 \
+  --dart-define=SIS_SVC_URL=http://localhost:8085/api/v1 \
   --dart-define=CREDENTIAL_SVC_URL=http://localhost:8086/api/v1 \
   --dart-define=FULFILMENT_SVC_URL=http://localhost:8087/api/v1 \
   --dart-define=STUDENT_USERNAME=<student-username> \
@@ -240,7 +240,7 @@ flutter run \
 ```bash
 # verifier-app / issuer-app — only need the credential service + key
 flutter run \
-  --dart-define=API_KEY=ulht-dev-local-CHANGE-ME \
+  --dart-define=API_KEY=dcs-dev-local-CHANGE-ME \
   --dart-define=CREDENTIAL_SVC_URL=http://localhost:8086/api/v1
 ```
 
@@ -267,7 +267,7 @@ flutter run -d web-server --web-port=5001 --web-hostname=127.0.0.1
 | --- | --- | --- |
 | Home | `screens/home_screen.dart` | Dashboard; shortcuts to academic screens. |
 | Wallet | `screens/wallet_screen.dart` | Lists held credentials; buttons to **Scan QR** (receive session credential / present), issue credentials, and open verification history. |
-| Schedules | `screens/schedules_screen.dart` | Class schedule from lusofona-service. |
+| Schedules | `screens/schedules_screen.dart` | Class schedule from sis-service. |
 | Profile | `screens/profile_screen.dart` | Student identity / settings (some items are placeholders). |
 | Enrolments | `screens/enrolments_screen.dart` | Enrolment list. |
 | Grades | `screens/grades_screen.dart` | Grades. |
@@ -336,7 +336,7 @@ Verified from source:
 | --- | --- |
 | **Schemes** (handled in-app, not launched externally) | `openid4vp`, `openid4vci`, `haip` |
 | **Exact http(s) hosts** | `localhost`, `127.0.0.1`, `10.0.2.2` (Android emulator loopback) |
-| **Host suffixes** (host or any sub-domain) | `university-sis.example.edu`, `ulusofona.pt` |
+| **Host suffixes** (host or any sub-domain) | `university-sis.example.edu`, `usis.pt` |
 
 Any `http(s)` URL whose host is not in the exact-host set and does not match a suffix is **blocked**; the scanner shows a "not an allowed destination" message. Non-`http(s)` schemes are allowed only if they are one of the three credential-exchange schemes.
 
@@ -375,7 +375,7 @@ flowchart TD
 ## 8. Production notes
 
 - **HTTPS base URLs.** Pass `--dart-define=<SVC>_URL=https://<host>/api/v1` for every service — the dev defaults use plain `http://` on localhost.
-- **Real API key.** Pass a real `--dart-define=API_KEY=<secret>`. **Never** ship the dev key `ulht-dev-local-CHANGE-ME`.
+- **Real API key.** Pass a real `--dart-define=API_KEY=<secret>`. **Never** ship the dev key `dcs-dev-local-CHANGE-ME`.
 - **Tighten the URL allowlist.** Update `url_guard.dart` to the real production host(s) over `https` only, and drop `localhost` / example hosts.
 - **Credentials at runtime.** Supply `STUDENT_USERNAME` / `STUDENT_INSTALL_KEY` at build time for dev, or via the (future) login UI persisted to secure storage — never committed.
 

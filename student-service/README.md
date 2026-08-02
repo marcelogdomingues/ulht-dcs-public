@@ -4,7 +4,7 @@ Entry point service for student requests - minimal and simple
 
 ## Overview
 
-The Student Service is the **primary gateway** for student interactions in the ULHT Digital Credential System. It provides a clean, minimal interface for triggering credential issuance workflows.
+The Student Service is the **primary gateway** for student interactions in the Digital Credential System. It provides a clean, minimal interface for triggering credential issuance workflows.
 
 ## Features
 
@@ -30,7 +30,7 @@ The Student Service is the **primary gateway** for student interactions in the U
        ▼
    [Kafka Topics]
        │
-       ├─► Lusofona Service (fetches real student data)
+       ├─► Sis Service (fetches real student data)
        │
        └─► Credential Service (issues credentials)
               │
@@ -210,7 +210,7 @@ student-service/
 ├── src/
 │   ├── main/
 │   │   ├── java/
-│   │   │   └── pt/ulusofona/student/
+│   │   │   └── pt/usis/student/
 │   │   │       ├── client/          # Feign clients
 │   │   │       ├── config/          # Configuration
 │   │   │       ├── controller/      # REST controllers
@@ -263,7 +263,7 @@ mvn package -DskipTests
 - **Fulfilment Service** - For status and credentials retrieval
 
 **Consumed by:**
-- **Lusofona Service** - Processes login requests
+- **Sis Service** - Processes login requests
 
 ## Workflow Example
 
@@ -278,9 +278,9 @@ mvn package -DskipTests
    - Topic: `student.login.requested`
    - Includes: correlationId, userName, installKey
 
-3. **Lusofona Service:**
+3. **Sis Service:**
    - Consumes event
-   - Fetches real student data from ULHT API
+   - Fetches real student data from DCS API
    - Publishes enriched data to `credential.requests`
 
 4. **Credential Service:**
@@ -314,7 +314,7 @@ Logs include correlation IDs for tracing requests across services.
 
 ## Standardization
 
-This service follows the **ULHT Digital Credential System** standardization:
+This service follows the **Digital Credential System** standardization:
 - ✅ OpenAPI 3.0.3 specification
 - ✅ Automated code generation
 - ✅ Consistent dependency management
@@ -357,10 +357,10 @@ MIT License - See LICENSE file for details
 ## Support
 
 For issues and questions:
-- Email: dev@ulusofona.pt
+- Email: dev@usis.pt
 - Documentation: `/docs`
 - API Reference: http://localhost:8085/swagger-ui.html
 
 ---
 
-**Part of the ULHT Digital Credential System**
+**Part of the Digital Credential System**

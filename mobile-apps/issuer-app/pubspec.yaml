@@ -1,5 +1,5 @@
 name: issuer_app
-description: ULHT Issuer App - Issue Session Credentials for Conferences and Events
+description: DCS Issuer App - Issue Session Credentials for Conferences and Events
 publish_to: 'none'
 version: 1.0.0+1
 

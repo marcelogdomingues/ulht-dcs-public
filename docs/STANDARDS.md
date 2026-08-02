@@ -1,6 +1,6 @@
 # Standards & Conformance
 
-This document is the **standards reference** for the **ULHT Digital Credential System (DCS)**. It records the open, published identity standards the platform builds on, exactly where each one is used in the code, and — honestly — what is fully implemented versus what is partial or on the roadmap.
+This document is the **standards reference** for the **Digital Credential System (DCS)**. It records the open, published identity standards the platform builds on, exactly where each one is used in the code, and — honestly — what is fully implemented versus what is partial or on the roadmap.
 
 > See also: [Architecture](ARCHITECTURE.md) · [API](API.md)
 
@@ -13,7 +13,7 @@ This document is the **standards reference** for the **ULHT Digital Credential S
 
 The DCS deliberately builds on **open, published standards** rather than a proprietary credential format. This choice has three concrete pay-offs:
 
-- **Interoperability** — credentials issued by the DCS can be read, stored, and verified by any conformant wallet or verifier, not only by ULHT tooling. Verification runs over **OpenID for Verifiable Presentations (OID4VP)**, and credentials follow the **W3C Verifiable Credentials Data Model**, so a third-party verifier (a library, an employer, a cross-border service) needs no ULHT-specific SDK.
+- **Interoperability** — credentials issued by the DCS can be read, stored, and verified by any conformant wallet or verifier, not only by DCS tooling. Verification runs over **OpenID for Verifiable Presentations (OID4VP)**, and credentials follow the **W3C Verifiable Credentials Data Model**, so a third-party verifier (a library, an employer, a cross-border service) needs no DCS-specific SDK.
 - **Portability** — a credential lives in a **student-controlled wallet** and is bound to the student's own **Decentralized Identifier (DID)**. It is not locked inside a university database; the student carries it and presents it wherever it is accepted.
 - **No vendor lock-in** — the issuing/verification engine is [walt.id](https://walt.id), an open-source implementation of these same standards. Because the wire formats and protocols are standardised, the underlying engine could be swapped for another conformant implementation without changing the credential contract seen by wallets and verifiers.
 

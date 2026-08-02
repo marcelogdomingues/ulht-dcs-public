@@ -1,0 +1,105 @@
+spring:
+  application:
+    name: dcs-waltid-proxy-test
+  
+  # Test database configuration (if needed)
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  # H2 console for testing
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  # JPA configuration for tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  # Kafka configuration for tests
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: test-consumer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  
+  # Feign configuration for tests
+  cloud:
+    openfeign:
+      client:
+        config:
+          sisClient:
+            url: http://localhost:8081
+  
+  # Feign configuration for tests
+  feign:
+    okhttp:
+      enabled: true
+    client:
+      config:
+        default:
+          connectTimeout: 5000
+          readTimeout: 5000
+
+# Server configuration for tests
+server:
+  port: 0  # Random port for tests
+  servlet:
+    context-path: /
+
+# Logging configuration for tests
+logging:
+  level:
+    com.example.dcs.sis: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.kafka: DEBUG
+    org.apache.kafka: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Test-specific configurations
+test:
+  kafka:
+    topics:
+      user-topic: test-user-topic
+      sis-service-success: test-sis-service-success
+      sis-service-failure: test-sis-service-failure
+      sis-service-result: test-sis-service-result
+  
+  # Mock external services
+  external:
+    sis:
+      base-url: http://localhost:8081
+      timeout: 5000
+    waltid:
+      base-url: http://localhost:8082
+      timeout: 5000
+
+# Management endpoints for tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# WaltID Configuration for tests
+waltid:
+  wallet:
+    url: http://localhost:8082 

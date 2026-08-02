@@ -1,6 +1,6 @@
 # Architecture
 
-This document is the **complete architecture reference** for the **ULHT Digital Credential System (DCS)** — an event-driven microservices platform that issues, stores, and selectively verifies **W3C Verifiable Credentials** for university students, backed by [walt.id](https://walt.id).
+This document is the **complete architecture reference** for the **Digital Credential System (DCS)** — an event-driven microservices platform that issues, stores, and selectively verifies **W3C Verifiable Credentials** for university students, backed by [walt.id](https://walt.id).
 
 > See also: [Deployment](DEPLOYMENT.md) · [Configuration](CONFIGURATION.md) · [Security](SECURITY.md) · [Getting Started](GETTING_STARTED.md) · [API](API.md) · [Troubleshooting](TROUBLESHOOTING.md) · [Project README](index.md)
 
@@ -36,7 +36,7 @@ graph LR
     verifier["Verifier<br/>(library, kiosk, employer)"] -->|verifier app| dcs
     admin["University staff"] -->|issuer app| dcs
 
-    subgraph dcs["ULHT Digital Credential System"]
+    subgraph dcs["Digital Credential System"]
         core["Event-driven<br/>microservices + Kafka"]
     end
 
@@ -64,7 +64,7 @@ graph TB
 
     subgraph services["Microservices — Spring Boot 4.1 · Java 25 · /api/v1"]
         student["student-service :8084<br/><b>entry point</b>"]
-        lusofona["lusofona-service :8085<br/>SIS integration"]
+        sis["sis-service :8085<br/>SIS integration"]
         credential["credential-service :8086<br/>W3C issuance · wallet · verifier"]
         fulfilment["fulfilment-service :8087<br/>workflow tracking · SSE"]
     end
@@ -101,16 +101,16 @@ graph TB
     kong -.-> student
 
     student <--> kafka
-    lusofona <--> kafka
+    sis <--> kafka
     credential <--> kafka
     fulfilment <--> kafka
 
     student --> consul
-    lusofona --> consul
+    sis --> consul
     credential --> consul
     fulfilment --> consul
 
-    lusofona --> sis
+    sis --> sis
     credential --> issuer
     credential --> verifier
     credential --> wallet
@@ -138,7 +138,7 @@ All four services are **Spring Boot 4.1.0** applications on **Java 25**, exposed
 | Service | Port | Group id | Responsibility |
 | --- | --- | --- | --- |
 | **student-service** | `8084` | — (producer + `student-app` reply group) | Entry point: login → issuance, verify → verification; polls status |
-| **lusofona-service** | `8085` | `lusofona-service-group` | SIS integration; resolves academic record; requests issuance |
+| **sis-service** | `8085` | `sis-service-group` | SIS integration; resolves academic record; requests issuance |
 | **credential-service** | `8086` | `credential-service-*-group` | W3C issuance, wallet, and verification via walt.id |
 | **fulfilment-service** | `8087` | `fulfilment-service-workflow-group` | Workflow lifecycle tracking; SSE streaming |
 
@@ -167,27 +167,27 @@ flowchart LR
 
 **Status polling** — `getWorkflowStatus` proxies to `fulfilment-service` and **maps** its granular internal states (`INITIATED`, `VALIDATING`, `PREPARING_ISSUER`, `ISSUING_CREDENTIALS`, …) down to the client-facing enum `PROCESSING · COMPLETED · FAILED · CANCELLED`. `getCredentials` returns **HTTP 202** while the workflow is not yet `COMPLETED`, and `200` with the credential offer URLs once it is.
 
-### 3.2 lusofona-service (:8085) — SIS integration
+### 3.2 sis-service (:8085) — SIS integration
 
 Bridges the DCS to the **university Student Information System (SIS)**. It consumes `student.login.requested`, calls the SIS to fetch the **full** academic record, and publishes `credential.requests` for the credential engine.
 
 !!! warning "No mock fallback for real data"
-    If the SIS call fails, `lusofona-service` does **not** fabricate student data. It publishes a `credential.error` event and fails the workflow. Credentials are only ever minted from real SIS data.
+    If the SIS call fails, `sis-service` does **not** fabricate student data. It publishes a `credential.error` event and fails the workflow. Credentials are only ever minted from real SIS data.
 
 **Key classes**
 
 | Class | Role |
 | --- | --- |
 | `StudentLoginConsumer` | `@KafkaListener` on `student.login.requested`; orchestrates the SIS call and forwards to credential-service; uses **request-reply** (`@SendTo`) to confirm the workflow started |
-| `LusofonaClient` (Feign) | Typed client to the SIS; base URL injected from config (placeholder `https://university-sis.example.edu/api`) |
-| `LusofonaFallback` | Circuit-breaker fallback returning `CIRCUIT_BREAKER_OPEN` sentinels |
+| `SisClient` (Feign) | Typed client to the SIS; base URL injected from config (placeholder `https://university-sis.example.edu/api`) |
+| `SisFallback` | Circuit-breaker fallback returning `CIRCUIT_BREAKER_OPEN` sentinels |
 | `CredentialWorkflowProducer` | Publishes `credential.requests` — **reusing the original `correlationId`** for end-to-end traceability |
 | `ResilienceConfig` | resilience4j circuit breaker + retry registries |
-| `LusofonaService`, `ServiceValidator` | Business logic and validation |
+| `SisService`, `ServiceValidator` | Business logic and validation |
 
 **SIS operations** (Feign, all `POST`): `Login`, `Registration`, `GetSIGESEnrolments`, `GetSIGESGrades`, `GetSIGESStudentEvals`, `GetSIGESStudentCourseCredits`, `GetUserScheduleSemester`.
 
-The consumer maps SIS/HTTP failures (`Unauthorized`, `Forbidden`, `NotFound`, `BadRequest`, `Timeout`, `LusofonaApiException`, …) onto internal `ErrorCodes`, publishes a `credential.error`, and returns a structured error reply. See [§13 Resilience](#13-resilience-patterns).
+The consumer maps SIS/HTTP failures (`Unauthorized`, `Forbidden`, `NotFound`, `BadRequest`, `Timeout`, `SisApiException`, …) onto internal `ErrorCodes`, publishes a `credential.error`, and returns a structured error reply. See [§13 Resilience](#13-resilience-patterns).
 
 ### 3.3 credential-service (:8086) — the credential engine
 
@@ -238,7 +238,7 @@ There are **two** communication styles in play:
 graph LR
     subgraph async["Asynchronous (Kafka) — the credential pipeline"]
         s1["student"] -->|events| k[(Kafka)]
-        k --> l1["lusofona"]
+        k --> l1["sis"]
         l1 -->|events| k
         k --> c1["credential"]
         c1 -->|events| k
@@ -251,7 +251,7 @@ graph LR
 
 Two consumers additionally use the **Kafka request-reply** pattern (`@SendTo` + a reply template configured on the container factory) so the producer can receive a confirmation that a workflow actually started:
 
-- `lusofona-service` `StudentLoginConsumer` replies `WORKFLOW_STARTED` / `WORKFLOW_FAILED`.
+- `sis-service` `StudentLoginConsumer` replies `WORKFLOW_STARTED` / `WORKFLOW_FAILED`.
 - `credential-service` `VerificationWorkflowConsumer` replies `VERIFICATION_STARTED` / `VERIFICATION_FAILED`.
 
 ---
@@ -263,7 +263,7 @@ The system is **asynchronous and event-driven**. A student login triggers a chai
 **Pipeline summary**
 
 ```
-student-service ──student.login.requested──▶ lusofona-service ──(SIS)──▶
+student-service ──student.login.requested──▶ sis-service ──(SIS)──▶
   ──credential.requests──▶ credential-service ──(walt.id)──▶
   ──credential.progress / .completed / .error──▶ fulfilment-service
 ```
@@ -276,7 +276,7 @@ sequenceDiagram
     actor Student
     participant SS as student-service :8084
     participant K as Kafka
-    participant LS as lusofona-service :8085
+    participant LS as sis-service :8085
     participant SIS as University SIS<br/>example.edu/api
     participant CS as credential-service :8086
     participant WI as walt.id issuer :7002
@@ -393,11 +393,11 @@ Kafka runs as **Confluent `cp-kafka` 8.3.0 in KRaft mode**.
 
 | Topic | Producer | Consumer(s) | Purpose |
 | --- | --- | --- | --- |
-| `student.login.requested` | student-service | lusofona-service | Student authenticated — start the pipeline |
-| `credential.requests` | lusofona-service | credential-service | Request issuance with full SIS data |
+| `student.login.requested` | student-service | sis-service | Student authenticated — start the pipeline |
+| `credential.requests` | sis-service | credential-service | Request issuance with full SIS data |
 | `credential.progress` | credential-service | fulfilment-service | Intermediate issuance progress (%) |
 | `credential.completed` | credential-service | fulfilment-service | Issuance succeeded (offer URLs, types) |
-| `credential.error` | credential-service, lusofona-service | fulfilment-service | Issuance / SIS failure |
+| `credential.error` | credential-service, sis-service | fulfilment-service | Issuance / SIS failure |
 | `verification.requested` | student-service | credential-service | Verifier requests a presentation |
 | `verification.progress` | credential-service | fulfilment-service | Verification progress (%) |
 | `verification.completed` | credential-service | fulfilment-service | Verification URL / result available |
@@ -414,7 +414,7 @@ Reply topics `credential.reply` / `verification.reply` back the request-reply pa
 ```mermaid
 graph LR
     SS["student-service"] --> T1["student.login.requested"]
-    T1 --> LS["lusofona-service"]
+    T1 --> LS["sis-service"]
 
     LS --> T2["credential.requests"]
     T2 --> CS["credential-service"]
@@ -452,7 +452,7 @@ graph LR
 
 | Group id | Service | Listens to |
 | --- | --- | --- |
-| `lusofona-service-group` | lusofona-service | `student.login.requested` |
+| `sis-service-group` | sis-service | `student.login.requested` |
 | `credential-service-group` | credential-service | `credential.requests` |
 | `credential-service-verification-group` | credential-service | `verification.requested` |
 | `credential-service-wallet-group` | credential-service | `wallet.requests` |
@@ -465,7 +465,7 @@ The retry defaults create topics with **3 partitions** and listener **concurrenc
 Messages are **JSON**, not Avro (the Avro classes under `domain/avro` are legacy). Producers use Spring Kafka `JsonSerializer` with `ADD_TYPE_INFO_HEADERS = false` (no `__TypeId__` header). Consumers use `ErrorHandlingDeserializer` wrapping `JsonDeserializer`, configured to deserialize into `java.util.HashMap` (`VALUE_DEFAULT_TYPE`) and to **not** read type headers.
 
 !!! warning "Trusted packages (security)"
-    `JsonDeserializer` is restricted to `spring.json.trusted.packages = pt.ulusofona.*,java.util,java.lang` rather than the insecure wildcard `*`. This blocks deserialization-gadget attacks. `ErrorHandlingDeserializer` ensures a single poison message cannot crash the listener container. See [Security](SECURITY.md).
+    `JsonDeserializer` is restricted to `spring.json.trusted.packages = com.example.dcs.*,java.util,java.lang` rather than the insecure wildcard `*`. This blocks deserialization-gadget attacks. `ErrorHandlingDeserializer` ensures a single poison message cannot crash the listener container. See [Security](SECURITY.md).
 
 Manual acknowledgement (`ack-mode: manual_immediate`, `enable-auto-commit: false`, `auto-offset-reset: earliest`) plus idempotent producers give at-least-once delivery with ordered, replayable streams.
 
@@ -613,7 +613,7 @@ graph TB
         reg["service registry + health"]
     end
     student["student-service"] -->|register + heartbeat| reg
-    lusofona["lusofona-service"] -->|register + heartbeat| reg
+    sis["sis-service"] -->|register + heartbeat| reg
     credential["credential-service"] -->|register + heartbeat| reg
     fulfilment["fulfilment-service"] -->|register + heartbeat| reg
     reg -->|resolve peers| student
@@ -639,7 +639,7 @@ graph TB
         kongui["kong-ui"]
     end
     subgraph backend["backend network (172.20.0.0/16)"]
-        svcs["student · lusofona<br/>credential · fulfilment"]
+        svcs["student · sis<br/>credential · fulfilment"]
         kafka["Kafka + kafka-ui"]
         consul["Consul"]
         obs["Prometheus · Grafana<br/>Loki · Promtail · kafka-exporter"]
@@ -653,12 +653,12 @@ graph TB
     svcs --> kafka
     svcs --> consul
     credential["credential-service"] --> waltid
-    lusofona["lusofona-service"] --> waltid
+    sis["sis-service"] --> waltid
 ```
 
 - **frontend** — public-facing edge (Kong, kong-ui). All four services also attach here for gateway reachability.
 - **backend** — internal service-to-service, Kafka, Consul, and observability traffic (subnet `172.20.0.0/16`).
-- **waltid_network** — the shared external network on which walt.id runs; joined by `credential-service`, `lusofona-service`, Kong, and kafka-ui.
+- **waltid_network** — the shared external network on which walt.id runs; joined by `credential-service`, `sis-service`, Kong, and kafka-ui.
 
 !!! tip "Loopback binding"
     Bindings such as `127.0.0.1:8086:8086` mean the ports are reachable only from the host machine. For remote access, front the stack with a reverse proxy / SSH tunnel — see [Deployment](DEPLOYMENT.md) and [Security](SECURITY.md).
@@ -687,10 +687,10 @@ graph TB
             kexp["kafka-exporter<br/>danielqsj/kafka-exporter:v1.9.0"]
         end
         subgraph app["Application containers"]
-            ss["ulht-student-service :8084"]
-            ls["ulht-lusofona-service :8085"]
-            cs["ulht-credential-service :8086"]
-            fs["ulht-fulfilment-service :8087"]
+            ss["dcs-student-service :8084"]
+            ls["dcs-sis-service :8085"]
+            cs["dcs-credential-service :8086"]
+            fs["dcs-fulfilment-service :8087"]
         end
     end
     app --> kafka
@@ -711,7 +711,7 @@ graph TB
 
 ## 13. Resilience patterns
 
-`lusofona-service` guards **every SIS call** with **resilience4j** circuit breakers and retries (`ResilienceConfig`), because the SIS is the least controllable dependency in the system.
+`sis-service` guards **every SIS call** with **resilience4j** circuit breakers and retries (`ResilienceConfig`), because the SIS is the least controllable dependency in the system.
 
 **Circuit breaker** — 50% failure-rate threshold over a sliding window of 10 calls (min 5 calls), 30 s open state, 5 permitted calls in half-open. Records `ConnectException`, `SocketTimeoutException`, `IOException`, `ResourceAccessException`, `FeignException`.
 
@@ -725,12 +725,12 @@ stateDiagram-v2
     HalfOpen --> Closed: probe calls succeed
     HalfOpen --> Open: probe calls fail
     note right of Open
-      LusofonaFallback returns
+      SisFallback returns
       CIRCUIT_BREAKER_OPEN sentinels
     end note
 ```
 
-When the breaker is open, `LusofonaFallback` returns sentinel responses (`errorCode = CIRCUIT_BREAKER_OPEN`) instead of throwing, so the consumer can fail the workflow cleanly via `credential.error`. On the credential side, walt.id calls have their own retry config and surface **503** when unavailable. Kafka listeners add **retry topics + a `.DLT`** dead-letter topic and `ErrorHandlingDeserializer` so poison messages don't stall the pipeline.
+When the breaker is open, `SisFallback` returns sentinel responses (`errorCode = CIRCUIT_BREAKER_OPEN`) instead of throwing, so the consumer can fail the workflow cleanly via `credential.error`. On the credential side, walt.id calls have their own retry config and surface **503** when unavailable. Kafka listeners add **retry topics + a `.DLT`** dead-letter topic and `ErrorHandlingDeserializer` so poison messages don't stall the pipeline.
 
 ---
 
@@ -742,7 +742,7 @@ Every service exposes Actuator/Micrometer metrics scraped by **Prometheus**; log
 graph LR
     subgraph services["services (Actuator /metrics)"]
         s["student"]
-        l["lusofona"]
+        l["sis"]
         c["credential"]
         f["fulfilment"]
     end
@@ -775,7 +775,7 @@ graph LR
 ## 15. Error handling
 
 - **HTTP** — every service has a `GlobalExceptionHandler` returning a structured `ErrorResponse` (code, name, message) and consistent status codes; typed exceptions (`UnauthorizedException`, `ForbiddenException`, `NotFoundException`, `ConflictException`, `TimeoutException`, `ExternalServiceException`, `ValidationException`).
-- **SIS errors** are mapped from `LusofonaErrorCode` to internal `ErrorCodes` (e.g. `AUTHENTICATION_FAILURE → LUSOFONA_AUTH_FAILURE`) and published to `credential.error`, which `fulfilment-service` records with an `errorCode` / `errorName` for the client.
+- **SIS errors** are mapped from `SisErrorCode` to internal `ErrorCodes` (e.g. `AUTHENTICATION_FAILURE → SIS_AUTH_FAILURE`) and published to `credential.error`, which `fulfilment-service` records with an `errorCode` / `errorName` for the client.
 - **Kafka** — `ErrorHandlingDeserializer`, retry topics, `.DLT` dead-letter topics; manual acks prevent premature offset commits on failure.
 - **walt.id down** — issuance/verify return **503**; the workflow surfaces the failure rather than issuing bad data.
 - **Async status** — `student-service` returns **202** for not-yet-complete workflows and maps unknown/absent status to `PROCESSING` so clients get a stable contract.

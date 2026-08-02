@@ -23,7 +23,7 @@ This builds and starts a lean, self-contained stack:
 - **Kafka** (KRaft, single node) — the event backbone
 - **Consul** — service discovery
 - **student-service** (`:8084`) — the entry point
-- **lusofona-service** (`:8085`) — SIS proxy (**mocked**)
+- **sis-service** (`:8085`) — SIS proxy (**mocked**)
 - **credential-service** (`:8086`) — walt.id issuer/wallet/verifier (**mocked**)
 - **fulfilment-service** (`:8087`) — workflow status/result tracking
 
@@ -36,8 +36,8 @@ inline demo defaults, so **no `.env` file is required**.
 ## What it does
 
 1. `POST /api/v1/student/issue` publishes a `student.login.requested` Kafka event.
-2. **lusofona-service** consumes it and (in demo mode) returns canned student data
-   from the mock `LusofonaClient` instead of calling a real SIS, then emits a
+2. **sis-service** consumes it and (in demo mode) returns canned student data
+   from the mock `SisClient` instead of calling a real SIS, then emits a
    `credential.requests` event.
 3. **credential-service** consumes it, ensures a wallet, and issues credentials via
    the mock walt.id clients — producing realistic OID4VCI **credential-offer URLs**
@@ -131,7 +131,7 @@ The mock verifier returns a verification URL and a successful ("verified") resul
 ## Debugging
 
 ```bash
-docker compose -f docker-compose.demo.yml logs credential-service lusofona-service
+docker compose -f docker-compose.demo.yml logs credential-service sis-service
 docker compose -f docker-compose.demo.yml ps
 ```
 
@@ -143,8 +143,8 @@ docker compose -f docker-compose.demo.yml down
 
 ## How the mocks are wired
 
-- **lusofona-service** — `DemoConfiguration` (`@Profile("demo")`) registers a
-  `@Primary` mock `LusofonaClient` returning canned enrolment/grade/eval/credit data
+- **sis-service** — `DemoConfiguration` (`@Profile("demo")`) registers a
+  `@Primary` mock `SisClient` returning canned enrolment/grade/eval/credit data
   and a login payload with a fake `studentId`/`email`/`fullName`.
 - **credential-service** — `DemoConfiguration` (`@Profile("demo")`) registers
   `@Primary` mock `WaltidIssuerClient`, `WaltidWalletClient`, and

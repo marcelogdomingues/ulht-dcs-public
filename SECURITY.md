@@ -1,6 +1,6 @@
 # Security Policy
 
-Thank you for helping keep the **ULHT Digital Credential System** and its users safe.
+Thank you for helping keep the **Digital Credential System** and its users safe.
 
 This document describes how to report security vulnerabilities in this
 repository. It is the coordinated-disclosure policy for the project. A more
@@ -42,7 +42,7 @@ comments. *(Security contact via GitHub; no email address is published.)*
 To help us triage quickly, please provide as much of the following as you can:
 
 - A clear description of the vulnerability and its potential impact.
-- The affected component(s) — e.g. student service, lusofona/SIS service,
+- The affected component(s) — e.g. student service, sis/SIS service,
   credential service, fulfilment service, API gateway, or a Flutter app.
 - The affected version, commit SHA, or Docker image tag.
 - Step-by-step reproduction instructions or a proof of concept.

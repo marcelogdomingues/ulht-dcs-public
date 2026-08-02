@@ -7,7 +7,7 @@ Accepted
 ## Context
 
 Issuing a credential in the DCS is not a single, fast operation. A student login
-triggers a chain of work: `lusofona-service` calls the university **SIS/SIGES**
+triggers a chain of work: `sis-service` calls the university **SIS/SIGES**
 to fetch the full academic record, `credential-service` builds and signs one or
 more **W3C Verifiable Credentials** through the external **walt.id** stack and
 offers them to the student's wallet, and `fulfilment-service` tracks the
@@ -23,7 +23,7 @@ different failure modes, scaling needs, and rates of change.
 ## Decision
 
 Build the DCS as **four Spring Boot microservices** — `student-service` (:8084,
-entry point), `lusofona-service` (:8085, SIS integration), `credential-service`
+entry point), `sis-service` (:8085, SIS integration), `credential-service`
 (:8086, walt.id issuance/verification/wallet), and `fulfilment-service` (:8087,
 workflow tracking) — communicating **asynchronously over an event bus** for the
 credential pipeline.

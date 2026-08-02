@@ -93,7 +93,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'ULHT Student Portal',
+                                'DCS Student Portal',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.white70,
@@ -261,7 +261,7 @@ class HomeScreen extends StatelessWidget {
                   () {
                     showAboutDialog(
                       context: context,
-                      applicationName: 'ULHT Student App',
+                      applicationName: 'DCS Student App',
                       applicationVersion: '1.0.0',
                     );
                   },

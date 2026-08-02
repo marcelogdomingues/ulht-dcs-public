@@ -1,4 +1,4 @@
-site_name: ULHT Digital Credential System
+site_name: Digital Credential System
 site_description: >-
   Event-driven microservices platform that issues and verifies W3C Verifiable
   Credentials for university students, with privacy-preserving selective disclosure.

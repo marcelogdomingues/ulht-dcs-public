@@ -1,12 +1,12 @@
-# ULHT Credential Service
+# DCS Credential Service
 
 ## 🎯 Overview
 
-The ULHT Credential Service is a microservice that issues W3C Verifiable Credentials for students. It integrates with:
+The DCS Credential Service is a microservice that issues W3C Verifiable Credentials for students. It integrates with:
 - **WaltID Wallet** (external service) - Wallet API for user authentication and credential storage
 - **WaltID Issuer** (external service) - Credential issuance via OID4VCI
 - **WaltID Verifier** (external service) - Credential verification
-- **Lusofona Service** - Receives real student data from ULHT systems
+- **Sis Service** - Receives real student data from DCS systems
 - **Fulfilment Service** - Tracks progress and notifies students
 
 **Note:** This service uses **WaltID Wallet as an external service** (similar to Issuer and Verifier). We do NOT build a custom wallet application. The `/wallet` endpoints are a wrapper/proxy around the WaltID Wallet API.
@@ -15,7 +15,7 @@ The ULHT Credential Service is a microservice that issues W3C Verifiable Credent
 
 - ✅ **W3C Verifiable Credentials** - JWT & SD-JWT formats
 - ✅ **European Educational Credentials** - SCHAC Educational ID & European Student Card
-- ✅ **Automatic Issuance** - Triggered on student login with real ULHT data
+- ✅ **Automatic Issuance** - Triggered on student login with real DCS data
 - ✅ **Kafka Integration** - Event-driven processing
 - ✅ **Progress Tracking** - Real-time updates via Fulfilment Service
 - ✅ **OpenAPI First** - API spec drives code generation
@@ -44,7 +44,7 @@ Service runs on: **http://localhost:8086**
 # 1. Start all services
 docker-compose up -d
 
-# 2. Trigger student login via Lusofona Service
+# 2. Trigger student login via Sis Service
 curl -X POST http://localhost:8085/api/v1/studentLogin \
   -H "Content-Type: application/json" \
   -d '{
@@ -95,8 +95,8 @@ Import collection: `Credential-Service-Postman-Collection.json`
 ```
 Student Login (Mobile App)
     ↓
-Lusofona Service (8085)
-    ↓ (calls real ULHT API)
+Sis Service (8085)
+    ↓ (calls real DCS API)
 Real Student Data
     ↓ (Kafka: credential.requests)
 Credential Service (8086)
@@ -113,7 +113,7 @@ Student Gets Credentials
 
 | Topic | Producer | Consumer | Purpose |
 |-------|----------|----------|---------|
-| `credential.requests` | Lusofona | Credential | Student data input |
+| `credential.requests` | Sis | Credential | Student data input |
 | `credential.progress` | Credential | Fulfilment | Progress updates |
 | `credential.completed` | Credential | Fulfilment | Final results |
 | `credential.error` | Credential | Fulfilment | Errors |
@@ -174,14 +174,14 @@ docker exec -it kafka kafka-console-consumer \
   --from-beginning
 ```
 
-### Lusofona Service Not Triggering?
+### Sis Service Not Triggering?
 
 ```bash
 # Check if CredentialWorkflowProducer is created
 curl http://localhost:8085/api/v1/actuator/beans | jq '.contexts[].beans | keys[]' | grep Credential
 
 # Check Kafka connection
-# In lusofona-service logs, should see:
+# In sis-service logs, should see:
 # "Sent credential workflow request for user: ..."
 ```
 
@@ -189,7 +189,7 @@ curl http://localhost:8085/api/v1/actuator/beans | jq '.contexts[].beans | keys[
 
 ```bash
 # Verify topic names are updated
-grep "credential.progress" fulfilment-service/src/main/java/pt/ulusofona/ulht/fulfilment/kafka/WorkflowEventConsumer.java
+grep "credential.progress" fulfilment-service/src/main/java/pt/usis/dcs/fulfilment/kafka/WorkflowEventConsumer.java
 
 # Should be "credential.progress" NOT "workflow.progress"
 ```
@@ -200,9 +200,9 @@ grep "credential.progress" fulfilment-service/src/main/java/pt/ulusofona/ulht/fu
 - 4 core documentation files (was 24!)
 - 1 flow type (was 6!)
 - 6 Kafka topics, all used, all standardized
-- Complete integration: Lusofona → Credential → Fulfilment
+- Complete integration: Sis → Credential → Fulfilment
 - OpenAPI Generator configured
-- Real data from ULHT systems
+- Real data from DCS systems
 
 **Test the complete flow using COMPLETE_INTEGRATION.md!**
 

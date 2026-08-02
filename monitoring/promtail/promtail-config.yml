@@ -17,7 +17,7 @@ scrape_configs:
     relabel_configs:
       # Only scrape containers with specific labels or names
       - source_labels: ['__meta_docker_container_name']
-        regex: '/(ulht-.*|prometheus|grafana|loki|promtail|kafka|zookeeper|consul|kafka-exporter)'
+        regex: '/(dcs-.*|prometheus|grafana|loki|promtail|kafka|zookeeper|consul|kafka-exporter)'
         action: keep
       # Extract container name
       - source_labels: ['__meta_docker_container_name']
@@ -25,7 +25,7 @@ scrape_configs:
         target_label: 'container'
       # Extract service name from container name (only for microservices)
       - source_labels: ['__meta_docker_container_name']
-        regex: '/ulht-(.*)-service'
+        regex: '/dcs-(.*)-service'
         target_label: 'service'
         replacement: '${1}'
       # Set job label
@@ -58,11 +58,11 @@ scrape_configs:
     relabel_configs:
       # Only scrape microservice containers
       - source_labels: ['__meta_docker_container_name']
-        regex: '/ulht-(student|lusofona|credential|fulfilment)-service'
+        regex: '/dcs-(student|sis|credential|fulfilment)-service'
         action: keep
       # Extract service name
       - source_labels: ['__meta_docker_container_name']
-        regex: '/ulht-(.*)-service'
+        regex: '/dcs-(.*)-service'
         target_label: 'service'
       # Extract container name
       - source_labels: ['__meta_docker_container_name']

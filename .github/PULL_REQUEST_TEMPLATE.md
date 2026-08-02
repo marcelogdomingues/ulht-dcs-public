@@ -18,7 +18,7 @@
 
 ## Affected Components
 
-<!-- e.g. student service, lusofona/SIS service, credential service,
+<!-- e.g. student service, sis/SIS service, credential service,
      fulfilment service, API gateway, a Flutter app, docs, infra. -->
 
 ## How Has This Been Tested?

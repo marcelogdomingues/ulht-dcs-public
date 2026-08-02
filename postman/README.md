@@ -3,8 +3,8 @@
 ## 🎯 Single Unified Collection
 
 **Import ONLY these 2 files:**
-1. ✅ **Collection**: `ULHT-Unified.postman_collection.json`
-2. ✅ **Environment**: `ULHT-Unified.postman_environment.json`
+1. ✅ **Collection**: `DCS-Unified.postman_collection.json`
+2. ✅ **Environment**: `DCS-Unified.postman_environment.json`
 
 📖 **Full Guide**: See `README-UNIFIED.md`
 
@@ -16,12 +16,12 @@
 
 Import these TWO files into Postman:
 
-1. **Collection**: `ULHT-Unified.postman_collection.json`
-2. **Environment**: `ULHT-Unified.postman_environment.json`
+1. **Collection**: `DCS-Unified.postman_collection.json`
+2. **Environment**: `DCS-Unified.postman_environment.json`
 
 ### 2. Select Environment
 
-In Postman, select **"ULHT Digital Credentials - Unified"** from the environment dropdown (top right).
+In Postman, select **"DCS Digital Credentials - Unified"** from the environment dropdown (top right).
 
 ### 3. Run Your First Workflow
 
@@ -56,7 +56,7 @@ The unified collection includes:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `student_url` | http://localhost:8084/api/v1 | Student service |
-| `lusofona_url` | http://localhost:8085/api/v1 | Lusofona service |
+| `sis_url` | http://localhost:8085/api/v1 | Sis service |
 | `credential_url` | http://localhost:8086/api/v1 | Credential service |
 | `fulfilment_url` | http://localhost:8087/api/v1 | Fulfilment service |
 | `waltid_verifier_url` | http://localhost:7003 | WaltID Verifier |
@@ -80,7 +80,7 @@ Auto-managed variables (set by test scripts):
 
 **All previous collections have been merged into this single unified collection:**
 
-- ✅ Complete workflows (from ULHT-Digital-Credentials-Complete)
+- ✅ Complete workflows (from DCS-Digital-Credentials-Complete)
 - ✅ Verification workflows (from Verification-Workflow)
 - ✅ Credential service APIs (from Credential-Service-Postman-Collection)
 - ✅ Verifier APIs (from Credential-Verifier)
