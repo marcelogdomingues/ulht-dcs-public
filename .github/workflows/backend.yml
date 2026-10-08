@@ -93,7 +93,7 @@ jobs:
       - name: Upload built JAR
         # Only publish the artifact when the build actually produced a jar.
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.service }}-jar
           path: services/${{ matrix.service }}/target/*.jar
